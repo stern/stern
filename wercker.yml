@@ -15,11 +15,65 @@ build:
         code: govendor sync
 
     - script:
-        name: build
+        name: build binaries
         code: |
-          CGO_ENABLED=0 \
-          go build \
-          -ldflags="-s -X github.com/wercker/stern.GitCommit=$WERCKER_GIT_COMMIT -X github.com/wercker/stern.PatchVersion=$(( ($(date +%s) - $(date --date=20150101 +%s) )/(60*60*24) )) -X github.com/wercker/stern.Compiled=$(date +%s)" \
-          -installsuffix cgo \
-          -o $WERCKER_OUTPUT_DIR/stern
+            export CGO_ENABLED=0
+            GOOS=linux GOARCH=amd64 go build \
+                -ldflags="-s -X github.com/wercker/stern.GitCommit=$WERCKER_GIT_COMMIT -X github.com/wercker/stern.PatchVersion=$(( ($(date +%s) - $(date --date=20150101 +%s) )/(60*60*24) )) -X github.com/wercker/stern.Compiled=$(date +%s)" \
+                -installsuffix cgo \
+                -o $WERCKER_OUTPUT_DIR/artifacts/latest/linux_amd64/stern
 
+            GOOS=darwin GOARCH=amd64 go build \
+                -ldflags="-s -X github.com/wercker/stern.GitCommit=$WERCKER_GIT_COMMIT -X github.com/wercker/stern.PatchVersion=$(( ($(date +%s) - $(date --date=20150101 +%s) )/(60*60*24) )) -X github.com/wercker/stern.Compiled=$(date +%s)" \
+                -installsuffix cgo \
+                -o $WERCKER_OUTPUT_DIR/artifacts/latest/darwin_amd64/stern
+
+            cp -r $WERCKER_OUTPUT_DIR/artifacts/latest/* $WERCKER_REPORT_ARTIFACTS_DIR
+
+    - script:
+        name: generate SHAs
+        code: |
+            cd $WERCKER_OUTPUT_DIR
+            for f in $(find . -type f -name stern); do
+              cd $WERCKER_OUTPUT_DIR/$(dirname "$f")
+              sha256sum stern > SHA256SUMS
+            done
+
+    - script:
+        name: prepare
+        code: cp -r scripts $WERCKER_OUTPUT_DIR
+
+release-stable:
+  steps:
+    - install-packages:
+        packages: jshon
+
+    - script:
+        name: version
+        code: |
+            export STERN_VERSION=$(./artifacts/latest/linux_amd64/stern --version | awk '{print $3}')
+            echo "Releasing stern stable v$STERN_VERSION" > $WERCKER_REPORT_MESSAGE_FILE
+            echo "Releasing stern stable v$STERN_VERSION"
+
+    - script:
+        name: generate release notes
+        code: |
+          export RELEASE_NOTES=$(jshon -s "$(./scripts/create-release-notes.sh)" | sed 's/.$//; s/^.//')
+          echo $RELEASE_NOTES
+
+    - github-create-release:
+        token: $GITHUB_TOKEN
+        tag: $STERN_VERSION
+        body: $RELEASE_NOTES
+
+    - github-upload-asset:
+        token: $GITHUB_TOKEN
+        file: ./artifacts/latest/linux_amd64/stern
+        filename: stern_linux_amd64
+        content-type: application/octet-stream
+
+    - github-upload-asset:
+        token: $GITHUB_TOKEN
+        file: ./artifacts/latest/darwin_amd64/stern
+        filename: stern_darwin_amd64
+        content-type: application/octet-stream
