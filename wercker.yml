@@ -1,0 +1,25 @@
+box: golang:1.7
+build:
+  base-path: /go/src/github.com/wercker/stern
+  steps:
+    - script:
+        name: install govendor
+        code: go get -u github.com/kardianos/govendor
+
+    - script:
+        name: go vet
+        code: govendor vet +local
+
+    - script:
+        name: install dependencies
+        code: govendor sync
+
+    - script:
+        name: build
+        code: |
+          CGO_ENABLED=0 \
+          go build \
+          -ldflags="-s -X github.com/wercker/stern.GitCommit=$WERCKER_GIT_COMMIT -X github.com/wercker/stern.PatchVersion=$(( ($(date +%s) - $(date --date=20150101 +%s) )/(60*60*24) )) -X github.com/wercker/stern.Compiled=$(date +%s)" \
+          -installsuffix cgo \
+          -o $WERCKER_OUTPUT_DIR/stern
+

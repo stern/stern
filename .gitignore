@@ -23,6 +23,5 @@ _testmain.go
 *.test
 *.prof
 
-stern
 /vendor/*/
 /.wercker
