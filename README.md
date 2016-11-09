@@ -10,8 +10,16 @@ When a pod contains multiple containers Stern can tail all of them too without h
 
 ## Installation
 
-```sh
-go get -u github.com/wercker/stern
+If you don't want to build from source go grab a [binary release](https://github.com/wercker/stern/releases)
+
+[Govendor](https://github.com/kardianos/govendor) is required to install vendored dependencies.
+
+```
+mkdir -p $GOPATH/src/github.com/wercker
+cd $GOPATH/src/github.com/wercker
+git clone git@github.com:wercker/stern.git && cd stern
+govendor sync
+go install
 ```
 
 ## Usage
