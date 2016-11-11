@@ -47,7 +47,8 @@ func Watch(ctx context.Context, i corev1.PodInterface, podFilter *regexp.Regexp,
 			select {
 			case e := <-watcher.ResultChan():
 				if e.Object == nil {
-					continue
+					// Closed because of error
+					return
 				}
 
 				pod := e.Object.(*v1.Pod)
