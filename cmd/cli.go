@@ -56,7 +56,7 @@ func Run() {
 			Value: "",
 		},
 		cli.StringFlag{
-			Name:  "namespace",
+			Name:  "namespace, n",
 			Usage: "Kubernetes namespace to use",
 			Value: "default",
 		},
