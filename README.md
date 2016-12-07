@@ -39,14 +39,15 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 
 ### cli flags
 
-| flag            | default          | purpose                                                                                |
-|-----------------|------------------|----------------------------------------------------------------------------------------|
-| `--container`   | `.*`             | Container name when multiple containers in pod (regular expression)                    |
-| `--timestamps`  |                  | Print timestamps                                                                       |
-| `--since`       |                  | Return logs newer than a relative duration like 52, 2m, or 3h. Displays all if omitted |
-| `--context`     |                  | Kubernetes context to use                                                              |
-| `--namespace`   | `default`        | Kubernetes namespace to use                                                            |
-| `--kube-config` | `~/.kube/config` | Path to kubeconfig file to use                                                         |
+| flag            | default          | purpose                                                                                  |
+|-----------------|------------------|------------------------------------------------------------------------------------------|
+| `--container`   | `.*`             | Container name when multiple containers in pod (regular expression)                      |
+| `--timestamps`  |                  | Print timestamps                                                                         |
+| `--since`       |                  | Return logs newer than a relative duration like 52, 2m, or 3h. Displays all if omitted   |
+| `--context`     |                  | Kubernetes context to use                                                                |
+| `--exclude`     |                  | Log lines to exclude; specify multiple with additional `--exclude`; (regular expression) |
+| `--namespace`   | `default`        | Kubernetes namespace to use                                                              |
+| `--kube-config` | `~/.kube/config` | Path to kubeconfig file to use                                                           |
 
 See `stern --help` for details
 

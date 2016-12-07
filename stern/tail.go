@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -40,6 +41,7 @@ type Tail struct {
 type TailOptions struct {
 	Timestamps   bool
 	SinceSeconds int64
+	Exclude      []*regexp.Regexp
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
@@ -98,13 +100,22 @@ func (t *Tail) Start(ctx context.Context, i corev1.PodInterface) {
 
 		reader := bufio.NewReader(stream)
 
+	OUTER:
 		for {
 			line, err := reader.ReadBytes('\n')
 			if err != nil {
 				return
 			}
 
-			t.Print(string(line))
+			str := string(line)
+
+			for _, rex := range t.Options.Exclude {
+				if rex.MatchString(str) {
+					continue OUTER
+				}
+			}
+
+			t.Print(str)
 		}
 	}()
 

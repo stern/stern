@@ -48,6 +48,7 @@ func Run(ctx context.Context, config *Config) error {
 			tail := NewTail(p.Pod, p.Container, &TailOptions{
 				Timestamps:   config.Timestamps,
 				SinceSeconds: int64(config.Since.Seconds()),
+				Exclude:      config.Exclude,
 			})
 			tails[ID] = tail
 

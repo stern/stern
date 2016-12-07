@@ -65,6 +65,11 @@ func Run() {
 			Usage: "Path to kubeconfig file to use",
 			Value: "",
 		},
+		cli.StringSliceFlag{
+			Name:  "exclude, e",
+			Usage: "Regex of log lines to exclude",
+			Value: &cli.StringSlice{},
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
@@ -115,10 +120,22 @@ func parseConfig(c *cli.Context) (*stern.Config, error) {
 		return nil, errors.Wrap(err, "failed to compile regular expression for container query")
 	}
 
+	var exclude []*regexp.Regexp
+
+	for _, ex := range c.StringSlice("exclude") {
+		rex, err := regexp.Compile(ex)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to compile regular expression for exclusion filter")
+		}
+
+		exclude = append(exclude, rex)
+	}
+
 	return &stern.Config{
 		KubeConfig:     kubeConfig,
 		PodQuery:       pod,
 		ContainerQuery: container,
+		Exclude:        exclude,
 		Timestamps:     c.Bool("timestamps"),
 		Since:          c.Duration("since"),
 		ContextName:    c.String("context"),

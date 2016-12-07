@@ -27,5 +27,6 @@ type Config struct {
 	PodQuery       *regexp.Regexp
 	Timestamps     bool
 	ContainerQuery *regexp.Regexp
+	Exclude        []*regexp.Regexp
 	Since          time.Duration
 }
