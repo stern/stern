@@ -20,10 +20,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	corev1 "k8s.io/client-go/1.4/kubernetes/typed/core/v1"
-	"k8s.io/client-go/1.4/pkg/api"
-	"k8s.io/client-go/1.4/pkg/api/v1"
-	"k8s.io/client-go/1.4/pkg/watch"
+	corev1 "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
+	"k8s.io/client-go/1.5/pkg/api"
+	"k8s.io/client-go/1.5/pkg/api/v1"
+	"k8s.io/client-go/1.5/pkg/watch"
 )
 
 // Target is a target to watch

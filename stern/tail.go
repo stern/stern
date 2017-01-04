@@ -23,9 +23,9 @@ import (
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 
-	corev1 "k8s.io/client-go/1.4/kubernetes/typed/core/v1"
-	"k8s.io/client-go/1.4/pkg/api/v1"
-	"k8s.io/client-go/1.4/rest"
+	corev1 "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
+	"k8s.io/client-go/1.5/pkg/api/v1"
+	"k8s.io/client-go/1.5/rest"
 )
 
 type Tail struct {
