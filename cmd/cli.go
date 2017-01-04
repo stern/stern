@@ -61,9 +61,10 @@ func Run() {
 			Value: "default",
 		},
 		cli.StringFlag{
-			Name:  "kube-config",
-			Usage: "Path to kubeconfig file to use",
-			Value: "",
+			Name:   "kube-config",
+			Usage:  "Path to kubeconfig file to use",
+			Value:  "",
+			EnvVar: "KUBECONFIG",
 		},
 		cli.StringSliceFlag{
 			Name:  "exclude, e",
