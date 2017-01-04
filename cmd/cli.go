@@ -35,7 +35,7 @@ func Run() {
 	app.Name = "stern"
 	app.Usage = "Tail multiple pods and containers from Kubernetes"
 	app.UsageText = "stern [options] pod-query"
-	app.Version = "1.1.0"
+	app.Version = "1.2.0"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "container, c",
