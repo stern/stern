@@ -24,14 +24,19 @@ import (
 	_ "k8s.io/client-go/1.5/plugin/pkg/client/auth/oidc"
 )
 
-// NewClientSet returns a new Kubernetes client set for a context
-func NewClientSet(configPath string, contextName string) (*kubernetes.Clientset, error) {
-	c, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+// NewClientConfig returns a new Kubernetes client config set for a context
+func NewClientConfig(configPath string, contextName string) clientcmd.ClientConfig {
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: configPath},
 		&clientcmd.ConfigOverrides{
 			CurrentContext: contextName,
 		},
-	).ClientConfig()
+	)
+}
+
+// NewClientSet returns a new Kubernetes client for a client config
+func NewClientSet(clientConfig clientcmd.ClientConfig) (*kubernetes.Clientset, error) {
+	c, err := clientConfig.ClientConfig()
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get client config")

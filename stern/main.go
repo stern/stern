@@ -24,12 +24,20 @@ import (
 
 // Run starts the main run loop
 func Run(ctx context.Context, config *Config) error {
-	clientset, err := kubernetes.NewClientSet(config.KubeConfig, config.ContextName)
+	clientConfig := kubernetes.NewClientConfig(config.KubeConfig, config.ContextName)
+	clientset, err := kubernetes.NewClientSet(clientConfig)
 	if err != nil {
 		return err
 	}
 
-	input := clientset.Core().Pods(config.Namespace)
+	namespace := config.Namespace
+	if namespace == "" {
+		namespace, _, err = clientConfig.Namespace()
+		if err != nil {
+			return errors.Wrap(err, "unable to get default namespace")
+		}
+	}
+	input := clientset.Core().Pods(namespace)
 
 	added, removed, err := Watch(ctx, input, config.PodQuery, config.ContainerQuery)
 	if err != nil {

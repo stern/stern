@@ -52,13 +52,13 @@ func Run() {
 		},
 		cli.StringFlag{
 			Name:  "context",
-			Usage: "Kubernetes context to use",
+			Usage: "Kubernetes context to use. Default to `kubectl config current-context`",
 			Value: "",
 		},
 		cli.StringFlag{
 			Name:  "namespace, n",
-			Usage: "Kubernetes namespace to use",
-			Value: "default",
+			Usage: "Kubernetes namespace to use. Default to namespace configured in Kubernetes context",
+			Value: "",
 		},
 		cli.StringFlag{
 			Name:   "kube-config",
