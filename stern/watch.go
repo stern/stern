@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
 	"k8s.io/client-go/1.5/pkg/api"
 	"k8s.io/client-go/1.5/pkg/api/v1"
+	"k8s.io/client-go/1.5/pkg/labels"
 	"k8s.io/client-go/1.5/pkg/watch"
 )
 
@@ -40,8 +41,8 @@ func (t *Target) GetID() string {
 }
 
 // Watch starts listening to Kubernetes events and emits modified containers/pods. The first result is targets added, the second is targets removed
-func Watch(ctx context.Context, i corev1.PodInterface, podFilter *regexp.Regexp, containerFilter *regexp.Regexp) (chan *Target, chan *Target, error) {
-	watcher, err := i.Watch(api.ListOptions{Watch: true})
+func Watch(ctx context.Context, i corev1.PodInterface, podFilter *regexp.Regexp, containerFilter *regexp.Regexp, labelSelector labels.Selector) (chan *Target, chan *Target, error) {
+	watcher, err := i.Watch(api.ListOptions{Watch: true, LabelSelector: labelSelector})
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to set up watch")
 	}

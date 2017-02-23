@@ -23,6 +23,8 @@ import (
 	"path"
 	"regexp"
 
+	"k8s.io/client-go/1.5/pkg/labels"
+
 	"github.com/pkg/errors"
 	"github.com/wercker/stern/stern"
 
@@ -75,10 +77,16 @@ func Run() {
 			Name:  "all-namespaces",
 			Usage: "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.",
 		},
+		cli.StringFlag{
+			Name:  "selector, l",
+			Usage: "Selector (label query) to filter on. If present, default to `.*` for the pod-query.",
+			Value: "",
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
-		if len(c.Args()) != 1 {
+		narg := c.NArg()
+		if (narg > 1) || (narg == 0 && c.String("selector") == "") {
 			return cli.ShowAppHelp(c)
 		}
 
@@ -115,7 +123,13 @@ func parseConfig(c *cli.Context) (*stern.Config, error) {
 		kubeConfig = path.Join(u.HomeDir, ".kube/config")
 	}
 
-	pod, err := regexp.Compile(c.Args()[0])
+	var podQuery string
+	if c.NArg() == 0 {
+		podQuery = ".*"
+	} else {
+		podQuery = c.Args()[0]
+	}
+	pod, err := regexp.Compile(podQuery)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compile regular expression from query")
 	}
@@ -136,6 +150,17 @@ func parseConfig(c *cli.Context) (*stern.Config, error) {
 		exclude = append(exclude, rex)
 	}
 
+	var labelSelector labels.Selector
+	selector := c.String("selector")
+	if selector == "" {
+		labelSelector = labels.Everything()
+	} else {
+		labelSelector, err = labels.Parse(selector)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse selector as label selector")
+		}
+	}
+
 	return &stern.Config{
 		KubeConfig:     kubeConfig,
 		PodQuery:       pod,
@@ -146,5 +171,6 @@ func parseConfig(c *cli.Context) (*stern.Config, error) {
 		ContextName:    c.String("context"),
 		Namespace:      c.String("namespace"),
 		AllNamespaces:  c.Bool("all-namespaces"),
+		LabelSelector:  labelSelector,
 	}, nil
 }

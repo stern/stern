@@ -49,6 +49,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 | `--namespace`      |                  | Kubernetes namespace to use. Default to namespace configured in Kubernetes context                          |
 | `--kube-config`    | `~/.kube/config` | Path to kubeconfig file to use                                                                              |
 | `--all-namespaces` |                  | If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace. |
+| `--selector`       |                  | Selector (label query) to filter on. If present, default to `.*` for the pod-query.                         |
 
 See `stern --help` for details
 
@@ -72,4 +73,14 @@ stern --context minikube some-new-feature
 View pods from another namespace
 ```
 stern --namespace kube-system kubernetes-dashboard
+```
+
+Tail the pods filtered by `run=nginx` label selector across all namespaces
+```
+stern --all-namespaces -l run=nginx
+```
+
+Follow the `frontend` pods in canary release
+```
+stern --selector release=canary frontend
 ```
