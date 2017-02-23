@@ -39,15 +39,16 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 
 ### cli flags
 
-| flag            | default          | purpose                                                                                  |
-|-----------------|------------------|------------------------------------------------------------------------------------------|
-| `--container`   | `.*`             | Container name when multiple containers in pod (regular expression)                      |
-| `--timestamps`  |                  | Print timestamps                                                                         |
-| `--since`       |                  | Return logs newer than a relative duration like 52, 2m, or 3h. Displays all if omitted   |
-| `--context`     |                  | Kubernetes context to use. Default to `kubectl config current-context`                   |
-| `--exclude`     |                  | Log lines to exclude; specify multiple with additional `--exclude`; (regular expression) |
-| `--namespace`   |                  | Kubernetes namespace to use. Default to namespace configured in Kubernetes context       |
-| `--kube-config` | `~/.kube/config` | Path to kubeconfig file to use                                                           |
+| flag               | default          | purpose                                                                                                     |
+|--------------------|------------------|-------------------------------------------------------------------------------------------------------------|
+| `--container`      | `.*`             | Container name when multiple containers in pod (regular expression)                                         |
+| `--timestamps`     |                  | Print timestamps                                                                                            |
+| `--since`          |                  | Return logs newer than a relative duration like 52, 2m, or 3h. Displays all if omitted                      |
+| `--context`        |                  | Kubernetes context to use. Default to `kubectl config current-context`                                      |
+| `--exclude`        |                  | Log lines to exclude; specify multiple with additional `--exclude`; (regular expression)                    |
+| `--namespace`      |                  | Kubernetes namespace to use. Default to namespace configured in Kubernetes context                          |
+| `--kube-config`    | `~/.kube/config` | Path to kubeconfig file to use                                                                              |
+| `--all-namespaces` |                  | If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace. |
 
 See `stern --help` for details
 

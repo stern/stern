@@ -29,4 +29,5 @@ type Config struct {
 	ContainerQuery *regexp.Regexp
 	Exclude        []*regexp.Regexp
 	Since          time.Duration
+	AllNamespaces  bool
 }

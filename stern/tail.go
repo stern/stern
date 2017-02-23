@@ -29,6 +29,7 @@ import (
 )
 
 type Tail struct {
+	Namespace      string
 	PodName        string
 	ContainerName  string
 	Options        *TailOptions
@@ -42,11 +43,13 @@ type TailOptions struct {
 	Timestamps   bool
 	SinceSeconds int64
 	Exclude      []*regexp.Regexp
+	Namespace    bool
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
-func NewTail(podName, containerName string, options *TailOptions) *Tail {
+func NewTail(namespace, podName, containerName string, options *TailOptions) *Tail {
 	return &Tail{
+		Namespace:     namespace,
 		PodName:       podName,
 		ContainerName: containerName,
 		Options:       options,
@@ -77,7 +80,11 @@ func (t *Tail) Start(ctx context.Context, i corev1.PodInterface) {
 		g := color.New(color.FgHiGreen, color.Bold).SprintFunc()
 		p := t.podColor.SprintFunc()
 		c := t.podColor.SprintFunc()
-		fmt.Printf("%s %s › %s\n", g("+"), p(t.PodName), c(t.ContainerName))
+		if t.Options.Namespace {
+			fmt.Printf("%s %s %s › %s\n", g("+"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
+		} else {
+			fmt.Printf("%s %s › %s\n", g("+"), p(t.PodName), c(t.ContainerName))
+		}
 
 		req := i.GetLogs(t.PodName, &v1.PodLogOptions{
 			Follow:       true,
@@ -88,7 +95,7 @@ func (t *Tail) Start(ctx context.Context, i corev1.PodInterface) {
 
 		stream, err := req.Stream()
 		if err != nil {
-			fmt.Println(errors.Wrapf(err, "Error opening stream to %s: %s\n", t.PodName, t.ContainerName))
+			fmt.Println(errors.Wrapf(err, "Error opening stream to %s/%s: %s\n", t.Namespace, t.PodName, t.ContainerName))
 			return
 		}
 		defer stream.Close()
@@ -129,7 +136,11 @@ func (t *Tail) Start(ctx context.Context, i corev1.PodInterface) {
 func (t *Tail) Close() {
 	r := color.New(color.FgHiRed, color.Bold).SprintFunc()
 	p := t.podColor.SprintFunc()
-	fmt.Printf("%s %s\n", r("-"), p(t.PodName))
+	if t.Options.Namespace {
+		fmt.Printf("%s %s %s\n", r("-"), p(t.Namespace), p(t.PodName))
+	} else {
+		fmt.Printf("%s %s\n", r("-"), p(t.PodName))
+	}
 	close(t.closed)
 }
 
@@ -137,5 +148,9 @@ func (t *Tail) Close() {
 func (t *Tail) Print(msg string) {
 	p := t.podColor.SprintFunc()
 	c := t.podColor.SprintFunc()
-	fmt.Printf("%s %s %s", p(t.PodName), c(t.ContainerName), msg)
+	if t.Options.Namespace {
+		fmt.Printf("%s %s %s %s", p(t.Namespace), p(t.PodName), c(t.ContainerName), msg)
+	} else {
+		fmt.Printf("%s %s %s", p(t.PodName), c(t.ContainerName), msg)
+	}
 }

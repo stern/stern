@@ -16,6 +16,7 @@ package stern
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -28,8 +29,14 @@ import (
 
 // Target is a target to watch
 type Target struct {
+	Namespace string
 	Pod       string
 	Container string
+}
+
+// GetID returns the ID of the object
+func (t *Target) GetID() string {
+	return fmt.Sprintf("%s-%s-%s", t.Namespace, t.Pod, t.Container)
 }
 
 // Watch starts listening to Kubernetes events and emits modified containers/pods. The first result is targets added, the second is targets removed
@@ -66,6 +73,7 @@ func Watch(ctx context.Context, i corev1.PodInterface, podFilter *regexp.Regexp,
 
 						if c.State.Running != nil {
 							added <- &Target{
+								Namespace: pod.Namespace,
 								Pod:       pod.Name,
 								Container: c.Name,
 							}
@@ -79,6 +87,7 @@ func Watch(ctx context.Context, i corev1.PodInterface, podFilter *regexp.Regexp,
 
 						if c.State.Running != nil {
 							added <- &Target{
+								Namespace: pod.Namespace,
 								Pod:       pod.Name,
 								Container: c.Name,
 							}
@@ -91,6 +100,7 @@ func Watch(ctx context.Context, i corev1.PodInterface, podFilter *regexp.Regexp,
 						}
 
 						removed <- &Target{
+							Namespace: pod.Namespace,
 							Pod:       pod.Name,
 							Container: container.Name,
 						}

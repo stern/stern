@@ -71,6 +71,10 @@ func Run() {
 			Usage: "Regex of log lines to exclude",
 			Value: &cli.StringSlice{},
 		},
+		cli.BoolFlag{
+			Name:  "all-namespaces",
+			Usage: "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.",
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
@@ -141,5 +145,6 @@ func parseConfig(c *cli.Context) (*stern.Config, error) {
 		Since:          c.Duration("since"),
 		ContextName:    c.String("context"),
 		Namespace:      c.String("namespace"),
+		AllNamespaces:  c.Bool("all-namespaces"),
 	}, nil
 }

@@ -16,7 +16,6 @@ package stern
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/wercker/stern/kubernetes"
@@ -30,16 +29,21 @@ func Run(ctx context.Context, config *Config) error {
 		return err
 	}
 
-	namespace := config.Namespace
-	if namespace == "" {
-		namespace, _, err = clientConfig.Namespace()
-		if err != nil {
-			return errors.Wrap(err, "unable to get default namespace")
+	var namespace string
+	// A specific namespace is ignored if all-namespaces is provided
+	if config.AllNamespaces {
+		namespace = ""
+	} else {
+		namespace = config.Namespace
+		if namespace == "" {
+			namespace, _, err = clientConfig.Namespace()
+			if err != nil {
+				return errors.Wrap(err, "unable to get default namespace")
+			}
 		}
 	}
-	input := clientset.Core().Pods(namespace)
 
-	added, removed, err := Watch(ctx, input, config.PodQuery, config.ContainerQuery)
+	added, removed, err := Watch(ctx, clientset.Core().Pods(namespace), config.PodQuery, config.ContainerQuery)
 	if err != nil {
 		return errors.Wrap(err, "failed to set up watch")
 	}
@@ -48,38 +52,35 @@ func Run(ctx context.Context, config *Config) error {
 
 	go func() {
 		for p := range added {
-			ID := id(p.Pod, p.Container)
-			if tails[ID] != nil {
+			id := p.GetID()
+			if tails[id] != nil {
 				continue
 			}
 
-			tail := NewTail(p.Pod, p.Container, &TailOptions{
+			tail := NewTail(p.Namespace, p.Pod, p.Container, &TailOptions{
 				Timestamps:   config.Timestamps,
 				SinceSeconds: int64(config.Since.Seconds()),
 				Exclude:      config.Exclude,
+				Namespace:    config.AllNamespaces,
 			})
-			tails[ID] = tail
+			tails[id] = tail
 
-			tail.Start(ctx, input)
+			tail.Start(ctx, clientset.Core().Pods(p.Namespace))
 		}
 	}()
 
 	go func() {
 		for p := range removed {
-			ID := id(p.Pod, p.Container)
-			if tails[ID] == nil {
+			id := p.GetID()
+			if tails[id] == nil {
 				continue
 			}
-			tails[ID].Close()
-			delete(tails, ID)
+			tails[id].Close()
+			delete(tails, id)
 		}
 	}()
 
 	<-ctx.Done()
 
 	return nil
-}
-
-func id(podID string, containerID string) string {
-	return fmt.Sprintf("%s-%s", podID, containerID)
 }
