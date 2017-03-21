@@ -69,18 +69,23 @@ var colorList = [][2]*color.Color{
 	{color.New(color.FgHiRed), color.New(color.FgRed)},
 }
 
+var podColors = make(map[string]*color.Color)
+
 // Start starts tailing
 func (t *Tail) Start(ctx context.Context, i corev1.PodInterface) {
-	index++
-
-	colorIndex := index % len(colorList)
-	t.podColor = colorList[colorIndex][0]
+	colorIndex := len(podColors) % len(colorList)
+	podColor, ok := podColors[t.PodName]
+	if !ok {
+		podColor = colorList[colorIndex][0]
+		podColors[t.PodName] = podColor
+	}
+	t.podColor = podColor
 	t.containerColor = colorList[colorIndex][1]
 
 	go func() {
 		g := color.New(color.FgHiGreen, color.Bold).SprintFunc()
 		p := t.podColor.SprintFunc()
-		c := t.podColor.SprintFunc()
+		c := t.containerColor.SprintFunc()
 		if t.Options.Namespace {
 			fmt.Printf("%s %s %s › %s\n", g("+"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
 		} else {
@@ -149,7 +154,7 @@ func (t *Tail) Close() {
 // Print prints a color coded log message with the pod and container names
 func (t *Tail) Print(msg string) {
 	p := t.podColor.SprintFunc()
-	c := t.podColor.SprintFunc()
+	c := t.containerColor.SprintFunc()
 	if t.Options.Namespace {
 		fmt.Printf("%s %s %s %s", p(t.Namespace), p(t.PodName), c(t.ContainerName), msg)
 	} else {
