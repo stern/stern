@@ -79,7 +79,7 @@ func Run() {
 		},
 		cli.StringFlag{
 			Name:  "selector, l",
-			Usage: "Selector (label query) to filter on. If present, default to `.*` for the pod-query.",
+			Usage: "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.",
 			Value: "",
 		},
 	}
