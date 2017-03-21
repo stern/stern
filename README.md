@@ -50,6 +50,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 | `--kube-config`    | `~/.kube/config` | Path to kubeconfig file to use                                                                              |
 | `--all-namespaces` |                  | If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace. |
 | `--selector`       |                  | Selector (label query) to filter on. If present, default to `.*` for the pod-query.                         |
+| `--tail`           | `-1`             | The number of lines from the end of the logs to show. Defaults to -1, showing all logs. |
 
 See `stern --help` for details
 

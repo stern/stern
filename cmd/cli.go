@@ -82,6 +82,11 @@ func Run() {
 			Usage: "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.",
 			Value: "",
 		},
+		cli.Int64Flag{
+			Name:  "tail",
+			Usage: "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.",
+			Value: -1,
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
@@ -161,6 +166,11 @@ func parseConfig(c *cli.Context) (*stern.Config, error) {
 		}
 	}
 
+	var tailLines *int64
+	if tail := c.Int64("tail"); tail != -1 {
+		tailLines = &tail
+	}
+
 	return &stern.Config{
 		KubeConfig:     kubeConfig,
 		PodQuery:       pod,
@@ -172,5 +182,6 @@ func parseConfig(c *cli.Context) (*stern.Config, error) {
 		Namespace:      c.String("namespace"),
 		AllNamespaces:  c.Bool("all-namespaces"),
 		LabelSelector:  labelSelector,
+		TailLines:      tailLines,
 	}, nil
 }

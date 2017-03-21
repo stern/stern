@@ -33,4 +33,5 @@ type Config struct {
 	Since          time.Duration
 	AllNamespaces  bool
 	LabelSelector  labels.Selector
+	TailLines      *int64
 }

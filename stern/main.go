@@ -62,6 +62,7 @@ func Run(ctx context.Context, config *Config) error {
 				SinceSeconds: int64(config.Since.Seconds()),
 				Exclude:      config.Exclude,
 				Namespace:    config.AllNamespaces,
+				TailLines:    config.TailLines,
 			})
 			tails[id] = tail
 

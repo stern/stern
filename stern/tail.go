@@ -44,6 +44,7 @@ type TailOptions struct {
 	SinceSeconds int64
 	Exclude      []*regexp.Regexp
 	Namespace    bool
+	TailLines    *int64
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
@@ -91,6 +92,7 @@ func (t *Tail) Start(ctx context.Context, i corev1.PodInterface) {
 			Timestamps:   t.Options.Timestamps,
 			Container:    t.ContainerName,
 			SinceSeconds: &t.Options.SinceSeconds,
+			TailLines:    t.Options.TailLines,
 		})
 
 		stream, err := req.Stream()
