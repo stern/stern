@@ -28,8 +28,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/wercker/stern/stern"
 
-	cli "gopkg.in/urfave/cli.v1"
 	"github.com/fatih/color"
+	cli "gopkg.in/urfave/cli.v1"
 )
 
 func Run() {
