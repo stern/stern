@@ -29,6 +29,7 @@ import (
 	"github.com/wercker/stern/stern"
 
 	cli "gopkg.in/urfave/cli.v1"
+	"github.com/fatih/color"
 )
 
 func Run() {
@@ -86,6 +87,11 @@ func Run() {
 			Name:  "tail",
 			Usage: "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.",
 			Value: -1,
+		},
+		cli.StringFlag{
+			Name:  "color",
+			Usage: "Color output. Can be 'always', 'never', or 'auto'",
+			Value: "auto",
 		},
 	}
 
@@ -169,6 +175,15 @@ func parseConfig(c *cli.Context) (*stern.Config, error) {
 	var tailLines *int64
 	if tail := c.Int64("tail"); tail != -1 {
 		tailLines = &tail
+	}
+
+	colorFlag := c.String("color")
+	if colorFlag == "always" {
+		color.NoColor = false
+	} else if colorFlag == "never" {
+		color.NoColor = true
+	} else if colorFlag != "auto" {
+		return nil, errors.New("color should be one of 'always', 'never', or 'auto'")
 	}
 
 	return &stern.Config{
