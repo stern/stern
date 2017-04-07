@@ -22,86 +22,69 @@ import (
 	"os/user"
 	"path"
 	"regexp"
+	"time"
 
 	"k8s.io/client-go/1.5/pkg/labels"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 	"github.com/wercker/stern/stern"
 
 	"github.com/fatih/color"
-	cli "gopkg.in/urfave/cli.v1"
 )
 
+const version = "1.4.0"
+
+type Options struct {
+	container     string
+	timestamps    bool
+	since         time.Duration
+	context       string
+	namespace     string
+	kubeConfig    string
+	exclude       []string
+	allNamespaces bool
+	selector      string
+	tail          int64
+	color         string
+	version       bool
+}
+
+var opts = &Options{
+	container: ".*",
+	tail:      -1,
+	color:     "auto",
+}
+
 func Run() {
-	app := cli.NewApp()
+	cmd := &cobra.Command{}
+	cmd.Use = "stern pod-query"
+	cmd.Short = "Tail multiple pods and containers from Kubernetes"
 
-	app.Name = "stern"
-	app.Usage = "Tail multiple pods and containers from Kubernetes"
-	app.UsageText = "stern [options] pod-query"
-	app.Version = "1.4.0"
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "container, c",
-			Usage: "Container name when multiple containers in pod",
-			Value: ".*",
-		},
-		cli.BoolFlag{
-			Name:  "timestamps, t",
-			Usage: "Print timestamps",
-		},
-		cli.DurationFlag{
-			Name:  "since, s",
-			Usage: "Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs.",
-		},
-		cli.StringFlag{
-			Name:  "context",
-			Usage: "Kubernetes context to use. Default to `kubectl config current-context`",
-			Value: "",
-		},
-		cli.StringFlag{
-			Name:  "namespace, n",
-			Usage: "Kubernetes namespace to use. Default to namespace configured in Kubernetes context",
-			Value: "",
-		},
-		cli.StringFlag{
-			Name:   "kube-config",
-			Usage:  "Path to kubeconfig file to use",
-			Value:  "",
-			EnvVar: "KUBECONFIG",
-		},
-		cli.StringSliceFlag{
-			Name:  "exclude, e",
-			Usage: "Regex of log lines to exclude",
-			Value: &cli.StringSlice{},
-		},
-		cli.BoolFlag{
-			Name:  "all-namespaces",
-			Usage: "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.",
-		},
-		cli.StringFlag{
-			Name:  "selector, l",
-			Usage: "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.",
-			Value: "",
-		},
-		cli.Int64Flag{
-			Name:  "tail",
-			Usage: "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.",
-			Value: -1,
-		},
-		cli.StringFlag{
-			Name:  "color",
-			Usage: "Color output. Can be 'always', 'never', or 'auto'",
-			Value: "auto",
-		},
-	}
+	cmd.Flags().StringVarP(&opts.container, "container", "c", opts.container, "Container name when multiple containers in pod")
+	cmd.Flags().BoolVarP(&opts.timestamps, "timestamps", "t", opts.timestamps, "Print timestamps")
+	cmd.Flags().DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs.")
+	cmd.Flags().StringVar(&opts.context, "context", opts.context, "Kubernetes context to use. Default to `kubectl config current-context`")
+	cmd.Flags().StringVarP(&opts.namespace, "namespace", "n", opts.namespace, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context")
+	cmd.Flags().StringVar(&opts.kubeConfig, "kube-config", "", "Path to kubeconfig file to use")
+	cmd.Flags().StringSliceVarP(&opts.exclude, "exclude", "e", opts.exclude, "Regex of log lines to exclude")
+	cmd.Flags().BoolVar(&opts.allNamespaces, "all-namespaces", opts.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
+	cmd.Flags().StringVarP(&opts.selector, "selector", "l", opts.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
+	cmd.Flags().Int64Var(&opts.tail, "tail", opts.tail, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
+	cmd.Flags().StringVar(&opts.color, "color", opts.color, "Color output. Can be 'always', 'never', or 'auto'")
+	cmd.Flags().BoolVarP(&opts.version, "version", "v", opts.version, "Print the version and exit")
 
-	app.Action = func(c *cli.Context) error {
-		narg := c.NArg()
-		if (narg > 1) || (narg == 0 && c.String("selector") == "") {
-			return cli.ShowAppHelp(c)
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if opts.version {
+			fmt.Printf("stern version %s\n", version)
+			return nil
 		}
 
-		config, err := parseConfig(c)
+		narg := len(args)
+		if (narg > 1) || (narg == 0 && opts.selector == "") {
+			return cmd.Help()
+		}
+		config, err := parseConfig(args)
 		if err != nil {
 			log.Println(err)
 			os.Exit(2)
@@ -119,40 +102,36 @@ func Run() {
 		return nil
 	}
 
-	app.Run(os.Args)
+	if err := cmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func parseConfig(c *cli.Context) (*stern.Config, error) {
-	kubeConfig := c.String("kube-config")
-	if kubeConfig == "" {
-		// kubernetes requires an absolute path
-		u, err := user.Current()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get current user")
-		}
-
-		kubeConfig = path.Join(u.HomeDir, ".kube/config")
+func parseConfig(args []string) (*stern.Config, error) {
+	kubeConfig, err := getKubeConfig()
+	if err != nil {
+		return nil, err
 	}
 
 	var podQuery string
-	if c.NArg() == 0 {
+	if len(args) == 0 {
 		podQuery = ".*"
 	} else {
-		podQuery = c.Args()[0]
+		podQuery = args[0]
 	}
 	pod, err := regexp.Compile(podQuery)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compile regular expression from query")
 	}
 
-	container, err := regexp.Compile(c.String("container"))
+	container, err := regexp.Compile(opts.container)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compile regular expression for container query")
 	}
 
 	var exclude []*regexp.Regexp
 
-	for _, ex := range c.StringSlice("exclude") {
+	for _, ex := range opts.exclude {
 		rex, err := regexp.Compile(ex)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to compile regular expression for exclusion filter")
@@ -162,7 +141,7 @@ func parseConfig(c *cli.Context) (*stern.Config, error) {
 	}
 
 	var labelSelector labels.Selector
-	selector := c.String("selector")
+	selector := opts.selector
 	if selector == "" {
 		labelSelector = labels.Everything()
 	} else {
@@ -173,11 +152,11 @@ func parseConfig(c *cli.Context) (*stern.Config, error) {
 	}
 
 	var tailLines *int64
-	if tail := c.Int64("tail"); tail != -1 {
-		tailLines = &tail
+	if opts.tail != -1 {
+		tailLines = &opts.tail
 	}
 
-	colorFlag := c.String("color")
+	colorFlag := opts.color
 	if colorFlag == "always" {
 		color.NoColor = false
 	} else if colorFlag == "never" {
@@ -191,12 +170,34 @@ func parseConfig(c *cli.Context) (*stern.Config, error) {
 		PodQuery:       pod,
 		ContainerQuery: container,
 		Exclude:        exclude,
-		Timestamps:     c.Bool("timestamps"),
-		Since:          c.Duration("since"),
-		ContextName:    c.String("context"),
-		Namespace:      c.String("namespace"),
-		AllNamespaces:  c.Bool("all-namespaces"),
+		Timestamps:     opts.timestamps,
+		Since:          opts.since,
+		ContextName:    opts.context,
+		Namespace:      opts.namespace,
+		AllNamespaces:  opts.allNamespaces,
 		LabelSelector:  labelSelector,
 		TailLines:      tailLines,
 	}, nil
+}
+
+func getKubeConfig() (string, error) {
+	var kubeconfig string
+
+	if kubeconfig = os.Getenv("KUBECONFIG"); kubeconfig != "" {
+		return kubeconfig, nil
+	}
+
+	if kubeconfig = opts.kubeConfig; kubeconfig != "" {
+		return kubeconfig, nil
+	}
+
+	// kubernetes requires an absolute path
+	u, err := user.Current()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get current user")
+	}
+
+	kubeconfig = path.Join(u.HomeDir, ".kube/config")
+
+	return kubeconfig, nil
 }

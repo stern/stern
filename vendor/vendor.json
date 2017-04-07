@@ -285,6 +285,12 @@
 			"revisionTime": "2016-05-17T06:44:35Z"
 		},
 		{
+			"checksumSHA1": "40vJyUB4ezQSn/NSadsKEOrudMc=",
+			"path": "github.com/inconshreveable/mousetrap",
+			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
+			"revisionTime": "2014-10-17T20:07:13Z"
+		},
+		{
 			"checksumSHA1": "cxz0JXkeS4nazxatJkaCdrMeNgM=",
 			"path": "github.com/jonboulle/clockwork",
 			"revision": "bcac9884e7502bb2b474c0339d889cb981a2f27f",
@@ -541,6 +547,12 @@
 			"path": "github.com/pmezard/go-difflib/difflib",
 			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
 			"revisionTime": "2016-01-10T10:55:54Z"
+		},
+		{
+			"checksumSHA1": "FV6/b9R0roHhArOq9dPIk41/lCA=",
+			"path": "github.com/spf13/cobra",
+			"revision": "92ea23a837e66f46ac9e7d04fa826602b7b0a42d",
+			"revisionTime": "2017-02-23T13:12:51Z"
 		},
 		{
 			"checksumSHA1": "G2laO+0eNWudaTAt24gwMsGUptM=",
@@ -865,12 +877,6 @@
 			"path": "gopkg.in/inf.v0",
 			"revision": "3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4",
 			"revisionTime": "2015-09-11T12:57:57Z"
-		},
-		{
-			"checksumSHA1": "KWoqBp4j4UFun6fTcOs8M2dUwEw=",
-			"path": "gopkg.in/urfave/cli.v1",
-			"revision": "a14d7d367bc02b1f57d88de97926727f2d936387",
-			"revisionTime": "2016-08-29T00:43:50Z"
 		},
 		{
 			"checksumSHA1": "EN0uJ9QjGGt0K1ZdiXnTvzkRWAc=",

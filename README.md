@@ -31,7 +31,7 @@ go install
 ## Usage
 
 ```
-stern [options] <pod>
+stern pod-query [flags]
 ```
 
 The `pod` query is a regular expression so you could provide `"web-\w"` to tail
@@ -59,22 +59,22 @@ See `stern --help` for details
 
 Tail the `gateway` container running inside of the `envvars` pod on staging
 ```
-stern --context staging --container gateway envvars
+stern envvars --context staging --container gateway
 ```
 
 Show auth activity from 15min ago with timestamps
 ```
-stern -t --since 15m auth
+stern auth -t --since 15m
 ```
 
 Follow the development of `some-new-feature` in minikube
 ```
-stern --context minikube some-new-feature
+stern some-new-feature --context minikube
 ```
 
 View pods from another namespace
 ```
-stern --namespace kube-system kubernetes-dashboard
+stern kubernetes-dashboard --namespace kube-system
 ```
 
 Tail the pods filtered by `run=nginx` label selector across all namespaces
@@ -84,5 +84,5 @@ stern --all-namespaces -l run=nginx
 
 Follow the `frontend` pods in canary release
 ```
-stern --selector release=canary frontend
+stern frontend --selector release=canary
 ```
