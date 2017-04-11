@@ -86,3 +86,26 @@ Follow the `frontend` pods in canary release
 ```
 stern frontend --selector release=canary
 ```
+
+## Completion
+
+Stern supports command-line auto completion for bash or zsh. `stern --completion=(bash|zsh)` outputs the shell completion code which work by being evaluated in `.bashrc`, etc for the specified shell.
+
+If you use bash, stern bash completion code depends on the [bash-completion](https://github.com/scop/bash-completion). On the macOS, you can install it with homebrew as follows:
+
+```
+$ brew install bash-completion
+```
+
+Note that bash-completion must be sourced before sourcing the stern bash completion code in `.bashrc`.
+
+```sh
+source <(brew --prefix)/etc/bash-completion
+source <(stern --completion=bash)
+```
+
+If you use zsh, just source the stern zsh completion code in `.zshrc`.
+
+```sh
+source <(stern --completion=zsh)
+```

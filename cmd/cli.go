@@ -48,6 +48,7 @@ type Options struct {
 	tail          int64
 	color         string
 	version       bool
+	completion    string
 }
 
 var opts = &Options{
@@ -73,11 +74,16 @@ func Run() {
 	cmd.Flags().Int64Var(&opts.tail, "tail", opts.tail, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
 	cmd.Flags().StringVar(&opts.color, "color", opts.color, "Color output. Can be 'always', 'never', or 'auto'")
 	cmd.Flags().BoolVarP(&opts.version, "version", "v", opts.version, "Print the version and exit")
+	cmd.Flags().StringVar(&opts.completion, "completion", opts.completion, "Outputs stern command-line completion code for the specified shell. Can be 'bash' or 'zsh'")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if opts.version {
 			fmt.Printf("stern version %s\n", version)
 			return nil
+		}
+
+		if opts.completion != "" {
+			return runCompletion(opts.completion, cmd)
 		}
 
 		narg := len(args)
