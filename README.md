@@ -47,7 +47,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 | `--context`        |                  | Kubernetes context to use. Default to `kubectl config current-context`                                       |
 | `--exclude`        |                  | Log lines to exclude; specify multiple with additional `--exclude`; (regular expression)                     |
 | `--namespace`      |                  | Kubernetes namespace to use. Default to namespace configured in Kubernetes context                           |
-| `--kube-config`    | `~/.kube/config` | Path to kubeconfig file to use                                                                               |
+| `--kubeconfig`     | `~/.kube/config` | Path to kubeconfig file to use                                                                               |
 | `--all-namespaces` |                  | If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.  |
 | `--selector`       |                  | Selector (label query) to filter on. If present, default to `.*` for the pod-query.                          |
 | `--tail`           | `-1`             | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.                      |
