@@ -76,6 +76,20 @@ func Run() {
 	cmd.Flags().BoolVarP(&opts.version, "version", "v", opts.version, "Print the version and exit")
 	cmd.Flags().StringVar(&opts.completion, "completion", opts.completion, "Outputs stern command-line completion code for the specified shell. Can be 'bash' or 'zsh'")
 
+	// Specify custom bash completion function
+	cmd.BashCompletionFunction = bash_completion_func
+	for name, completion := range bash_completion_flags {
+		if cmd.Flag(name) != nil {
+			if cmd.Flag(name).Annotations == nil {
+				cmd.Flag(name).Annotations = map[string][]string{}
+			}
+			cmd.Flag(name).Annotations[cobra.BashCompCustom] = append(
+				cmd.Flag(name).Annotations[cobra.BashCompCustom],
+				completion,
+			)
+		}
+	}
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if opts.version {
 			fmt.Printf("stern version %s\n", version)

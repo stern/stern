@@ -22,6 +22,79 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	// bash_completion_func depends on kubectl.
+	// If kubectl isn't installed, it doesn't work, but error doesn't occur.
+	bash_completion_func = `
+__is_kubectl_installed=true
+if ! which kubectl >/dev/null 2>&1; then
+	__is_kubectl_installed=false
+fi
+
+__kubectl_override_flag_list=(kubeconfig context namespace)
+__kubectl_override_flags()
+{
+    local ${__kubectl_override_flag_list[*]} two_word_of of
+    for w in "${words[@]}"; do
+        if [ -n "${two_word_of}" ]; then
+            eval "${two_word_of}=\"--${two_word_of}=\${w}\""
+            two_word_of=
+            continue
+        fi
+        for of in "${__kubectl_override_flag_list[@]}"; do
+            case "${w}" in
+                --${of}=*)
+                    eval "${of}=\"${w}\""
+                    ;;
+                --${of})
+                    two_word_of="${of}"
+                    ;;
+            esac
+        done
+        if [ "${w}" == "--all-namespaces" ]; then
+            namespace="--all-namespaces"
+        fi
+    done
+    for of in "${__kubectl_override_flag_list[@]}"; do
+        if eval "test -n \"\$${of}\""; then
+            eval "echo \${${of}}"
+        fi
+    done
+}
+
+__kubectl_get_namespaces()
+{
+    local template kubectl_out
+
+    if ! $__is_kubectl_installed; then
+        return 1
+    fi
+    template="{{ range .items  }}{{ .metadata.name }} {{ end }}"
+    if kubectl_out=$(kubectl get -o template --template="${template}" namespace 2>/dev/null); then
+        COMPREPLY=( $( compgen -W "${kubectl_out[*]}" -- "$cur" ) )
+    fi
+}
+
+__kubectl_config_get_contexts()
+{
+    local template kubectl_out
+
+    if ! $__is_kubectl_installed; then
+        return 1
+    fi
+    template="{{ range .contexts  }}{{ .name }} {{ end }}"
+    if kubectl_out=$(kubectl config $(__kubectl_override_flags) -o template --template="${template}" view 2>/dev/null); then
+        COMPREPLY=( $( compgen -W "${kubectl_out[*]}" -- "$cur" ) )
+    fi
+}
+	`
+)
+
+var bash_completion_flags = map[string]string{
+	"namespace": "__kubectl_get_namespaces",
+	"context":   "__kubectl_config_get_contexts",
+}
+
 func runCompletion(shell string, cmd *cobra.Command) error {
 	var err error
 
