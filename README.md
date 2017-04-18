@@ -89,7 +89,7 @@ stern frontend --selector release=canary
 
 ## Completion
 
-Stern supports command-line auto completion for bash or zsh. `stern --completion=(bash|zsh)` outputs the shell completion code which work by being evaluated in `.bashrc`, etc for the specified shell.
+Stern supports command-line auto completion for bash or zsh. `stern --completion=(bash|zsh)` outputs the shell completion code which work by being evaluated in `.bashrc`, etc for the specified shell. In addition, Stern supports dynamic completion for `--namespace` and `--context`. In order to use that, kubectl must be installed on your environment.
 
 If you use bash, stern bash completion code depends on the [bash-completion](https://github.com/scop/bash-completion). On the macOS, you can install it with homebrew as follows:
 
