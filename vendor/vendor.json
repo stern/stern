@@ -345,6 +345,12 @@
 			"revisionTime": "2016-08-06T12:27:52Z"
 		},
 		{
+			"checksumSHA1": "9VnGHaNfB7VQcYf2INovZvXu7NU=",
+			"path": "github.com/mitchellh/go-homedir",
+			"revision": "b8bc1bf767474819792c23f32d8286a45736f1c6",
+			"revisionTime": "2016-12-03T19:45:07Z"
+		},
+		{
 			"checksumSHA1": "1DWrs1BD213WDosWHU7acTO2AxY=",
 			"path": "github.com/onsi/ginkgo",
 			"revision": "46c87bb63f2d8d62b3076873b7a84da124da72ce",

@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/user"
 	"path"
 	"regexp"
 	"time"
 
 	"k8s.io/client-go/1.5/pkg/labels"
 
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/wercker/stern/stern"
@@ -198,12 +198,12 @@ func getKubeConfig() (string, error) {
 	}
 
 	// kubernetes requires an absolute path
-	u, err := user.Current()
+	home, err := homedir.Dir()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get current user")
+		return "", errors.Wrap(err, "failed to get user home directory")
 	}
 
-	kubeconfig = path.Join(u.HomeDir, ".kube/config")
+	kubeconfig = path.Join(home, ".kube/config")
 
 	return kubeconfig, nil
 }
