@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"regexp"
 	"time"
 
@@ -203,7 +203,7 @@ func getKubeConfig() (string, error) {
 		return "", errors.Wrap(err, "failed to get user home directory")
 	}
 
-	kubeconfig = path.Join(home, ".kube/config")
+	kubeconfig = filepath.Join(home, ".kube/config")
 
 	return kubeconfig, nil
 }
