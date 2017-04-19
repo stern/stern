@@ -67,7 +67,9 @@ func Run() {
 	cmd.Flags().DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs.")
 	cmd.Flags().StringVar(&opts.context, "context", opts.context, "Kubernetes context to use. Default to current context configured in kubeconfig.")
 	cmd.Flags().StringVarP(&opts.namespace, "namespace", "n", opts.namespace, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context")
-	cmd.Flags().StringVar(&opts.kubeConfig, "kube-config", "", "Path to kubeconfig file to use")
+	cmd.Flags().StringVar(&opts.kubeConfig, "kubeconfig", opts.kubeConfig, "Path to kubeconfig file to use")
+	cmd.Flags().StringVar(&opts.kubeConfig, "kube-config", opts.kubeConfig, "Path to kubeconfig file to use")
+	cmd.Flags().MarkDeprecated("kube-config", "Use --kubeconfig instead.")
 	cmd.Flags().StringSliceVarP(&opts.exclude, "exclude", "e", opts.exclude, "Regex of log lines to exclude")
 	cmd.Flags().BoolVar(&opts.allNamespaces, "all-namespaces", opts.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
 	cmd.Flags().StringVarP(&opts.selector, "selector", "l", opts.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
@@ -75,6 +77,20 @@ func Run() {
 	cmd.Flags().StringVar(&opts.color, "color", opts.color, "Color output. Can be 'always', 'never', or 'auto'")
 	cmd.Flags().BoolVarP(&opts.version, "version", "v", opts.version, "Print the version and exit")
 	cmd.Flags().StringVar(&opts.completion, "completion", opts.completion, "Outputs stern command-line completion code for the specified shell. Can be 'bash' or 'zsh'")
+
+	// Specify custom bash completion function
+	cmd.BashCompletionFunction = bash_completion_func
+	for name, completion := range bash_completion_flags {
+		if cmd.Flag(name) != nil {
+			if cmd.Flag(name).Annotations == nil {
+				cmd.Flag(name).Annotations = map[string][]string{}
+			}
+			cmd.Flag(name).Annotations[cobra.BashCompCustom] = append(
+				cmd.Flag(name).Annotations[cobra.BashCompCustom],
+				completion,
+			)
+		}
+	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if opts.version {
