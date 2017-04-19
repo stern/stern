@@ -1,4 +1,4 @@
-box: golang:1.7
+box: golang:1.8
 build:
   base-path: /go/src/github.com/wercker/stern
   steps:
