@@ -37,6 +37,17 @@ build:
             cp $WERCKER_OUTPUT_DIR/artifacts/latest/darwin_amd64/stern $WERCKER_REPORT_ARTIFACTS_DIR
 
     - script:
+        name: go build windows amd64
+        code: |
+            export CGO_ENABLED=0
+            GOOS=windows GOARCH=amd64 go build \
+                -ldflags="-s -X github.com/wercker/stern.GitCommit=$WERCKER_GIT_COMMIT -X github.com/wercker/stern.PatchVersion=$(( ($(date +%s) - $(date --date=20150101 +%s) )/(60*60*24) )) -X github.com/wercker/stern.Compiled=$(date +%s)" \
+                -installsuffix cgo \
+                -o $WERCKER_OUTPUT_DIR/artifacts/latest/windows_amd64/stern.exe
+
+            cp $WERCKER_OUTPUT_DIR/artifacts/latest/windows_amd64/stern.exe $WERCKER_REPORT_ARTIFACTS_DIR
+
+    - script:
         name: generate SHAs
         code: |
             cd $WERCKER_OUTPUT_DIR
@@ -82,4 +93,10 @@ release-stable:
         token: $GITHUB_TOKEN
         file: ./artifacts/latest/darwin_amd64/stern
         filename: stern_darwin_amd64
+        content-type: application/octet-stream
+
+    - github-upload-asset:
+        token: $GITHUB_TOKEN
+        file: ./artifacts/latest/windows_amd64/stern.exe
+        filename: stern_windows_amd64.exe
         content-type: application/octet-stream
