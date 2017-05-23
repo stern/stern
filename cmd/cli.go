@@ -205,11 +205,11 @@ func parseConfig(args []string) (*stern.Config, error) {
 func getKubeConfig() (string, error) {
 	var kubeconfig string
 
-	if kubeconfig = os.Getenv("KUBECONFIG"); kubeconfig != "" {
+	if kubeconfig = opts.kubeConfig; kubeconfig != "" {
 		return kubeconfig, nil
 	}
 
-	if kubeconfig = opts.kubeConfig; kubeconfig != "" {
+	if kubeconfig = os.Getenv("KUBECONFIG"); kubeconfig != "" {
 		return kubeconfig, nil
 	}
 
