@@ -55,6 +55,10 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 
 See `stern --help` for details
 
+Stern will use the `$KUBECONFIG` environment variable if set. If both the
+environment variable and `--kubeconfig` flag are passed the cli flag will be
+used.
+
 ## Examples:
 
 Tail the `gateway` container running inside of the `envvars` pod on staging
