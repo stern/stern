@@ -164,13 +164,6 @@ __stern_compgen() {
 __stern_compopt() {
     true # don't do anything. Not supported by bashcompinit in zsh
 }
-__stern_declare() {
-    if [ "$1" == "-F" ]; then
-        whence -w "$@"
-    else
-        builtin declare "$@"
-    fi
-}
 __stern_ltrim_colon_completions()
 {
     if [[ "$1" == *:* && "$COMP_WORDBREAKS" == *:* ]]; then
@@ -248,7 +241,7 @@ __stern_convert_bash_to_zsh() {
     -e "s/${LWORD}__ltrim_colon_completions${RWORD}/__stern_ltrim_colon_completions/g" \
     -e "s/${LWORD}compgen${RWORD}/__stern_compgen/g" \
     -e "s/${LWORD}compopt${RWORD}/__stern_compopt/g" \
-    -e "s/${LWORD}declare${RWORD}/__stern_declare/g" \
+    -e "s/${LWORD}declare${RWORD}/builtin declare/g" \
     -e "s/\\\$(type${RWORD}/\$(__stern_type/g" \
     <<'BASH_COMPLETION_EOF'
 `
