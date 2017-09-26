@@ -28,6 +28,13 @@ govendor sync
 go install
 ```
 
+### Homebrew
+
+On macOS, you can also install Stern using [Homebrew](https://brew.sh/):
+```
+brew install stern
+```
+
 ## Usage
 
 ```
