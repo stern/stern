@@ -18,7 +18,7 @@ import (
 	"regexp"
 	"time"
 
-	"k8s.io/client-go/1.5/pkg/labels"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // Config contains the config for stern
