@@ -23,9 +23,9 @@ import (
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 
-	corev1 "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
-	"k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/rest"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 )
 
 type Tail struct {
@@ -72,7 +72,7 @@ var colorList = [][2]*color.Color{
 var podColors = make(map[string]*color.Color)
 
 // Start starts tailing
-func (t *Tail) Start(ctx context.Context, i corev1.PodInterface) {
+func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 	colorIndex := len(podColors) % len(colorList)
 	podColor, ok := podColors[t.PodName]
 	if !ok {
@@ -92,7 +92,7 @@ func (t *Tail) Start(ctx context.Context, i corev1.PodInterface) {
 			fmt.Printf("%s %s › %s\n", g("+"), p(t.PodName), c(t.ContainerName))
 		}
 
-		req := i.GetLogs(t.PodName, &v1.PodLogOptions{
+		req := i.GetLogs(t.PodName, &corev1.PodLogOptions{
 			Follow:       true,
 			Timestamps:   t.Options.Timestamps,
 			Container:    t.ContainerName,

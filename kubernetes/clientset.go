@@ -16,12 +16,12 @@ package kubernetes
 
 import (
 	"github.com/pkg/errors"
-	"k8s.io/client-go/1.5/kubernetes"
-	"k8s.io/client-go/1.5/tools/clientcmd"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 
 	// auth providers
-	_ "k8s.io/client-go/1.5/plugin/pkg/client/auth/gcp"
-	_ "k8s.io/client-go/1.5/plugin/pkg/client/auth/oidc"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
 // NewClientConfig returns a new Kubernetes client config set for a context

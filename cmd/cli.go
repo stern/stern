@@ -23,7 +23,7 @@ import (
 	"regexp"
 	"time"
 
-	"k8s.io/client-go/1.5/pkg/labels"
+	"k8s.io/apimachinery/pkg/labels"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
