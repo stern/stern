@@ -51,9 +51,9 @@ build:
         name: generate SHAs
         code: |
             cd $WERCKER_OUTPUT_DIR
-            for f in $(find . -type f -name stern); do
-              cd $WERCKER_OUTPUT_DIR/$(dirname "$f")
-              sha256sum stern > SHA256SUMS
+            for f in $(echo "$WERCKER_OUTPUT_DIR/artifacts/latest/linux_amd64/stern" "$WERCKER_OUTPUT_DIR/artifacts/latest/darwin_amd64/stern" "$WERCKER_OUTPUT_DIR/artifacts/latest/windows_amd64/stern.exe"); do
+              cd $(dirname "$f")
+              sha256sum $(basename "$f") > SHA256SUMS
             done
 
     - script:
