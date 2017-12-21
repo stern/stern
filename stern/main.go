@@ -57,7 +57,7 @@ func Run(ctx context.Context, config *Config) error {
 				continue
 			}
 
-			tail := NewTail(p.Namespace, p.Pod, p.Container, &TailOptions{
+			tail := NewTail(p.Namespace, p.Pod, p.Container, config.Template, &TailOptions{
 				Timestamps:   config.Timestamps,
 				SinceSeconds: int64(config.Since.Seconds()),
 				Exclude:      config.Exclude,

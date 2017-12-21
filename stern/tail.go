@@ -18,11 +18,12 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os"
 	"regexp"
+	"text/template"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
@@ -37,6 +38,7 @@ type Tail struct {
 	closed         chan struct{}
 	podColor       *color.Color
 	containerColor *color.Color
+	tmpl           *template.Template
 }
 
 type TailOptions struct {
@@ -48,13 +50,14 @@ type TailOptions struct {
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
-func NewTail(namespace, podName, containerName string, options *TailOptions) *Tail {
+func NewTail(namespace, podName, containerName string, tmpl *template.Template, options *TailOptions) *Tail {
 	return &Tail{
 		Namespace:     namespace,
 		PodName:       podName,
 		ContainerName: containerName,
 		Options:       options,
 		closed:        make(chan struct{}),
+		tmpl:          tmpl,
 	}
 }
 
@@ -87,9 +90,9 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 		p := t.podColor.SprintFunc()
 		c := t.containerColor.SprintFunc()
 		if t.Options.Namespace {
-			fmt.Printf("%s %s %s › %s\n", g("+"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
+			fmt.Fprintf(os.Stderr, "%s %s %s › %s\n", g("+"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
 		} else {
-			fmt.Printf("%s %s › %s\n", g("+"), p(t.PodName), c(t.ContainerName))
+			fmt.Fprintf(os.Stderr, "%s %s › %s\n", g("+"), p(t.PodName), c(t.ContainerName))
 		}
 
 		req := i.GetLogs(t.PodName, &corev1.PodLogOptions{
@@ -144,20 +147,44 @@ func (t *Tail) Close() {
 	r := color.New(color.FgHiRed, color.Bold).SprintFunc()
 	p := t.podColor.SprintFunc()
 	if t.Options.Namespace {
-		fmt.Printf("%s %s %s\n", r("-"), p(t.Namespace), p(t.PodName))
+		fmt.Fprintf(os.Stderr, "%s %s %s\n", r("-"), p(t.Namespace), p(t.PodName))
 	} else {
-		fmt.Printf("%s %s\n", r("-"), p(t.PodName))
+		fmt.Fprintf(os.Stderr, "%s %s\n", r("-"), p(t.PodName))
 	}
 	close(t.closed)
 }
 
 // Print prints a color coded log message with the pod and container names
 func (t *Tail) Print(msg string) {
-	p := t.podColor.SprintFunc()
-	c := t.containerColor.SprintFunc()
-	if t.Options.Namespace {
-		fmt.Printf("%s %s %s %s", p(t.Namespace), p(t.PodName), c(t.ContainerName), msg)
-	} else {
-		fmt.Printf("%s %s %s", p(t.PodName), c(t.ContainerName), msg)
+	vm := Log{
+		Message:        msg,
+		Namespace:      t.Namespace,
+		PodName:        t.PodName,
+		ContainerName:  t.ContainerName,
+		PodColor:       t.podColor,
+		ContainerColor: t.containerColor,
 	}
+	err := t.tmpl.Execute(os.Stdout, vm)
+	if err != nil {
+		os.Stderr.WriteString(fmt.Sprintf("expanding template failed: %s", err))
+	}
+}
+
+// Log is the object which will be used together with the template to generate
+// the output.
+type Log struct {
+	// Message is the log message itself
+	Message string `json:"message"`
+
+	// Namespace of the pod
+	Namespace string `json:"namespace"`
+
+	// PodName of the pod
+	PodName string `json:"podName"`
+
+	// ContainerName of the container
+	ContainerName string `json:"containerName"`
+
+	PodColor       *color.Color `json:"-"`
+	ContainerColor *color.Color `json:"-"`
 }
