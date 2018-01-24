@@ -49,6 +49,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 | flag               | default          | purpose                                                                                                      |
 |--------------------|------------------|--------------------------------------------------------------------------------------------------------------|
 | `--container`      | `.*`             | Container name when multiple containers in pod (regular expression)                                          |
+| `--container-state`| `running`        | Tail containers with status in running, waiting or terminated. Default to running.
 | `--timestamps`     |                  | Print timestamps                                                                                             |
 | `--since`          |                  | Return logs newer than a relative duration like 52, 2m, or 3h. Displays all if omitted                       |
 | `--context`        |                  | Kubernetes context to use. Default to `kubectl config current-context`                                       |
