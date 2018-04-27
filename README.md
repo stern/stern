@@ -120,3 +120,7 @@ If you use zsh, just source the stern zsh completion code in `.zshrc`.
 ```sh
 source <(stern --completion=zsh)
 ```
+
+## Contributing to this repository
+
+Oracle welcomes contributions to this repository from anyone.  Please see [CONTRIBUTING](CONTRIBUTING.md) for details. 
