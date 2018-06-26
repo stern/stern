@@ -38,29 +38,31 @@ import (
 const version = "1.7.0"
 
 type Options struct {
-	container     string
-	timestamps    bool
-	since         time.Duration
-	context       string
-	namespace     string
-	kubeConfig    string
-	exclude       []string
-	allNamespaces bool
-	selector      string
-	tail          int64
-	color         string
-	version       bool
-	completion    string
-	template      string
-	output        string
+	container      string
+	containerState string
+	timestamps     bool
+	since          time.Duration
+	context        string
+	namespace      string
+	kubeConfig     string
+	exclude        []string
+	allNamespaces  bool
+	selector       string
+	tail           int64
+	color          string
+	version        bool
+	completion     string
+	template       string
+	output         string
 }
 
 var opts = &Options{
-	container: ".*",
-	tail:      -1,
-	color:     "auto",
-	template:  "",
-	output:    "default",
+	container:      ".*",
+	containerState: "running",
+	tail:           -1,
+	color:          "auto",
+	template:       "",
+	output:         "default",
 }
 
 func Run() {
@@ -69,6 +71,7 @@ func Run() {
 	cmd.Short = "Tail multiple pods and containers from Kubernetes"
 
 	cmd.Flags().StringVarP(&opts.container, "container", "c", opts.container, "Container name when multiple containers in pod")
+	cmd.Flags().StringVar(&opts.containerState, "container-state", opts.containerState, "If present, tail containers with status in running, waiting or terminated. Default to running.")
 	cmd.Flags().BoolVarP(&opts.timestamps, "timestamps", "t", opts.timestamps, "Print timestamps")
 	cmd.Flags().DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs.")
 	cmd.Flags().StringVar(&opts.context, "context", opts.context, "Kubernetes context to use. Default to current context configured in kubeconfig.")
@@ -170,6 +173,11 @@ func parseConfig(args []string) (*stern.Config, error) {
 		exclude = append(exclude, rex)
 	}
 
+	containerState, err := stern.NewContainerState(opts.containerState)
+	if err != nil {
+		return nil, err
+	}
+
 	var labelSelector labels.Selector
 	selector := opts.selector
 	if selector == "" {
@@ -239,6 +247,7 @@ func parseConfig(args []string) (*stern.Config, error) {
 		KubeConfig:     kubeConfig,
 		PodQuery:       pod,
 		ContainerQuery: container,
+		ContainerState: containerState,
 		Exclude:        exclude,
 		Timestamps:     opts.timestamps,
 		Since:          opts.since,
