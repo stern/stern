@@ -16,11 +16,13 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"text/template"
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
@@ -33,7 +35,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const version = "1.6.0"
+const version = "1.7.0"
 
 type Options struct {
 	container      string
@@ -50,6 +52,8 @@ type Options struct {
 	color          string
 	version        bool
 	completion     string
+	template       string
+	output         string
 }
 
 var opts = &Options{
@@ -57,6 +61,8 @@ var opts = &Options{
 	containerState: "running",
 	tail:           -1,
 	color:          "auto",
+	template:       "",
+	output:         "default",
 }
 
 func Run() {
@@ -80,6 +86,8 @@ func Run() {
 	cmd.Flags().StringVar(&opts.color, "color", opts.color, "Color output. Can be 'always', 'never', or 'auto'")
 	cmd.Flags().BoolVarP(&opts.version, "version", "v", opts.version, "Print the version and exit")
 	cmd.Flags().StringVar(&opts.completion, "completion", opts.completion, "Outputs stern command-line completion code for the specified shell. Can be 'bash' or 'zsh'")
+	cmd.Flags().StringVar(&opts.template, "template", opts.template, "Template to use for log lines, leave empty to use --output flag")
+	cmd.Flags().StringVarP(&opts.output, "output", "o", opts.output, "Specify predefined template. Currently support: [default, raw, json]")
 
 	// Specify custom bash completion function
 	cmd.BashCompletionFunction = bash_completion_func
@@ -195,6 +203,46 @@ func parseConfig(args []string) (*stern.Config, error) {
 		return nil, errors.New("color should be one of 'always', 'never', or 'auto'")
 	}
 
+	t := opts.template
+	if t == "" {
+		switch opts.output {
+		case "default":
+			if color.NoColor {
+				t = "{{.PodName}} {{.ContainerName}} {{.Message}}"
+				if opts.allNamespaces {
+					t = fmt.Sprintf("{{.Namespace}} %s", t)
+				}
+			} else {
+				t = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}"
+				if opts.allNamespaces {
+					t = fmt.Sprintf("{{color .PodColor .Namespace}} %s", t)
+				}
+
+			}
+		case "raw":
+			t = "{{.Message}}"
+		case "json":
+			t = "{{json .}}\n"
+		}
+	}
+
+	funs := map[string]interface{}{
+		"json": func(in interface{}) (string, error) {
+			b, err := json.Marshal(in)
+			if err != nil {
+				return "", err
+			}
+			return string(b), nil
+		},
+		"color": func(color color.Color, text string) string {
+			return color.SprintFunc()(text)
+		},
+	}
+	template, err := template.New("log").Funcs(funs).Parse(t)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to parse template")
+	}
+
 	return &stern.Config{
 		KubeConfig:     kubeConfig,
 		PodQuery:       pod,
@@ -208,6 +256,7 @@ func parseConfig(args []string) (*stern.Config, error) {
 		AllNamespaces:  opts.allNamespaces,
 		LabelSelector:  labelSelector,
 		TailLines:      tailLines,
+		Template:       template,
 	}, nil
 }
 

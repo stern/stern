@@ -16,6 +16,7 @@ package stern
 
 import (
 	"regexp"
+	"text/template"
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
@@ -35,4 +36,5 @@ type Config struct {
 	AllNamespaces  bool
 	LabelSelector  labels.Selector
 	TailLines      *int64
+	Template       *template.Template
 }
