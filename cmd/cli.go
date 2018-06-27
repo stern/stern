@@ -38,22 +38,23 @@ import (
 const version = "1.7.0"
 
 type Options struct {
-	container      string
-	containerState string
-	timestamps     bool
-	since          time.Duration
-	context        string
-	namespace      string
-	kubeConfig     string
-	exclude        []string
-	allNamespaces  bool
-	selector       string
-	tail           int64
-	color          string
-	version        bool
-	completion     string
-	template       string
-	output         string
+	container        string
+	excludeContainer string
+	containerState   string
+	timestamps       bool
+	since            time.Duration
+	context          string
+	namespace        string
+	kubeConfig       string
+	exclude          []string
+	allNamespaces    bool
+	selector         string
+	tail             int64
+	color            string
+	version          bool
+	completion       string
+	template         string
+	output           string
 }
 
 var opts = &Options{
@@ -71,6 +72,7 @@ func Run() {
 	cmd.Short = "Tail multiple pods and containers from Kubernetes"
 
 	cmd.Flags().StringVarP(&opts.container, "container", "c", opts.container, "Container name when multiple containers in pod")
+	cmd.Flags().StringVarP(&opts.excludeContainer, "exclude-container", "E", opts.excludeContainer, "Exclude a Container name")
 	cmd.Flags().StringVar(&opts.containerState, "container-state", opts.containerState, "If present, tail containers with status in running, waiting or terminated. Default to running.")
 	cmd.Flags().BoolVarP(&opts.timestamps, "timestamps", "t", opts.timestamps, "Print timestamps")
 	cmd.Flags().DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs.")
@@ -162,6 +164,13 @@ func parseConfig(args []string) (*stern.Config, error) {
 		return nil, errors.Wrap(err, "failed to compile regular expression for container query")
 	}
 
+	var excludeContainer *regexp.Regexp
+	if opts.excludeContainer != "" {
+		excludeContainer, err = regexp.Compile(opts.excludeContainer)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to compile regular expression for exclude container query")
+		}
+	}
 	var exclude []*regexp.Regexp
 
 	for _, ex := range opts.exclude {
@@ -244,19 +253,20 @@ func parseConfig(args []string) (*stern.Config, error) {
 	}
 
 	return &stern.Config{
-		KubeConfig:     kubeConfig,
-		PodQuery:       pod,
-		ContainerQuery: container,
-		ContainerState: containerState,
-		Exclude:        exclude,
-		Timestamps:     opts.timestamps,
-		Since:          opts.since,
-		ContextName:    opts.context,
-		Namespace:      opts.namespace,
-		AllNamespaces:  opts.allNamespaces,
-		LabelSelector:  labelSelector,
-		TailLines:      tailLines,
-		Template:       template,
+		KubeConfig:            kubeConfig,
+		PodQuery:              pod,
+		ContainerQuery:        container,
+		ExcludeContainerQuery: excludeContainer,
+		ContainerState:        containerState,
+		Exclude:               exclude,
+		Timestamps:            opts.timestamps,
+		Since:                 opts.since,
+		ContextName:           opts.context,
+		Namespace:             opts.namespace,
+		AllNamespaces:         opts.allNamespaces,
+		LabelSelector:         labelSelector,
+		TailLines:             tailLines,
+		Template:              template,
 	}, nil
 }
 
