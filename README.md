@@ -94,10 +94,12 @@ will receive the following struct:
 The following functions are available within the template (besides the [builtin
 functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 
-| func    | arguments             | description                                     |
-|---------|-----------------------|-------------------------------------------------|
-| `json`  | `object`              | Marshal the object and output it as a json text |
-| `color` | `color.Color, string` | Wrap the text in color                          |
+| func    | arguments             | description                                                     |
+|---------|-----------------------|-----------------------------------------------------------------|
+| `json`  | `object`              | Marshal the object and output it as a json text                 |
+| `color` | `color.Color, string` | Wrap the text in color (.containerColor and .podColor provided) |
+
+
 
 ## Examples:
 
@@ -145,6 +147,12 @@ Output using a custom template:
 
 ```
 stern --template '{{.Message}} ({{.Namespace}}/{{.PodName}}/{{.ContainerName}})' backend
+```
+
+Output using a custom template with stern-provided colors:
+
+```
+stern --template '{{.Message}} ({{.Namespace}}/{{color .podColor .PodName}}/{{color .containerColor .ContainerName}})' backend
 ```
 
 ## Completion
