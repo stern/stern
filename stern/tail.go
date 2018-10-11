@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"hash/fnv"
 	"os"
 	"regexp"
 	"text/template"
@@ -61,8 +62,6 @@ func NewTail(namespace, podName, containerName string, tmpl *template.Template, 
 	}
 }
 
-var index = 0
-
 var colorList = [][2]*color.Color{
 	{color.New(color.FgHiCyan), color.New(color.FgCyan)},
 	{color.New(color.FgHiGreen), color.New(color.FgGreen)},
@@ -72,18 +71,18 @@ var colorList = [][2]*color.Color{
 	{color.New(color.FgHiRed), color.New(color.FgRed)},
 }
 
-var podColors = make(map[string]*color.Color)
+func determineColor(podName string) (podColor, containerColor *color.Color) {
+	hash := fnv.New32()
+	hash.Write([]byte(podName))
+	idx := hash.Sum32() % uint32(len(colorList))
+
+	colors := colorList[idx]
+	return colors[0], colors[1]
+}
 
 // Start starts tailing
 func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
-	colorIndex := len(podColors) % len(colorList)
-	podColor, ok := podColors[t.PodName]
-	if !ok {
-		podColor = colorList[colorIndex][0]
-		podColors[t.PodName] = podColor
-	}
-	t.podColor = podColor
-	t.containerColor = colorList[colorIndex][1]
+	t.podColor, t.containerColor = determineColor(t.PodName)
 
 	go func() {
 		g := color.New(color.FgHiGreen, color.Bold).SprintFunc()
