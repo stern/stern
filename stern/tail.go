@@ -46,6 +46,7 @@ type TailOptions struct {
 	Timestamps   bool
 	SinceSeconds int64
 	Exclude      []*regexp.Regexp
+	Include      []*regexp.Regexp
 	Namespace    bool
 	TailLines    *int64
 }
@@ -131,7 +132,13 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 				}
 			}
 
-			t.Print(str)
+			for _, rin := range t.Options.Include {
+				if !rin.MatchString(str) {
+					continue OUTER
+				}
+			}
+
+			 t.Print(str)
 		}
 	}()
 

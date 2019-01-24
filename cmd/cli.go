@@ -47,6 +47,7 @@ type Options struct {
 	namespace        string
 	kubeConfig       string
 	exclude          []string
+	include          []string
 	allNamespaces    bool
 	selector         string
 	tail             int64
@@ -82,6 +83,7 @@ func Run() {
 	cmd.Flags().StringVar(&opts.kubeConfig, "kube-config", opts.kubeConfig, "Path to kubeconfig file to use")
 	cmd.Flags().MarkDeprecated("kube-config", "Use --kubeconfig instead.")
 	cmd.Flags().StringSliceVarP(&opts.exclude, "exclude", "e", opts.exclude, "Regex of log lines to exclude")
+	cmd.Flags().StringSliceVarP(&opts.include, "include", "i", opts.include, "Regex of log lines to include")
 	cmd.Flags().BoolVar(&opts.allNamespaces, "all-namespaces", opts.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
 	cmd.Flags().StringVarP(&opts.selector, "selector", "l", opts.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
 	cmd.Flags().Int64Var(&opts.tail, "tail", opts.tail, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
@@ -171,8 +173,8 @@ func parseConfig(args []string) (*stern.Config, error) {
 			return nil, errors.Wrap(err, "failed to compile regular expression for exclude container query")
 		}
 	}
-	var exclude []*regexp.Regexp
 
+	var exclude []*regexp.Regexp
 	for _, ex := range opts.exclude {
 		rex, err := regexp.Compile(ex)
 		if err != nil {
@@ -180,6 +182,16 @@ func parseConfig(args []string) (*stern.Config, error) {
 		}
 
 		exclude = append(exclude, rex)
+	}
+
+	var include []*regexp.Regexp
+	for _, inc := range opts.include {
+		rin, err := regexp.Compile(inc)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to compile regular expression for inclusion filter")
+		}
+
+		include = append(include, rin)
 	}
 
 	containerState, err := stern.NewContainerState(opts.containerState)
@@ -263,6 +275,7 @@ func parseConfig(args []string) (*stern.Config, error) {
 		ExcludeContainerQuery: excludeContainer,
 		ContainerState:        containerState,
 		Exclude:               exclude,
+		Include:               include,
 		Timestamps:            opts.timestamps,
 		Since:                 opts.since,
 		ContextName:           opts.context,
