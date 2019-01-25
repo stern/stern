@@ -132,10 +132,14 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 				}
 			}
 
+			matches := false
 			for _, rin := range t.Options.Include {
-				if !rin.MatchString(str) {
-					continue OUTER
+				if rin.MatchString(str) {
+					matches = true
 				}
+			}
+ 			if !matches {
+				continue OUTER
 			}
 
 			 t.Print(str)
