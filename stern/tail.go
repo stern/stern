@@ -138,11 +138,11 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 					matches = true
 				}
 			}
- 			if !matches {
+ 			if t.Options.Include && !matches {
 				continue OUTER
 			}
 
-			 t.Print(str)
+			t.Print(str)
 		}
 	}()
 
