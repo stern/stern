@@ -138,7 +138,7 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 					matches = true
 				}
 			}
- 			if t.Options.Include && !matches {
+ 			if len(t.Options.Include) != 0 && !matches {
 				continue OUTER
 			}
 
