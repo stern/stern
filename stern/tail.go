@@ -132,7 +132,18 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 				}
 			}
 
-			matches := false
+			if len(t.Options.Include) != 0 {
+				matches := false
+				for _, rin := range t.Options.Include {
+					if rin.MatchString(str) {
+						matches = true
+						break
+					}
+				}
+ 				if !matches {
+					continue OUTER
+				}
+			}
 			for _, rin := range t.Options.Include {
 				if rin.MatchString(str) {
 					matches = true
