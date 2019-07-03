@@ -61,6 +61,7 @@ func Run(ctx context.Context, config *Config) error {
 				Timestamps:   config.Timestamps,
 				SinceSeconds: int64(config.Since.Seconds()),
 				Exclude:      config.Exclude,
+				Include:      config.Include,
 				Namespace:    config.AllNamespaces,
 				TailLines:    config.TailLines,
 			})
