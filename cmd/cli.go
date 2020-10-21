@@ -30,7 +30,7 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/wercker/stern/stern"
+	"github.com/stern/stern/stern"
 
 	"github.com/fatih/color"
 )

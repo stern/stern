@@ -1,6 +1,6 @@
-# stern
+# This repository is a friendly fork of https://github.com/wercker/stern - discontinued due to lack of maintainers.
 
-[![wercker status](https://app.wercker.com/status/fb1ed340ffed75c22dc301c38ab0893c/s/master "wercker status")](https://app.wercker.com/project/byKey/fb1ed340ffed75c22dc301c38ab0893c)
+# stern
 
 Stern allows you to `tail` multiple pods on Kubernetes and multiple containers
 within the pod. Each result is color coded for quicker debugging.
@@ -16,23 +16,16 @@ limit what containers to show. By default all containers are listened to.
 
 ## Installation
 
-If you don't want to build from source go grab a [binary release](https://github.com/wercker/stern/releases)
+If you don't want to build from source go grab a [binary release](https://github.com/stern/stern/releases)
 
 [Govendor](https://github.com/kardianos/govendor) is required to install vendored dependencies.
 
 ```
-mkdir -p $GOPATH/src/github.com/wercker
-cd $GOPATH/src/github.com/wercker
-git clone https://github.com/wercker/stern.git && cd stern
+mkdir -p $GOPATH/src/github.com/stern
+cd $GOPATH/src/github.com/stern
+git clone https://github.com/stern/stern.git && cd stern
 govendor sync
 go install
-```
-
-### Homebrew
-
-On macOS, you can also install Stern using [Homebrew](https://brew.sh/):
-```
-brew install stern
 ```
 
 ## Usage
@@ -193,5 +186,4 @@ source <(stern --completion=zsh)
 
 ## Contributing to this repository
 
-Oracle welcomes contributions to this repository from anyone.  Please see
-[CONTRIBUTING](CONTRIBUTING.md) for details.
+Please see [CONTRIBUTING](CONTRIBUTING.md) for details.

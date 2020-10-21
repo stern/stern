@@ -1138,5 +1138,5 @@
 			"revisionTime": "2018-07-19T21:38:58Z"
 		}
 	],
-	"rootPath": "github.com/wercker/stern"
+	"rootPath": "github.com/stern/stern"
 }

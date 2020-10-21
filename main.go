@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/wercker/stern/cmd"
+import "github.com/stern/stern/cmd"
 
 func main() {
 	cmd.Run()

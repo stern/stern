@@ -1,6 +1,6 @@
 box: golang:1.8
 build:
-  base-path: /go/src/github.com/wercker/stern
+  base-path: /go/src/github.com/stern/stern
   steps:
     - script:
         name: install govendor
@@ -19,46 +19,46 @@ build:
         code: |
             export CGO_ENABLED=0
             GOOS=linux GOARCH=amd64 go build \
-                -ldflags="-s -X github.com/wercker/stern.GitCommit=$WERCKER_GIT_COMMIT -X github.com/wercker/stern.PatchVersion=$(( ($(date +%s) - $(date --date=20150101 +%s) )/(60*60*24) )) -X github.com/wercker/stern.Compiled=$(date +%s)" \
+                -ldflags="-s -X github.com/stern/stern.GitCommit=$STERN_GIT_COMMIT -X github.com/stern/stern.PatchVersion=$(( ($(date +%s) - $(date --date=20150101 +%s) )/(60*60*24) )) -X github.com/stern/stern.Compiled=$(date +%s)" \
                 -installsuffix cgo \
-                -o $WERCKER_OUTPUT_DIR/artifacts/latest/linux_amd64/stern
+                -o $STERN_OUTPUT_DIR/artifacts/latest/linux_amd64/stern
 
-            cp $WERCKER_OUTPUT_DIR/artifacts/latest/linux_amd64/stern $WERCKER_REPORT_ARTIFACTS_DIR
+            cp $STERN_OUTPUT_DIR/artifacts/latest/linux_amd64/stern $STERN_REPORT_ARTIFACTS_DIR
 
     - script:
         name: go build darwin amd64
         code: |
             export CGO_ENABLED=0
             GOOS=darwin GOARCH=amd64 go build \
-                -ldflags="-s -X github.com/wercker/stern.GitCommit=$WERCKER_GIT_COMMIT -X github.com/wercker/stern.PatchVersion=$(( ($(date +%s) - $(date --date=20150101 +%s) )/(60*60*24) )) -X github.com/wercker/stern.Compiled=$(date +%s)" \
+                -ldflags="-s -X github.com/stern/stern.GitCommit=$STERN_GIT_COMMIT -X github.com/stern/stern.PatchVersion=$(( ($(date +%s) - $(date --date=20150101 +%s) )/(60*60*24) )) -X github.com/stern/stern.Compiled=$(date +%s)" \
                 -installsuffix cgo \
-                -o $WERCKER_OUTPUT_DIR/artifacts/latest/darwin_amd64/stern
+                -o $STERN_OUTPUT_DIR/artifacts/latest/darwin_amd64/stern
 
-            cp $WERCKER_OUTPUT_DIR/artifacts/latest/darwin_amd64/stern $WERCKER_REPORT_ARTIFACTS_DIR
+            cp $STERN_OUTPUT_DIR/artifacts/latest/darwin_amd64/stern $STERN_REPORT_ARTIFACTS_DIR
 
     - script:
         name: go build windows amd64
         code: |
             export CGO_ENABLED=0
             GOOS=windows GOARCH=amd64 go build \
-                -ldflags="-s -X github.com/wercker/stern.GitCommit=$WERCKER_GIT_COMMIT -X github.com/wercker/stern.PatchVersion=$(( ($(date +%s) - $(date --date=20150101 +%s) )/(60*60*24) )) -X github.com/wercker/stern.Compiled=$(date +%s)" \
+                -ldflags="-s -X github.com/stern/stern.GitCommit=$STERN_GIT_COMMIT -X github.com/stern/stern.PatchVersion=$(( ($(date +%s) - $(date --date=20150101 +%s) )/(60*60*24) )) -X github.com/stern/stern.Compiled=$(date +%s)" \
                 -installsuffix cgo \
-                -o $WERCKER_OUTPUT_DIR/artifacts/latest/windows_amd64/stern.exe
+                -o $STERN_OUTPUT_DIR/artifacts/latest/windows_amd64/stern.exe
 
-            cp $WERCKER_OUTPUT_DIR/artifacts/latest/windows_amd64/stern.exe $WERCKER_REPORT_ARTIFACTS_DIR
+            cp $STERN_OUTPUT_DIR/artifacts/latest/windows_amd64/stern.exe $STERN_REPORT_ARTIFACTS_DIR
 
     - script:
         name: generate SHAs
         code: |
-            cd $WERCKER_OUTPUT_DIR
-            for f in $(echo "$WERCKER_OUTPUT_DIR/artifacts/latest/linux_amd64/stern" "$WERCKER_OUTPUT_DIR/artifacts/latest/darwin_amd64/stern" "$WERCKER_OUTPUT_DIR/artifacts/latest/windows_amd64/stern.exe"); do
+            cd $STERN_OUTPUT_DIR
+            for f in $(echo "$STERN_OUTPUT_DIR/artifacts/latest/linux_amd64/stern" "$STERN_OUTPUT_DIR/artifacts/latest/darwin_amd64/stern" "$STERN_OUTPUT_DIR/artifacts/latest/windows_amd64/stern.exe"); do
               cd $(dirname "$f")
               sha256sum $(basename "$f") > SHA256SUMS
             done
 
     - script:
         name: prepare
-        code: cp -r scripts $WERCKER_OUTPUT_DIR
+        code: cp -r scripts $STERN_OUTPUT_DIR
 
 release-stable:
   steps:
@@ -69,7 +69,7 @@ release-stable:
         name: version
         code: |
             export STERN_VERSION=$(./artifacts/latest/linux_amd64/stern --version | awk '{print $3}')
-            echo "Releasing stern stable v$STERN_VERSION" > $WERCKER_REPORT_MESSAGE_FILE
+            echo "Releasing stern stable v$STERN_VERSION" > $STERN_REPORT_MESSAGE_FILE
             echo "Releasing stern stable v$STERN_VERSION"
 
     - script:

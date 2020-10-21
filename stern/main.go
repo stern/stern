@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/wercker/stern/kubernetes"
+	"github.com/stern/stern/kubernetes"
 )
 
 // Run starts the main run loop

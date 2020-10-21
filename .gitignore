@@ -24,4 +24,6 @@ _testmain.go
 *.prof
 
 /vendor/*/
-/.wercker
+
+*.iml
+.idea/
