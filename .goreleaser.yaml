@@ -1,0 +1,32 @@
+env:
+- GO111MODULE=on
+- GOPROXY=https://gocenter.io
+builds:
+- env:
+  - CGO_ENABLED=0
+  ldflags:
+  - -s
+  - -w
+  - -X github.com/stern/stern.Version={{.Version}}
+  - -X github.com/stern/stern.GitCommit={{.Commit}}
+  - -X github.com/stern/stern.Date={{.Date}}
+  goos:
+  - linux
+  - windows
+  - darwin
+  goarch:
+  - amd64
+  - arm
+  - arm64
+archives:
+- builds:
+  - stern
+  name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  format: tar.gz
+  files:
+  - LICENSE
+  wrap_in_directory: true
+checksum:
+  name_template: 'checksums.txt'
+changelog:
+  sort: asc
