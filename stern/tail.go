@@ -103,7 +103,7 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 			TailLines:    t.Options.TailLines,
 		})
 
-		stream, err := req.Stream()
+		stream, err := req.Stream(ctx)
 		if err != nil {
 			fmt.Println(errors.Wrapf(err, "Error opening stream to %s/%s: %s\n", t.Namespace, t.PodName, t.ContainerName))
 			return
