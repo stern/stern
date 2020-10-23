@@ -1,6 +1,6 @@
-# This repository is a friendly fork of https://github.com/wercker/stern - discontinued due to lack of maintainers.
-
 # stern
+
+fork of discontinued [wercker/stern](https://github.com/wercker/stern)
 
 Stern allows you to `tail` multiple pods on Kubernetes and multiple containers
 within the pod. Each result is color coded for quicker debugging.
@@ -16,7 +16,11 @@ limit what containers to show. By default all containers are listened to.
 
 ## Installation
 
-If you don't want to build from source go grab a [binary release](https://github.com/stern/stern/releases)
+### Option A: download binary
+
+Download a [binary release](https://github.com/stern/stern/releases)
+
+### Options B: build from source
 
 [Govendor](https://github.com/kardianos/govendor) is required to install vendored dependencies.
 
