@@ -21,11 +21,8 @@ If you don't want to build from source go grab a [binary release](https://github
 [Govendor](https://github.com/kardianos/govendor) is required to install vendored dependencies.
 
 ```
-mkdir -p $GOPATH/src/github.com/stern
-cd $GOPATH/src/github.com/stern
 git clone https://github.com/stern/stern.git && cd stern
-govendor sync
-go install
+make install
 ```
 
 ## Usage
