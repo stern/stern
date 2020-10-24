@@ -167,7 +167,11 @@ If you use bash, stern bash completion code depends on the
 can install it with homebrew as follows:
 
 ```
-$ brew install bash-completion
+# If running Bash 3.2
+brew install bash-completion
+
+# or, if running Bash 4.1+
+brew install bash-completion@2
 ```
 
 Note that bash-completion must be sourced before sourcing the stern bash
