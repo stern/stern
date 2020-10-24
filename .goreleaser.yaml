@@ -30,3 +30,9 @@ checksum:
   name_template: 'checksums.txt'
 changelog:
   sort: asc
+dockers:
+- image_templates:
+  - "ghcr.io/stern/stern:latest"
+  - "ghcr.io/stern/stern:{{ .Major }}"
+  - "ghcr.io/stern/stern:{{ .Major }}.{{ .Minor }}"
+  - "ghcr.io/stern/stern:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"

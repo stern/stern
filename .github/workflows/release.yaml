@@ -18,6 +18,12 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: stern-robot
+        password: ${{ secrets.CR_PAT }}
     - name: Release
       run: make release
       env:
