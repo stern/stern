@@ -21,10 +21,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	// auth providers
-	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+	// load all auth plugins
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 // NewClientConfig returns a new Kubernetes client config set for a context
