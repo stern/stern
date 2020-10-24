@@ -22,8 +22,6 @@ Download a [binary release](https://github.com/stern/stern/releases)
 
 ### Options B: build from source
 
-[Govendor](https://github.com/kardianos/govendor) is required to install vendored dependencies.
-
 ```
 git clone https://github.com/stern/stern.git && cd stern
 make install
