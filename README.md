@@ -23,8 +23,7 @@ Download a [binary release](https://github.com/stern/stern/releases)
 ### Options B: build from source
 
 ```
-git clone https://github.com/stern/stern.git && cd stern
-make install
+go get -u github.com/stern/stern
 ```
 
 ## Usage
