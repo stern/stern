@@ -203,6 +203,21 @@ docker run --rm -v "$HOME/.minikube:$HOME/.minikube" -v "$HOME/.kube:/$HOME/.kub
 
 You can find container image tags in https://github.com/orgs/stern/packages?repo_name=stern.
 
+## Running in Kubernetes Pods
+
+If you want to use stern in Kubernetes Pods, you need to create the following ClusterRole and bind it to ServiceAccount.
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: stern
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "watch", "list"]
+```
+
 ## Contributing to this repository
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
