@@ -26,5 +26,7 @@ jobs:
           ${{ runner.os }}-go-
     - name: Run test
       run: make test
+    - name: Run lint
+      run: make lint
     - name: Build binary
       run: make build

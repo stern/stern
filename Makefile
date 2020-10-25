@@ -10,17 +10,28 @@ TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 GORELEASER_BIN := bin/goreleaser
 GORELEASER := $(TOOLS_DIR)/$(GORELEASER_BIN)
+GOLANGCI_LINT_BIN := bin/golangci-lint
+GOLANGCI_LINT := $(TOOLS_DIR)/$(GOLANGCI_LINT_BIN)
 
 $(GORELEASER): $(TOOLS_DIR)/go.mod
 	cd $(TOOLS_DIR) && go build -o $(GORELEASER_BIN) github.com/goreleaser/goreleaser
+
+$(GOLANGCI_LINT): $(TOOLS_DIR)/go.mod
+	cd $(TOOLS_DIR) && go build -o $(GOLANGCI_LINT_BIN) github.com/golangci/golangci-lint/cmd/golangci-lint
 
 .PHONY: build-cross
 build-cross: $(GORELEASER)
 	$(GORELEASER) build --snapshot --rm-dist
 
+<<<<<<< HEAD
 .PHONY: test
 test:
 	go test -v ./...
+=======
+.PHONY: lint
+lint: $(GOLANGCI_LINT)
+	$(GOLANGCI_LINT) run
+>>>>>>> f93c217... Use golangci-lint as linter
 
 .PHONY: dist
 dist: $(GORELEASER)
