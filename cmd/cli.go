@@ -81,7 +81,7 @@ func Run() {
 	cmd.Flags().StringVarP(&opts.namespace, "namespace", "n", opts.namespace, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context")
 	cmd.Flags().StringVar(&opts.kubeConfig, "kubeconfig", opts.kubeConfig, "Path to kubeconfig file to use")
 	cmd.Flags().StringVar(&opts.kubeConfig, "kube-config", opts.kubeConfig, "Path to kubeconfig file to use")
-	cmd.Flags().MarkDeprecated("kube-config", "Use --kubeconfig instead.")
+	_ = cmd.Flags().MarkDeprecated("kube-config", "Use --kubeconfig instead.")
 	cmd.Flags().StringSliceVarP(&opts.exclude, "exclude", "e", opts.exclude, "Regex of log lines to exclude")
 	cmd.Flags().StringSliceVarP(&opts.include, "include", "i", opts.include, "Regex of log lines to include")
 	cmd.Flags().BoolVarP(&opts.allNamespaces, "all-namespaces", "A", opts.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")

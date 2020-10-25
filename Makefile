@@ -23,15 +23,13 @@ $(GOLANGCI_LINT): $(TOOLS_DIR)/go.mod
 build-cross: $(GORELEASER)
 	$(GORELEASER) build --snapshot --rm-dist
 
-<<<<<<< HEAD
 .PHONY: test
 test:
 	go test -v ./...
-=======
+
 .PHONY: lint
 lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run
->>>>>>> f93c217... Use golangci-lint as linter
 
 .PHONY: dist
 dist: $(GORELEASER)
