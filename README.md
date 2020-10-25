@@ -187,6 +187,22 @@ If you use zsh, just source the stern zsh completion code in `.zshrc`.
 source <(stern --completion=zsh)
 ```
 
+## Running with container
+
+You can also use stern using a container:
+
+```
+docker run ghcr.io/stern/stern --version
+```
+
+If you are using a minikube cluster, you need to run a container as follows:
+
+```
+docker run --rm -v "$HOME/.minikube:$HOME/.minikube" -v "$HOME/.kube:/$HOME/.kube" -e KUBECONFIG="$HOME/.kube/config" ghcr.io/stern/stern .
+```
+
+You can find container image tags in https://github.com/orgs/stern/packages?repo_name=stern.
+
 ## Contributing to this repository
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.

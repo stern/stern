@@ -18,8 +18,8 @@ $(GORELEASER): $(TOOLS_DIR)/go.mod
 build-cross: $(GORELEASER)
 	$(GORELEASER) build --snapshot --rm-dist
 
-.PHONY: archive
-archive: $(GORELEASER)
+.PHONY: dist
+dist: $(GORELEASER)
 	$(GORELEASER) release --rm-dist --skip-publish --snapshot
 
 .PHONY: release
