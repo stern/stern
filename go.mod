@@ -3,7 +3,7 @@ module github.com/stern/stern
 go 1.15
 
 require (
-	github.com/fatih/color v1.7.1-0.20180516100307-2d684516a886
+	github.com/fatih/color v1.9.0
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
