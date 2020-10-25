@@ -6,10 +6,6 @@ GO ?= GO111MODULE=on GOPROXY=https://gocenter.io go
 build:
 	$(GO) build -o dist/stern .
 
-.PHONY: install
-install:
-	$(GO) install .
-
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 GORELEASER_BIN := bin/goreleaser
