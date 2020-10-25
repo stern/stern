@@ -24,5 +24,7 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
+    - name: Run test
+      run: make test
     - name: Build binary
       run: make build

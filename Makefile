@@ -18,6 +18,10 @@ $(GORELEASER): $(TOOLS_DIR)/go.mod
 build-cross: $(GORELEASER)
 	$(GORELEASER) build --snapshot --rm-dist
 
+.PHONY: test
+test:
+	go test -v ./...
+
 .PHONY: dist
 dist: $(GORELEASER)
 	$(GORELEASER) release --rm-dist --skip-publish --snapshot
