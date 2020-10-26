@@ -14,10 +14,10 @@ GOLANGCI_LINT_BIN := bin/golangci-lint
 GOLANGCI_LINT := $(TOOLS_DIR)/$(GOLANGCI_LINT_BIN)
 
 $(GORELEASER): $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR) && go build -o $(GORELEASER_BIN) github.com/goreleaser/goreleaser
+	cd $(TOOLS_DIR) && $(GO) build -o $(GORELEASER_BIN) github.com/goreleaser/goreleaser
 
 $(GOLANGCI_LINT): $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR) && go build -o $(GOLANGCI_LINT_BIN) github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd $(TOOLS_DIR) && $(GO) build -o $(GOLANGCI_LINT_BIN) github.com/golangci/golangci-lint/cmd/golangci-lint
 
 .PHONY: build-cross
 build-cross: $(GORELEASER)
@@ -25,7 +25,7 @@ build-cross: $(GORELEASER)
 
 .PHONY: test
 test:
-	go test -v ./...
+	$(GO) test -v ./...
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT)
@@ -37,7 +37,7 @@ dist: $(GORELEASER)
 
 .PHONY: release
 release: $(GORELEASER)
-	$(GORELEASER) release --rm-dist
+	$(GORELEASER) release --rm-dist --skip-validate
 
 .PHONY: clean
 clean: clean-tools clean-dist
