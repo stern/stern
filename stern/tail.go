@@ -27,7 +27,6 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/rest"
 )
 
 type Tail struct {
@@ -35,7 +34,6 @@ type Tail struct {
 	PodName        string
 	ContainerName  string
 	Options        *TailOptions
-	req            *rest.Request
 	closed         chan struct{}
 	podColor       *color.Color
 	containerColor *color.Color
@@ -74,7 +72,7 @@ var colorList = [][2]*color.Color{
 
 func determineColor(podName string) (podColor, containerColor *color.Color) {
 	hash := fnv.New32()
-	hash.Write([]byte(podName))
+	_, _ = hash.Write([]byte(podName))
 	idx := hash.Sum32() % uint32(len(colorList))
 
 	colors := colorList[idx]
