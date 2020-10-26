@@ -31,17 +31,17 @@ if ! which kubectl >/dev/null 2>&1; then
 	__is_kubectl_installed=false
 fi
 
-__kubectl_override_flag_list=(kubeconfig context namespace)
-__kubectl_override_flags()
+__stern_kubectl_override_flag_list=(kubeconfig context namespace)
+__stern_kubectl_override_flags()
 {
-    local ${__kubectl_override_flag_list[*]} two_word_of of
+    local ${__stern_kubectl_override_flag_list[*]} two_word_of of
     for w in "${words[@]}"; do
         if [ -n "${two_word_of}" ]; then
             eval "${two_word_of}=\"--${two_word_of}=\${w}\""
             two_word_of=
             continue
         fi
-        for of in "${__kubectl_override_flag_list[@]}"; do
+        for of in "${__stern_kubectl_override_flag_list[@]}"; do
             case "${w}" in
                 --${of}=*)
                     eval "${of}=\"${w}\""
@@ -55,14 +55,14 @@ __kubectl_override_flags()
             namespace="--all-namespaces"
         fi
     done
-    for of in "${__kubectl_override_flag_list[@]}"; do
+    for of in "${__stern_kubectl_override_flag_list[@]}"; do
         if eval "test -n \"\$${of}\""; then
             eval "echo \${${of}}"
         fi
     done
 }
 
-__kubectl_get_namespaces()
+__stern_kubectl_get_namespaces()
 {
     local template kubectl_out
 
@@ -75,7 +75,7 @@ __kubectl_get_namespaces()
     fi
 }
 
-__kubectl_config_get_contexts()
+__stern_kubectl_config_get_contexts()
 {
     local template kubectl_out
 
@@ -83,16 +83,16 @@ __kubectl_config_get_contexts()
         return 1
     fi
     template="{{ range .contexts  }}{{ .name }} {{ end }}"
-    if kubectl_out=$(kubectl config $(__kubectl_override_flags) -o template --template="${template}" view 2>/dev/null); then
+    if kubectl_out=$(kubectl config $(__stern_kubectl_override_flags) -o template --template="${template}" view 2>/dev/null); then
         COMPREPLY=( $( compgen -W "${kubectl_out[*]}" -- "$cur" ) )
     fi
 }
-	`
+`
 )
 
 var bash_completion_flags = map[string]string{
-	"namespace": "__kubectl_get_namespaces",
-	"context":   "__kubectl_config_get_contexts",
+	"namespace": "__stern_kubectl_get_namespaces",
+	"context":   "__stern_kubectl_config_get_contexts",
 }
 
 func runCompletion(shell string, cmd *cobra.Command) error {
