@@ -35,7 +35,11 @@ import (
 	"github.com/fatih/color"
 )
 
-const version = "1.12.1"
+var (
+	version = "dev"
+	commit  = ""
+	date    = ""
+)
 
 type Options struct {
 	container        string
@@ -109,7 +113,7 @@ func Run() {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if opts.version {
-			fmt.Printf("stern version %s\n", version)
+			fmt.Println(buildVersion(version, commit, date))
 			return nil
 		}
 
@@ -307,4 +311,18 @@ func getKubeConfig() (string, error) {
 	kubeconfig = filepath.Join(home, ".kube/config")
 
 	return kubeconfig, nil
+}
+
+func buildVersion(version, commit, date string) string {
+	result := fmt.Sprintf("version: %s", version)
+
+	if commit != "" {
+		result = fmt.Sprintf("%s\ncommit: %s", result, commit)
+	}
+
+	if date != "" {
+		result = fmt.Sprintf("%s\nbuilt at: %s", result, date)
+	}
+
+	return result
 }

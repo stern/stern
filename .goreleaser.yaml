@@ -7,9 +7,9 @@ builds:
   ldflags:
   - -s
   - -w
-  - -X github.com/stern/stern.Version={{.Version}}
-  - -X github.com/stern/stern.GitCommit={{.Commit}}
-  - -X github.com/stern/stern.Date={{.Date}}
+  - -X github.com/stern/stern/cmd.version={{.Version}}
+  - -X github.com/stern/stern/cmd.commit={{.Commit}}
+  - -X github.com/stern/stern/cmd.date={{.Date}}
   goos:
   - linux
   - windows
