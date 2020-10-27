@@ -201,7 +201,7 @@ If you are using a minikube cluster, you need to run a container as follows:
 docker run --rm -v "$HOME/.minikube:$HOME/.minikube" -v "$HOME/.kube:/$HOME/.kube" -e KUBECONFIG="$HOME/.kube/config" ghcr.io/stern/stern .
 ```
 
-You can find container image tags in https://github.com/orgs/stern/packages?repo_name=stern.
+You can find image tags in https://github.com/orgs/stern/packages/container/package/stern.
 
 ## Running in Kubernetes Pods
 
