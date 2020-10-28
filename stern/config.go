@@ -34,6 +34,7 @@ type Config struct {
 	ContainerState        ContainerState
 	Exclude               []*regexp.Regexp
 	Include               []*regexp.Regexp
+	InitContainers        bool
 	Since                 time.Duration
 	AllNamespaces         bool
 	LabelSelector         labels.Selector

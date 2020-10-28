@@ -52,6 +52,7 @@ type Options struct {
 	kubeConfig       string
 	exclude          []string
 	include          []string
+	initContainers   bool
 	allNamespaces    bool
 	selector         string
 	tail             int64
@@ -65,6 +66,7 @@ type Options struct {
 var opts = &Options{
 	container:      ".*",
 	containerState: "running",
+	initContainers: true,
 	tail:           -1,
 	color:          "auto",
 	template:       "",
@@ -82,12 +84,13 @@ func Run() {
 	cmd.Flags().BoolVarP(&opts.timestamps, "timestamps", "t", opts.timestamps, "Print timestamps")
 	cmd.Flags().DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to 48h.")
 	cmd.Flags().StringVar(&opts.context, "context", opts.context, "Kubernetes context to use. Default to current context configured in kubeconfig.")
-	cmd.Flags().StringVarP(&opts.namespace, "namespace", "n", opts.namespace, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context")
+	cmd.Flags().StringVarP(&opts.namespace, "namespace", "n", opts.namespace, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context.")
 	cmd.Flags().StringVar(&opts.kubeConfig, "kubeconfig", opts.kubeConfig, "Path to kubeconfig file to use")
 	cmd.Flags().StringVar(&opts.kubeConfig, "kube-config", opts.kubeConfig, "Path to kubeconfig file to use")
 	_ = cmd.Flags().MarkDeprecated("kube-config", "Use --kubeconfig instead.")
 	cmd.Flags().StringSliceVarP(&opts.exclude, "exclude", "e", opts.exclude, "Regex of log lines to exclude")
 	cmd.Flags().StringSliceVarP(&opts.include, "include", "i", opts.include, "Regex of log lines to include")
+	cmd.Flags().BoolVar(&opts.initContainers, "init-containers", opts.initContainers, "Include or exclude init containers")
 	cmd.Flags().BoolVarP(&opts.allNamespaces, "all-namespaces", "A", opts.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
 	cmd.Flags().StringVarP(&opts.selector, "selector", "l", opts.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
 	cmd.Flags().Int64Var(&opts.tail, "tail", opts.tail, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
