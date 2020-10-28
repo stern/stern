@@ -24,12 +24,20 @@ build-cross: $(GORELEASER)
 	$(GORELEASER) build --snapshot --rm-dist
 
 .PHONY: test
-test:
+test: fmt vet lint
 	$(GO) test -v ./...
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run
+
+.PHONY: fmt
+fmt:
+	go fmt ./...
+
+.PHONY: vet
+vet:
+	go vet ./...
 
 .PHONY: dist
 dist: $(GORELEASER)

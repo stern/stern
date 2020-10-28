@@ -138,7 +138,7 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 						break
 					}
 				}
- 				if !matches {
+				if !matches {
 					continue OUTER
 				}
 			}
