@@ -1,6 +1,7 @@
+[![Build](https://github.com/stern/stern/workflows/CI/badge.svg)](https://github.com/stern/stern/actions?query=workflow%3ACI+branch%3Amaster)
 # stern
 
-fork of discontinued [wercker/stern](https://github.com/wercker/stern)
+*Fork of discontinued [wercker/stern](https://github.com/wercker/stern)*
 
 Stern allows you to `tail` multiple pods on Kubernetes and multiple containers
 within the pod. Each result is color coded for quicker debugging.

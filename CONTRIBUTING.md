@@ -18,4 +18,4 @@ by your fix.
 1. Submit the pull request. *Do not leave the pull request blank*. Explain exactly
 what your changes are meant to do and provide simple steps on how to validate
 your changes. Ensure that you reference the issue you created as well.
-We will assign the pull request to 2-3 people for review before it is merged.
+The pull request will be review before it is merged.
