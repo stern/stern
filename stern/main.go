@@ -43,7 +43,14 @@ func Run(ctx context.Context, config *Config) error {
 		}
 	}
 
-	added, removed, err := Watch(ctx, clientset.CoreV1().Pods(namespace), config.PodQuery, config.ContainerQuery, config.ExcludeContainerQuery, config.ContainerState, config.LabelSelector)
+	added, removed, err := Watch(ctx,
+		clientset.CoreV1().Pods(namespace),
+		config.PodQuery,
+		config.ContainerQuery,
+		config.ExcludeContainerQuery,
+		config.InitContainers,
+		config.ContainerState,
+		config.LabelSelector)
 	if err != nil {
 		return errors.Wrap(err, "failed to set up watch")
 	}
