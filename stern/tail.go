@@ -19,14 +19,16 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"io"
 	"os"
 	"regexp"
+	"strings"
 	"text/template"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 type Tail struct {
@@ -47,6 +49,30 @@ type TailOptions struct {
 	Include      []*regexp.Regexp
 	Namespace    bool
 	TailLines    *int64
+}
+
+func (o TailOptions) IsExclude(msg string) bool {
+	for _, rex := range o.Exclude {
+		if rex.MatchString(msg) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (o TailOptions) IsInclude(msg string) bool {
+	if len(o.Include) == 0 {
+		return true
+	}
+
+	for _, rin := range o.Include {
+		if rin.MatchString(msg) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
@@ -113,37 +139,8 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 			stream.Close()
 		}()
 
-		reader := bufio.NewReader(stream)
-
-	OUTER:
-		for {
-			line, err := reader.ReadBytes('\n')
-			if err != nil {
-				return
-			}
-
-			str := string(line)
-
-			for _, rex := range t.Options.Exclude {
-				if rex.MatchString(str) {
-					continue OUTER
-				}
-			}
-
-			if len(t.Options.Include) != 0 {
-				matches := false
-				for _, rin := range t.Options.Include {
-					if rin.MatchString(str) {
-						matches = true
-						break
-					}
-				}
-				if !matches {
-					continue OUTER
-				}
-			}
-
-			t.Print(str)
+		if err := t.ConsumeStream(stream, os.Stdout); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		}
 	}()
 
@@ -165,8 +162,31 @@ func (t *Tail) Close() {
 	close(t.closed)
 }
 
+// ConsumeStream reads the data from stream reader and writes into the out
+// writer.
+func (t *Tail) ConsumeStream(stream io.Reader, out io.Writer) error {
+	r := bufio.NewReader(stream)
+	for {
+		line, err := r.ReadBytes('\n')
+		msg := string(line)
+		// Remove a line break
+		msg = strings.TrimSuffix(msg, "\n")
+
+		if !t.Options.IsExclude(msg) && t.Options.IsInclude(msg) {
+			t.Print(msg, out)
+		}
+
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+			return nil
+		}
+	}
+}
+
 // Print prints a color coded log message with the pod and container names
-func (t *Tail) Print(msg string) {
+func (t *Tail) Print(msg string, out io.Writer) {
 	vm := Log{
 		Message:        msg,
 		Namespace:      t.Namespace,
@@ -175,9 +195,8 @@ func (t *Tail) Print(msg string) {
 		PodColor:       t.podColor,
 		ContainerColor: t.containerColor,
 	}
-	err := t.tmpl.Execute(os.Stdout, vm)
-	if err != nil {
-		os.Stderr.WriteString(fmt.Sprintf("expanding template failed: %s", err))
+	if err := t.tmpl.Execute(out, vm); err != nil {
+		fmt.Fprintf(os.Stderr, "expanding template failed: %s\n", err)
 	}
 }
 

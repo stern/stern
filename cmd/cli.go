@@ -250,8 +250,9 @@ func parseConfig(args []string) (*stern.Config, error) {
 		case "raw":
 			t = "{{.Message}}"
 		case "json":
-			t = "{{json .}}\n"
+			t = "{{json .}}"
 		}
+		t += "\n"
 	}
 
 	funs := map[string]interface{}{
