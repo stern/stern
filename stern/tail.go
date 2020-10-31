@@ -32,6 +32,7 @@ import (
 )
 
 type Tail struct {
+	NodeName       string
 	Namespace      string
 	PodName        string
 	ContainerName  string
@@ -76,8 +77,9 @@ func (o TailOptions) IsInclude(msg string) bool {
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
-func NewTail(namespace, podName, containerName string, tmpl *template.Template, options *TailOptions) *Tail {
+func NewTail(nodeName, namespace, podName, containerName string, tmpl *template.Template, options *TailOptions) *Tail {
 	return &Tail{
+		NodeName:      nodeName,
 		Namespace:     namespace,
 		PodName:       podName,
 		ContainerName: containerName,
@@ -189,6 +191,7 @@ func (t *Tail) ConsumeStream(stream io.Reader, out io.Writer) error {
 func (t *Tail) Print(msg string, out io.Writer) {
 	vm := Log{
 		Message:        msg,
+		NodeName:       t.NodeName,
 		Namespace:      t.Namespace,
 		PodName:        t.PodName,
 		ContainerName:  t.ContainerName,
@@ -205,6 +208,9 @@ func (t *Tail) Print(msg string, out io.Writer) {
 type Log struct {
 	// Message is the log message itself
 	Message string `json:"message"`
+
+	// Node name of the pod
+	NodeName string `json:"nodeName"`
 
 	// Namespace of the pod
 	Namespace string `json:"namespace"`
