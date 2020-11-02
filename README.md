@@ -149,13 +149,13 @@ stern backend -o raw
 Output using a custom template:
 
 ```
-stern --template '{{.Message}} ({{.Namespace}}/{{.PodName}}/{{.ContainerName}})' backend
+stern --template '{{printf "%s (%s/%s/%s)\n" .Message .Namespace .PodName .ContainerName}}' backend
 ```
 
 Output using a custom template with stern-provided colors:
 
 ```
-stern --template '{{.Message}} ({{.Namespace}}/{{color .PodColor .PodName}}/{{color .ContainerColor .ContainerName}})' backend
+stern --template '{{.Message}} ({{.Namespace}}/{{color .PodColor .PodName}}/{{color .ContainerColor .ContainerName}}){{"\n"}}' backend
 ```
 
 ## Completion
