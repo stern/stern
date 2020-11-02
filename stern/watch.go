@@ -25,11 +25,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // Target is a target to watch
 type Target struct {
+	Node      string
 	Namespace string
 	Pod       string
 	Container string
@@ -85,6 +86,7 @@ func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, con
 
 						if containerState.Match(c.State) {
 							added <- &Target{
+								Node:      pod.Spec.NodeName,
 								Namespace: pod.Namespace,
 								Pod:       pod.Name,
 								Container: c.Name,
@@ -107,6 +109,7 @@ func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, con
 						}
 
 						removed <- &Target{
+							Node:      pod.Spec.NodeName,
 							Namespace: pod.Namespace,
 							Pod:       pod.Name,
 							Container: c.Name,

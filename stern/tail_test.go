@@ -64,21 +64,21 @@ func TestConsumeStreamTail(t *testing.T) {
 		expected []byte
 	}{
 		{
-			tmpl: template.Must(template.New("").Parse(`{{printf "%s (%s/%s/%s)\n" .Message .Namespace .PodName .ContainerName}}`)),
+			tmpl: template.Must(template.New("").Parse(`{{printf "%s (%s/%s/%s/%s)\n" .Message .NodeName .Namespace .PodName .ContainerName}}`)),
 			stream: bytes.NewBufferString(`line 1
 line 2
 line 3
 line 4`),
-			expected: []byte(`line 1 (my-namespace/my-pod/my-container)
-line 2 (my-namespace/my-pod/my-container)
-line 3 (my-namespace/my-pod/my-container)
-line 4 (my-namespace/my-pod/my-container)
+			expected: []byte(`line 1 (my-node/my-namespace/my-pod/my-container)
+line 2 (my-node/my-namespace/my-pod/my-container)
+line 3 (my-node/my-namespace/my-pod/my-container)
+line 4 (my-node/my-namespace/my-pod/my-container)
 `),
 		},
 	}
 
 	for i, tt := range tests {
-		tail := NewTail("my-namespace", "my-pod", "my-container", tt.tmpl, &TailOptions{})
+		tail := NewTail("my-node", "my-namespace", "my-pod", "my-container", tt.tmpl, &TailOptions{})
 		out := new(bytes.Buffer)
 
 		if err := tail.ConsumeStream(tt.stream, out); err != nil {
