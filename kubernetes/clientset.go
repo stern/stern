@@ -27,13 +27,17 @@ import (
 
 // NewClientConfig returns a new Kubernetes client config set for a context
 func NewClientConfig(configPath string, contextName string) clientcmd.ClientConfig {
-	configPathList := filepath.SplitList(configPath)
-	configLoadingRules := &clientcmd.ClientConfigLoadingRules{}
-	if len(configPathList) <= 1 {
-		configLoadingRules.ExplicitPath = configPath
-	} else {
-		configLoadingRules.Precedence = configPathList
+	configLoadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+
+	if configPath != "" {
+		configPathList := filepath.SplitList(configPath)
+		if len(configPathList) <= 1 {
+			configLoadingRules.ExplicitPath = configPath
+		} else {
+			configLoadingRules.Precedence = configPathList
+		}
 	}
+
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		configLoadingRules,
 		&clientcmd.ConfigOverrides{

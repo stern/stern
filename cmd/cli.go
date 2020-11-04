@@ -20,14 +20,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"regexp"
 	"text/template"
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/stern/stern/stern"
@@ -152,11 +150,6 @@ func Run() {
 }
 
 func parseConfig(args []string) (*stern.Config, error) {
-	kubeConfig, err := getKubeConfig()
-	if err != nil {
-		return nil, err
-	}
-
 	var podQuery string
 	if len(args) == 0 {
 		podQuery = ".*"
@@ -277,7 +270,7 @@ func parseConfig(args []string) (*stern.Config, error) {
 	}
 
 	return &stern.Config{
-		KubeConfig:            kubeConfig,
+		KubeConfig:            opts.kubeConfig,
 		PodQuery:              pod,
 		ContainerQuery:        container,
 		ExcludeContainerQuery: excludeContainer,
@@ -293,28 +286,6 @@ func parseConfig(args []string) (*stern.Config, error) {
 		TailLines:             tailLines,
 		Template:              template,
 	}, nil
-}
-
-func getKubeConfig() (string, error) {
-	var kubeconfig string
-
-	if kubeconfig = opts.kubeConfig; kubeconfig != "" {
-		return kubeconfig, nil
-	}
-
-	if kubeconfig = os.Getenv("KUBECONFIG"); kubeconfig != "" {
-		return kubeconfig, nil
-	}
-
-	// kubernetes requires an absolute path
-	home, err := homedir.Dir()
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get user home directory")
-	}
-
-	kubeconfig = filepath.Join(home, ".kube/config")
-
-	return kubeconfig, nil
 }
 
 func buildVersion(version, commit, date string) string {
