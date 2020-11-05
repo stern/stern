@@ -17,14 +17,22 @@ limit what containers to show. By default all containers are listened to.
 
 ## Installation
 
-### Option A: download binary
+### Download binary
 
 Download a [binary release](https://github.com/stern/stern/releases)
 
-### Options B: build from source
+### Build from source
 
 ```
 go get -u github.com/stern/stern
+```
+
+### asdf (Linux/macOS)
+
+If you use [asdf](https://asdf-vm.com/), you can install like this:
+```
+asdf plugin-add stern
+asdf install stern latest
 ```
 
 ## Usage
