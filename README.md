@@ -35,6 +35,13 @@ asdf plugin-add stern
 asdf install stern latest
 ```
 
+### Homebrew (Linux/macOS)
+
+If you use [Homebrew](https://brew.sh), you can install like this:
+```
+brew install stern/stern/stern
+```
+
 ## Usage
 
 ```
