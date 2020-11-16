@@ -39,7 +39,7 @@ asdf install stern latest
 
 If you use [Homebrew](https://brew.sh), you can install like this:
 ```
-brew install stern/stern/stern
+brew install stern
 ```
 
 ## Usage
