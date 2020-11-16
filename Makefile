@@ -41,7 +41,7 @@ vet:
 
 .PHONY: dist
 dist: $(GORELEASER)
-	HOMEBREW_TAP_GITHUB_TOKEN="" $(GORELEASER) release --rm-dist --skip-publish --snapshot
+	$(GORELEASER) release --rm-dist --skip-publish --snapshot
 
 .PHONY: release
 release: $(GORELEASER)
