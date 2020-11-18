@@ -61,7 +61,12 @@ func Run(ctx context.Context, config *Config) error {
 		for p := range added {
 			id := p.GetID()
 			if tails[id] != nil {
-				continue
+				if tails[id].isActive() {
+					continue
+				} else {
+					tails[id].Close()
+					delete(tails, id)
+				}
 			}
 
 			tail := NewTail(p.Node, p.Namespace, p.Pod, p.Container, config.Template, &TailOptions{

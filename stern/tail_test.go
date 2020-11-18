@@ -2,11 +2,15 @@ package stern
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"regexp"
 	"testing"
 	"text/template"
+
+	"k8s.io/client-go/rest"
 )
 
 func TestDetermineColor(t *testing.T) {
@@ -60,15 +64,17 @@ func TestIsIncludeTestOptions(t *testing.T) {
 func TestConsumeStreamTail(t *testing.T) {
 	tests := []struct {
 		tmpl     *template.Template
-		stream   io.Reader
+		request  rest.ResponseWrapper
 		expected []byte
 	}{
 		{
 			tmpl: template.Must(template.New("").Parse(`{{printf "%s (%s/%s/%s/%s)\n" .Message .NodeName .Namespace .PodName .ContainerName}}`)),
-			stream: bytes.NewBufferString(`line 1
+			request: &responseWrapperMock{
+				data: bytes.NewBufferString(`line 1
 line 2
 line 3
 line 4`),
+			},
 			expected: []byte(`line 1 (my-node/my-namespace/my-pod/my-container)
 line 2 (my-node/my-namespace/my-pod/my-container)
 line 3 (my-node/my-namespace/my-pod/my-container)
@@ -81,7 +87,7 @@ line 4 (my-node/my-namespace/my-pod/my-container)
 		tail := NewTail("my-node", "my-namespace", "my-pod", "my-container", tt.tmpl, &TailOptions{})
 		out := new(bytes.Buffer)
 
-		if err := tail.ConsumeStream(tt.stream, out); err != nil {
+		if err := tail.ConsumeRequest(context.TODO(), tt.request, out); err != nil {
 			t.Fatalf("%d: unexpected err %v", i, err)
 		}
 
@@ -89,4 +95,17 @@ line 4 (my-node/my-namespace/my-pod/my-container)
 			t.Errorf("%d: expected %s, but actual %s", i, tt.expected, out)
 		}
 	}
+}
+
+type responseWrapperMock struct {
+	data io.Reader
+}
+
+func (r *responseWrapperMock) DoRaw(context.Context) ([]byte, error) {
+	data, _ := ioutil.ReadAll(r.data)
+	return data, nil
+}
+
+func (r *responseWrapperMock) Stream(context.Context) (io.ReadCloser, error) {
+	return ioutil.NopCloser(r.data), nil
 }
