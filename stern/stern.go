@@ -16,10 +16,33 @@ package stern
 
 import (
 	"context"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/stern/stern/kubernetes"
 )
+
+var tails = make(map[string]*Tail)
+var tailLock sync.RWMutex
+
+func getTail(targetID string) (*Tail, bool) {
+	tailLock.RLock()
+	defer tailLock.RUnlock()
+	tail, ok := tails[targetID]
+	return tail, ok
+}
+
+func setTail(targetID string, tail *Tail) {
+	tailLock.Lock()
+	defer tailLock.Unlock()
+	tails[targetID] = tail
+}
+
+func clearTail(targetID string) {
+	tailLock.Lock()
+	defer tailLock.Unlock()
+	delete(tails, targetID)
+}
 
 // Run starts the main run loop
 func Run(ctx context.Context, config *Config) error {
@@ -55,17 +78,16 @@ func Run(ctx context.Context, config *Config) error {
 		return errors.Wrap(err, "failed to set up watch")
 	}
 
-	tails := make(map[string]*Tail)
-
 	go func() {
 		for p := range added {
-			id := p.GetID()
-			if tails[id] != nil {
-				if tails[id].isActive() {
+			targetID := p.GetID()
+
+			if tail, ok := getTail(targetID); ok {
+				if tail.isActive() {
 					continue
 				} else {
-					tails[id].Close()
-					delete(tails, id)
+					tail.Close()
+					clearTail(targetID)
 				}
 			}
 
@@ -77,7 +99,7 @@ func Run(ctx context.Context, config *Config) error {
 				Namespace:    config.AllNamespaces,
 				TailLines:    config.TailLines,
 			})
-			tails[id] = tail
+			setTail(targetID, tail)
 
 			tail.Start(ctx, clientset.CoreV1().Pods(p.Namespace))
 		}
@@ -85,12 +107,11 @@ func Run(ctx context.Context, config *Config) error {
 
 	go func() {
 		for p := range removed {
-			id := p.GetID()
-			if tails[id] == nil {
-				continue
+			targetID := p.GetID()
+			if tail, ok := getTail(targetID); ok {
+				tail.Close()
+				clearTail(targetID)
 			}
-			tails[id].Close()
-			delete(tails, id)
 		}
 	}()
 
