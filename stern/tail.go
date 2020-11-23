@@ -26,9 +26,9 @@ import (
 	"text/template"
 
 	"github.com/fatih/color"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 )
 
 type Tail struct {
@@ -41,6 +41,7 @@ type Tail struct {
 	podColor       *color.Color
 	containerColor *color.Color
 	tmpl           *template.Template
+	active         bool
 }
 
 type TailOptions struct {
@@ -86,6 +87,7 @@ func NewTail(nodeName, namespace, podName, containerName string, tmpl *template.
 		Options:       options,
 		closed:        make(chan struct{}),
 		tmpl:          tmpl,
+		active:        true,
 	}
 }
 
@@ -111,6 +113,12 @@ func determineColor(podName string) (podColor, containerColor *color.Color) {
 func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 	t.podColor, t.containerColor = determineColor(t.PodName)
 
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		<-t.closed
+		cancel()
+	}()
+
 	go func() {
 		g := color.New(color.FgHiGreen, color.Bold).SprintFunc()
 		p := t.podColor.SprintFunc()
@@ -129,26 +137,12 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 			TailLines:    t.Options.TailLines,
 		})
 
-		stream, err := req.Stream(ctx)
-		if err != nil {
-			fmt.Println(errors.Wrapf(err, "Error opening stream to %s/%s: %s\n", t.Namespace, t.PodName, t.ContainerName))
-			return
+		err := t.ConsumeRequest(ctx, req, os.Stdout)
+		if err != nil && err != context.Canceled {
+			fmt.Fprintf(os.Stderr, "unexpected error: %v\n", err)
 		}
-		defer stream.Close()
 
-		go func() {
-			<-t.closed
-			stream.Close()
-		}()
-
-		if err := t.ConsumeStream(stream, os.Stdout); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		}
-	}()
-
-	go func() {
-		<-ctx.Done()
-		close(t.closed)
+		t.active = false
 	}()
 }
 
@@ -156,26 +150,36 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 func (t *Tail) Close() {
 	r := color.New(color.FgHiRed, color.Bold).SprintFunc()
 	p := t.podColor.SprintFunc()
+	c := t.containerColor.SprintFunc()
 	if t.Options.Namespace {
-		fmt.Fprintf(os.Stderr, "%s %s %s\n", r("-"), p(t.Namespace), p(t.PodName))
+		fmt.Fprintf(os.Stderr, "%s %s %s › %s\n", r("-"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
 	} else {
-		fmt.Fprintf(os.Stderr, "%s %s\n", r("-"), p(t.PodName))
+		fmt.Fprintf(os.Stderr, "%s %s › %s\n", r("-"), p(t.PodName), c(t.ContainerName))
 	}
+
 	close(t.closed)
 }
 
-// ConsumeStream reads the data from stream reader and writes into the out
+// ConsumeRequest reads the data from request and writes into the out
 // writer.
-func (t *Tail) ConsumeStream(stream io.Reader, out io.Writer) error {
+func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper, out io.Writer) error {
+	stream, err := request.Stream(ctx)
+	if err != nil {
+		return err
+	}
+	defer stream.Close()
+
 	r := bufio.NewReader(stream)
 	for {
 		line, err := r.ReadBytes('\n')
-		msg := string(line)
-		// Remove a line break
-		msg = strings.TrimSuffix(msg, "\n")
+		if len(line) != 0 {
+			msg := string(line)
+			// Remove a line break
+			msg = strings.TrimSuffix(msg, "\n")
 
-		if !t.Options.IsExclude(msg) && t.Options.IsInclude(msg) {
-			t.Print(msg, out)
+			if !t.Options.IsExclude(msg) && t.Options.IsInclude(msg) {
+				t.Print(msg, out)
+			}
 		}
 
 		if err != nil {
@@ -201,6 +205,11 @@ func (t *Tail) Print(msg string, out io.Writer) {
 	if err := t.tmpl.Execute(out, vm); err != nil {
 		fmt.Fprintf(os.Stderr, "expanding template failed: %s\n", err)
 	}
+}
+
+// isActive returns false if the log stream is closed.
+func (t *Tail) isActive() bool {
+	return t.active
 }
 
 // Log is the object which will be used together with the template to generate
