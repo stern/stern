@@ -16,6 +16,7 @@ package stern
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"hash/fnv"
@@ -202,9 +203,14 @@ func (t *Tail) Print(msg string, out io.Writer) {
 		PodColor:       t.podColor,
 		ContainerColor: t.containerColor,
 	}
-	if err := t.tmpl.Execute(out, vm); err != nil {
+
+	var buf bytes.Buffer
+	if err := t.tmpl.Execute(&buf, vm); err != nil {
 		fmt.Fprintf(os.Stderr, "expanding template failed: %s\n", err)
+		return
 	}
+
+	fmt.Fprint(out, buf.String())
 }
 
 // isActive returns false if the log stream is closed.
