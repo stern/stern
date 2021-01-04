@@ -10,6 +10,7 @@ import (
 	"testing"
 	"text/template"
 
+	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 )
 
@@ -83,11 +84,12 @@ line 4 (my-node/my-namespace/my-pod/my-container)
 		},
 	}
 
+	clientset := fake.NewSimpleClientset()
 	for i, tt := range tests {
-		tail := NewTail("my-node", "my-namespace", "my-pod", "my-container", tt.tmpl, &TailOptions{})
 		out := new(bytes.Buffer)
+		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", tt.tmpl, out, ioutil.Discard, &TailOptions{})
 
-		if err := tail.ConsumeRequest(context.TODO(), tt.request, out); err != nil {
+		if err := tail.ConsumeRequest(context.TODO(), tt.request); err != nil {
 			t.Fatalf("%d: unexpected err %v", i, err)
 		}
 
