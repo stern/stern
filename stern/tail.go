@@ -18,21 +18,23 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"io"
-	"os"
 	"regexp"
 	"strings"
 	"text/template"
 
 	"github.com/fatih/color"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 )
 
 type Tail struct {
+	clientset corev1client.CoreV1Interface
+
 	NodeName       string
 	Namespace      string
 	PodName        string
@@ -43,6 +45,8 @@ type Tail struct {
 	containerColor *color.Color
 	tmpl           *template.Template
 	active         bool
+	out            io.Writer
+	errOut         io.Writer
 }
 
 type TailOptions struct {
@@ -79,8 +83,9 @@ func (o TailOptions) IsInclude(msg string) bool {
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
-func NewTail(nodeName, namespace, podName, containerName string, tmpl *template.Template, options *TailOptions) *Tail {
+func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podName, containerName string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions) *Tail {
 	return &Tail{
+		clientset:     clientset,
 		NodeName:      nodeName,
 		Namespace:     namespace,
 		PodName:       podName,
@@ -89,6 +94,8 @@ func NewTail(nodeName, namespace, podName, containerName string, tmpl *template.
 		closed:        make(chan struct{}),
 		tmpl:          tmpl,
 		active:        true,
+		out:           out,
+		errOut:        errOut,
 	}
 }
 
@@ -111,7 +118,7 @@ func determineColor(podName string) (podColor, containerColor *color.Color) {
 }
 
 // Start starts tailing
-func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
+func (t *Tail) Start(ctx context.Context) error {
 	t.podColor, t.containerColor = determineColor(t.PodName)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -120,31 +127,31 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 		cancel()
 	}()
 
-	go func() {
-		g := color.New(color.FgHiGreen, color.Bold).SprintFunc()
-		p := t.podColor.SprintFunc()
-		c := t.containerColor.SprintFunc()
-		if t.Options.Namespace {
-			fmt.Fprintf(os.Stderr, "%s %s %s › %s\n", g("+"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
-		} else {
-			fmt.Fprintf(os.Stderr, "%s %s › %s\n", g("+"), p(t.PodName), c(t.ContainerName))
-		}
+	g := color.New(color.FgHiGreen, color.Bold).SprintFunc()
+	p := t.podColor.SprintFunc()
+	c := t.containerColor.SprintFunc()
+	if t.Options.Namespace {
+		fmt.Fprintf(t.errOut, "%s %s %s › %s\n", g("+"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
+	} else {
+		fmt.Fprintf(t.errOut, "%s %s › %s\n", g("+"), p(t.PodName), c(t.ContainerName))
+	}
 
-		req := i.GetLogs(t.PodName, &corev1.PodLogOptions{
-			Follow:       true,
-			Timestamps:   t.Options.Timestamps,
-			Container:    t.ContainerName,
-			SinceSeconds: &t.Options.SinceSeconds,
-			TailLines:    t.Options.TailLines,
-		})
+	req := t.clientset.Pods(t.Namespace).GetLogs(t.PodName, &corev1.PodLogOptions{
+		Follow:       true,
+		Timestamps:   t.Options.Timestamps,
+		Container:    t.ContainerName,
+		SinceSeconds: &t.Options.SinceSeconds,
+		TailLines:    t.Options.TailLines,
+	})
 
-		err := t.ConsumeRequest(ctx, req, os.Stdout)
-		if err != nil && err != context.Canceled {
-			fmt.Fprintf(os.Stderr, "unexpected error: %v\n", err)
-		}
+	err := t.ConsumeRequest(ctx, req)
+	t.active = false
 
-		t.active = false
-	}()
+	if errors.Is(err, context.Canceled) {
+		return nil
+	}
+
+	return err
 }
 
 // Close stops tailing
@@ -153,9 +160,9 @@ func (t *Tail) Close() {
 	p := t.podColor.SprintFunc()
 	c := t.containerColor.SprintFunc()
 	if t.Options.Namespace {
-		fmt.Fprintf(os.Stderr, "%s %s %s › %s\n", r("-"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
+		fmt.Fprintf(t.errOut, "%s %s %s › %s\n", r("-"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
 	} else {
-		fmt.Fprintf(os.Stderr, "%s %s › %s\n", r("-"), p(t.PodName), c(t.ContainerName))
+		fmt.Fprintf(t.errOut, "%s %s › %s\n", r("-"), p(t.PodName), c(t.ContainerName))
 	}
 
 	close(t.closed)
@@ -163,7 +170,7 @@ func (t *Tail) Close() {
 
 // ConsumeRequest reads the data from request and writes into the out
 // writer.
-func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper, out io.Writer) error {
+func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper) error {
 	stream, err := request.Stream(ctx)
 	if err != nil {
 		return err
@@ -179,7 +186,7 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper,
 			msg = strings.TrimSuffix(msg, "\n")
 
 			if !t.Options.IsExclude(msg) && t.Options.IsInclude(msg) {
-				t.Print(msg, out)
+				t.Print(msg)
 			}
 		}
 
@@ -193,7 +200,7 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper,
 }
 
 // Print prints a color coded log message with the pod and container names
-func (t *Tail) Print(msg string, out io.Writer) {
+func (t *Tail) Print(msg string) {
 	vm := Log{
 		Message:        msg,
 		NodeName:       t.NodeName,
@@ -206,11 +213,11 @@ func (t *Tail) Print(msg string, out io.Writer) {
 
 	var buf bytes.Buffer
 	if err := t.tmpl.Execute(&buf, vm); err != nil {
-		fmt.Fprintf(os.Stderr, "expanding template failed: %s\n", err)
+		fmt.Fprintf(t.errOut, "expanding template failed: %s\n", err)
 		return
 	}
 
-	fmt.Fprint(out, buf.String())
+	fmt.Fprint(t.out, buf.String())
 }
 
 // isActive returns false if the log stream is closed.

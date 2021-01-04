@@ -16,10 +16,13 @@ package stern
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/stern/stern/kubernetes"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 var tails = make(map[string]*Tail)
@@ -47,7 +50,12 @@ func clearTail(targetID string) {
 // Run starts the main run loop
 func Run(ctx context.Context, config *Config) error {
 	clientConfig := kubernetes.NewClientConfig(config.KubeConfig, config.ContextName)
-	clientset, err := kubernetes.NewClientSet(clientConfig)
+	cc, err := clientConfig.ClientConfig()
+	if err != nil {
+		return err
+	}
+
+	clientset, err := corev1client.NewForConfig(cc)
 	if err != nil {
 		return err
 	}
@@ -60,6 +68,7 @@ func Run(ctx context.Context, config *Config) error {
 		namespace = config.Namespace
 		if namespace == "" {
 			namespace, _, err = clientConfig.Namespace()
+
 			if err != nil {
 				return errors.Wrap(err, "unable to get default namespace")
 			}
@@ -67,7 +76,7 @@ func Run(ctx context.Context, config *Config) error {
 	}
 
 	added, removed, err := Watch(ctx,
-		clientset.CoreV1().Pods(namespace),
+		clientset.Pods(namespace),
 		config.PodQuery,
 		config.ContainerQuery,
 		config.ExcludeContainerQuery,
@@ -91,7 +100,7 @@ func Run(ctx context.Context, config *Config) error {
 				}
 			}
 
-			tail := NewTail(p.Node, p.Namespace, p.Pod, p.Container, config.Template, &TailOptions{
+			tail := NewTail(clientset, p.Node, p.Namespace, p.Pod, p.Container, config.Template, os.Stdout, os.Stderr, &TailOptions{
 				Timestamps:   config.Timestamps,
 				SinceSeconds: int64(config.Since.Seconds()),
 				Exclude:      config.Exclude,
@@ -101,7 +110,11 @@ func Run(ctx context.Context, config *Config) error {
 			})
 			setTail(targetID, tail)
 
-			tail.Start(ctx, clientset.CoreV1().Pods(p.Namespace))
+			go func(tail *Tail) {
+				if err := tail.Start(ctx); err != nil {
+					fmt.Fprintf(os.Stderr, "unexpected error: %v\n", err)
+				}
+			}(tail)
 		}
 	}()
 
