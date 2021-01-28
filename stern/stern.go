@@ -82,7 +82,8 @@ func Run(ctx context.Context, config *Config) error {
 		config.ExcludeContainerQuery,
 		config.InitContainers,
 		config.ContainerState,
-		config.LabelSelector)
+		config.LabelSelector,
+		config.FieldSelector)
 	if err != nil {
 		return errors.Wrap(err, "failed to set up watch")
 	}

@@ -24,6 +24,7 @@ import (
 	"text/template"
 	"time"
 
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/pkg/errors"
@@ -53,6 +54,7 @@ type Options struct {
 	initContainers   bool
 	allNamespaces    bool
 	selector         string
+	fieldSelector    string
 	tail             int64
 	color            string
 	version          bool
@@ -91,6 +93,7 @@ func Run() {
 	cmd.Flags().BoolVar(&opts.initContainers, "init-containers", opts.initContainers, "Include or exclude init containers")
 	cmd.Flags().BoolVarP(&opts.allNamespaces, "all-namespaces", "A", opts.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
 	cmd.Flags().StringVarP(&opts.selector, "selector", "l", opts.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
+	cmd.Flags().StringVar(&opts.fieldSelector, "field-selector", opts.fieldSelector, "Selector (field query) to filter on. If present, default to \".*\" for the pod-query.")
 	cmd.Flags().Int64Var(&opts.tail, "tail", opts.tail, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
 	cmd.Flags().StringVar(&opts.color, "color", opts.color, "Color output. Can be 'always', 'never', or 'auto'")
 	cmd.Flags().BoolVarP(&opts.version, "version", "v", opts.version, "Print the version and exit")
@@ -123,7 +126,7 @@ func Run() {
 		}
 
 		narg := len(args)
-		if (narg > 1) || (narg == 0 && opts.selector == "") {
+		if (narg > 1) || (narg == 0 && opts.selector == "" && opts.fieldSelector == "") {
 			return cmd.Help()
 		}
 		config, err := parseConfig(args)
@@ -200,13 +203,22 @@ func parseConfig(args []string) (*stern.Config, error) {
 	}
 
 	var labelSelector labels.Selector
-	selector := opts.selector
-	if selector == "" {
+	if opts.selector == "" {
 		labelSelector = labels.Everything()
 	} else {
-		labelSelector, err = labels.Parse(selector)
+		labelSelector, err = labels.Parse(opts.selector)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse selector as label selector")
+		}
+	}
+
+	var fieldSelector fields.Selector
+	if opts.fieldSelector == "" {
+		fieldSelector = fields.Everything()
+	} else {
+		fieldSelector, err = fields.ParseSelector(opts.fieldSelector)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse selector as field selector")
 		}
 	}
 
@@ -283,6 +295,7 @@ func parseConfig(args []string) (*stern.Config, error) {
 		Namespace:             opts.namespace,
 		AllNamespaces:         opts.allNamespaces,
 		LabelSelector:         labelSelector,
+		FieldSelector:         fieldSelector,
 		TailLines:             tailLines,
 		Template:              template,
 	}, nil

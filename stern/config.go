@@ -19,6 +19,7 @@ import (
 	"text/template"
 	"time"
 
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -38,6 +39,7 @@ type Config struct {
 	Since                 time.Duration
 	AllNamespaces         bool
 	LabelSelector         labels.Selector
+	FieldSelector         fields.Selector
 	TailLines             *int64
 	Template              *template.Template
 }
