@@ -155,7 +155,7 @@ stern frontend --selector release=canary
 
 Tail the pods on `kind-control-plane` node accross all namespaces
 ```
-stern --all-namespaces --field-selector spec.nodeName=kind-control-plane ".*"
+stern --all-namespaces --field-selector spec.nodeName=kind-control-plane
 ```
 
 Pipe the log message to jq:
