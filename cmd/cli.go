@@ -126,7 +126,7 @@ func Run() {
 		}
 
 		narg := len(args)
-		if (narg > 1) || (narg == 0 && opts.selector == "") {
+		if (narg > 1) || (narg == 0 && opts.selector == "" && opts.fieldSelector == "") {
 			return cmd.Help()
 		}
 		config, err := parseConfig(args)
