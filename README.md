@@ -70,6 +70,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 | `--namespace`, `-n`        |                  | Kubernetes namespace to use. Default to namespace configured in Kubernetes context                           |
 | `--output`, `-o`           | `default`        | Specify predefined template. Currently support: [default, raw, json] See templates section                   |
 | `--selector`, `-l`         |                  | Selector (label query) to filter on. If present, default to `.*` for the pod-query.                          |
+| `--field-selector`         |                  | Selector (field query) to filter on. If present, default to `.*` for the pod-query.                          |
 | `--since`, `-s`            | `48h`            | Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to 48h.                              |
 | `--tail`                   | `-1`             | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.                      |
 | `--template`               |                  | Template to use for log lines, leave empty to use --output flag                                              |
@@ -150,6 +151,11 @@ stern --all-namespaces -l run=nginx
 Follow the `frontend` pods in canary release
 ```
 stern frontend --selector release=canary
+```
+
+Tail the pods on `kind-control-plane` node accross all namespaces
+```
+stern --all-namespaces --field-selector spec.nodeName=kind-control-plane ".*"
 ```
 
 Pipe the log message to jq:
