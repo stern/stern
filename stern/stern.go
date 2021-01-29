@@ -60,32 +60,63 @@ func Run(ctx context.Context, config *Config) error {
 		return err
 	}
 
-	var namespace string
+	var namespaces []string
 	// A specific namespace is ignored if all-namespaces is provided
 	if config.AllNamespaces {
-		namespace = ""
+		namespaces = []string{""}
 	} else {
-		namespace = config.Namespace
-		if namespace == "" {
-			namespace, _, err = clientConfig.Namespace()
-
+		namespaces = config.Namespaces
+		if len(namespaces) == 0 {
+			n, _, err := clientConfig.Namespace()
 			if err != nil {
 				return errors.Wrap(err, "unable to get default namespace")
 			}
+			namespaces = []string{n}
 		}
 	}
 
-	added, removed, err := Watch(ctx,
-		clientset.Pods(namespace),
-		config.PodQuery,
-		config.ContainerQuery,
-		config.ExcludeContainerQuery,
-		config.InitContainers,
-		config.ContainerState,
-		config.LabelSelector,
-		config.FieldSelector)
-	if err != nil {
-		return errors.Wrap(err, "failed to set up watch")
+	added := make(chan *Target)
+	removed := make(chan *Target)
+	errCh := make(chan error)
+
+	defer close(added)
+	defer close(removed)
+	defer close(errCh)
+
+	for _, n := range namespaces {
+		a, r, err := Watch(ctx,
+			clientset.Pods(n),
+			config.PodQuery,
+			config.ContainerQuery,
+			config.ExcludeContainerQuery,
+			config.InitContainers,
+			config.ContainerState,
+			config.LabelSelector,
+			config.FieldSelector)
+		if err != nil {
+			return errors.Wrap(err, "failed to set up watch")
+		}
+
+		go func() {
+			for {
+				select {
+				case v, ok := <-a:
+					if !ok {
+						errCh <- fmt.Errorf("lost watch connection")
+						return
+					}
+					added <- v
+				case v, ok := <-r:
+					if !ok {
+						errCh <- fmt.Errorf("lost watch connection")
+						return
+					}
+					removed <- v
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
 	}
 
 	go func() {
@@ -106,7 +137,7 @@ func Run(ctx context.Context, config *Config) error {
 				SinceSeconds: int64(config.Since.Seconds()),
 				Exclude:      config.Exclude,
 				Include:      config.Include,
-				Namespace:    config.AllNamespaces,
+				Namespace:    config.AllNamespaces || len(namespaces) > 1,
 				TailLines:    config.TailLines,
 			})
 			setTail(targetID, tail)
@@ -129,7 +160,10 @@ func Run(ctx context.Context, config *Config) error {
 		}
 	}()
 
-	<-ctx.Done()
-
-	return nil
+	select {
+	case e := <-errCh:
+		return e
+	case <-ctx.Done():
+		return nil
+	}
 }
