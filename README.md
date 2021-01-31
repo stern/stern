@@ -153,7 +153,7 @@ Follow the `frontend` pods in canary release
 stern frontend --selector release=canary
 ```
 
-Tail the pods on `kind-control-plane` node accross all namespaces
+Tail the pods on `kind-control-plane` node across all namespaces
 ```
 stern --all-namespaces --field-selector spec.nodeName=kind-control-plane
 ```
