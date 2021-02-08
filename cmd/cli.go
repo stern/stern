@@ -47,7 +47,7 @@ type Options struct {
 	timestamps       bool
 	since            time.Duration
 	context          string
-	namespace        string
+	namespaces       []string
 	kubeConfig       string
 	exclude          []string
 	include          []string
@@ -84,7 +84,7 @@ func Run() {
 	cmd.Flags().BoolVarP(&opts.timestamps, "timestamps", "t", opts.timestamps, "Print timestamps")
 	cmd.Flags().DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to 48h.")
 	cmd.Flags().StringVar(&opts.context, "context", opts.context, "Kubernetes context to use. Default to current context configured in kubeconfig.")
-	cmd.Flags().StringVarP(&opts.namespace, "namespace", "n", opts.namespace, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context.")
+	cmd.Flags().StringSliceVarP(&opts.namespaces, "namespace", "n", opts.namespaces, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
 	cmd.Flags().StringVar(&opts.kubeConfig, "kubeconfig", opts.kubeConfig, "Path to kubeconfig file to use")
 	cmd.Flags().StringVar(&opts.kubeConfig, "kube-config", opts.kubeConfig, "Path to kubeconfig file to use")
 	_ = cmd.Flags().MarkDeprecated("kube-config", "Use --kubeconfig instead.")
@@ -242,12 +242,12 @@ func parseConfig(args []string) (*stern.Config, error) {
 		case "default":
 			if color.NoColor {
 				t = "{{.PodName}} {{.ContainerName}} {{.Message}}"
-				if opts.allNamespaces {
+				if opts.allNamespaces || len(opts.namespaces) > 1 {
 					t = fmt.Sprintf("{{.Namespace}} %s", t)
 				}
 			} else {
 				t = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}"
-				if opts.allNamespaces {
+				if opts.allNamespaces || len(opts.namespaces) > 1 {
 					t = fmt.Sprintf("{{color .PodColor .Namespace}} %s", t)
 				}
 
@@ -281,6 +281,22 @@ func parseConfig(args []string) (*stern.Config, error) {
 		opts.since = 172800000000000 // 48h
 	}
 
+	// Make namespaces array unique
+	namespaces := []string{}
+	if opts.namespaces != nil {
+		m := make(map[string]struct{})
+		for _, namespace := range opts.namespaces {
+			if namespace == "" {
+				continue
+			}
+
+			if _, ok := m[namespace]; !ok {
+				m[namespace] = struct{}{}
+				namespaces = append(namespaces, namespace)
+			}
+		}
+	}
+
 	return &stern.Config{
 		KubeConfig:            opts.kubeConfig,
 		PodQuery:              pod,
@@ -292,7 +308,7 @@ func parseConfig(args []string) (*stern.Config, error) {
 		Timestamps:            opts.timestamps,
 		Since:                 opts.since,
 		ContextName:           opts.context,
-		Namespace:             opts.namespace,
+		Namespaces:            namespaces,
 		AllNamespaces:         opts.allNamespaces,
 		LabelSelector:         labelSelector,
 		FieldSelector:         fieldSelector,

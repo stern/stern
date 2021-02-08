@@ -53,29 +53,29 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 
 ### cli flags
 
-| flag                       | default          | purpose                                                                                                      |
-|----------------------------|------------------|--------------------------------------------------------------------------------------------------------------|
-| `--all-namespaces`, `-A`   |                  | If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.  |
-| `--color`                  | `auto`           | Force set color output. `auto`: colorize if tty attached, `always`: always colorize, `never`: never colorize |
-| `--completion`             |                  | Outputs stern command-line completion code for the specified shell. Can be 'bash' or 'zsh'                   |
-| `--container`, `-c`        | `.*`             | Container name when multiple containers in pod (regular expression)                                          |
-| `--container-state`        | `running`        | Tail containers with status in running, waiting or terminated. Default to running.                           |
-| `--context`                |                  | Kubernetes context to use. Default to `kubectl config current-context`                                       |
-| `--exclude`, `-e`          |                  | Log lines to exclude; specify multiple with additional `--exclude`; (regular expression)                     |
-| `--exclude-container`, `-E`|                  | Container name to exclude when multiple containers in pod (regular expression)                               |
-| `--help`, `-h`             |                  | Output Usage and Flags details                                                                               |
-| `--include`, `-i`          |                  | Log lines to include; specify multiple with additional `--include`; (regular expression)                     |
-| `--init-containers`        | `true`           | Include or exclude init containers                                                                           |
-| `--kubeconfig`             | *see note*       | Path to kubeconfig file to use. Default to `KUBECONFIG` variable then `~/.kube/config` path                  |
-| `--namespace`, `-n`        |                  | Kubernetes namespace to use. Default to namespace configured in Kubernetes context                           |
-| `--output`, `-o`           | `default`        | Specify predefined template. Currently support: [default, raw, json] See templates section                   |
-| `--selector`, `-l`         |                  | Selector (label query) to filter on. If present, default to `.*` for the pod-query.                          |
-| `--field-selector`         |                  | Selector (field query) to filter on. If present, default to `.*` for the pod-query.                          |
-| `--since`, `-s`            | `48h`            | Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to 48h.                              |
-| `--tail`                   | `-1`             | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.                      |
-| `--template`               |                  | Template to use for log lines, leave empty to use --output flag                                              |
-| `--timestamps`, `-t`       |                  | Print timestamps                                                                                             |
-| `--version`, `-v`          |                  | Print the version and exit                                                                                   |
+| flag                        | default    | purpose                                                                                                                                                            |
+|-----------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--all-namespaces`, `-A`    |            | If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.                                                        |
+| `--color`                   | `auto`     | Force set color output. `auto`: colorize if tty attached, `always`: always colorize, `never`: never colorize                                                       |
+| `--completion`              |            | Outputs stern command-line completion code for the specified shell. Can be 'bash' or 'zsh'                                                                         |
+| `--container`, `-c`         | `.*`       | Container name when multiple containers in pod (regular expression)                                                                                                |
+| `--container-state`         | `running`  | Tail containers with status in running, waiting or terminated. Default to running.                                                                                 |
+| `--context`                 |            | Kubernetes context to use. Default to `kubectl config current-context`                                                                                             |
+| `--exclude`, `-e`           |            | Log lines to exclude; specify multiple with additional `--exclude`; (regular expression)                                                                           |
+| `--exclude-container`, `-E` |            | Container name to exclude when multiple containers in pod (regular expression)                                                                                     |
+| `--help`, `-h`              |            | Output Usage and Flags details                                                                                                                                     |
+| `--include`, `-i`           |            | Log lines to include; specify multiple with additional `--include`; (regular expression)                                                                           |
+| `--init-containers`         | `true`     | Include or exclude init containers                                                                                                                                 |
+| `--kubeconfig`              | *see note* | Path to kubeconfig file to use. Default to `KUBECONFIG` variable then `~/.kube/config` path                                                                        |
+| `--namespace`, `-n`         |            | Kubernetes namespace to use. Default to namespace configured in Kubernetes context. To watch multiple namespaces, repeat this flag or set comma-separated value.   |
+| `--output`, `-o`            | `default`  | Specify predefined template. Currently support: [default, raw, json] See templates section                                                                         |
+| `--selector`, `-l`          |            | Selector (label query) to filter on. If present, default to `.*` for the pod-query.                                                                                |
+| `--field-selector`          |            | Selector (field query) to filter on. If present, default to `.*` for the pod-query.                                                                                |
+| `--since`, `-s`             | `48h`      | Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to 48h.                                                                                    |
+| `--tail`                    | `-1`       | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.                                                                            |
+| `--template`                |            | Template to use for log lines, leave empty to use --output flag                                                                                                    |
+| `--timestamps`, `-t`        |            | Print timestamps                                                                                                                                                   |
+| `--version`, `-v`           |            | Print the version and exit                                                                                                                                         |
 
 See `stern --help` for details
 

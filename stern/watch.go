@@ -60,6 +60,8 @@ func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, con
 			case e := <-watcher.ResultChan():
 				if e.Object == nil {
 					// Closed because of error
+					close(added)
+					close(removed)
 					return
 				}
 
