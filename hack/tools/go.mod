@@ -1,8 +1,8 @@
 module github.com/stern/stern/hack/tools
 
-go 1.15
+go 1.16
 
 require (
-	github.com/goreleaser/goreleaser v0.145.0
-	github.com/golangci/golangci-lint v1.32.0
+	github.com/golangci/golangci-lint v1.36.0
+	github.com/goreleaser/goreleaser v0.157.0
 )
