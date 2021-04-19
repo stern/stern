@@ -75,6 +75,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 | `--tail`                    | `-1`       | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.                                                                            |
 | `--template`                |            | Template to use for log lines, leave empty to use --output flag                                                                                                    |
 | `--timestamps`, `-t`        |            | Print timestamps                                                                                                                                                   |
+| `--timezone`                | `Local`    | Set timestamps to specific timezone. Defaults to `Local`.                                                                                                          |
 | `--version`, `-v`           |            | Print the version and exit                                                                                                                                         |
 
 See `stern --help` for details
@@ -131,6 +132,11 @@ stern -n staging --exclude-container istio-proxy .
 Show auth activity from 15min ago with timestamps
 ```
 stern auth -t --since 15m
+```
+
+Show auth activity with timestamps in specific timezone (default is your local timezone)
+```
+stern auth -t --timezone Asia/Tokyo
 ```
 
 Follow the development of `some-new-feature` in minikube

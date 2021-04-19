@@ -45,6 +45,7 @@ type Options struct {
 	excludeContainer string
 	containerState   string
 	timestamps       bool
+	timezone         string
 	since            time.Duration
 	context          string
 	namespaces       []string
@@ -66,6 +67,8 @@ type Options struct {
 var opts = &Options{
 	container:      ".*",
 	containerState: "running",
+	timestamps:     false,
+	timezone:       "Local",
 	initContainers: true,
 	tail:           -1,
 	color:          "auto",
@@ -82,6 +85,7 @@ func Run() {
 	cmd.Flags().StringVarP(&opts.excludeContainer, "exclude-container", "E", opts.excludeContainer, "Exclude a Container name")
 	cmd.Flags().StringVar(&opts.containerState, "container-state", opts.containerState, "If present, tail containers with status in running, waiting or terminated. Default to running.")
 	cmd.Flags().BoolVarP(&opts.timestamps, "timestamps", "t", opts.timestamps, "Print timestamps")
+	cmd.Flags().StringVar(&opts.timezone, "timezone", opts.timezone, "Set timestamps to specific timezone")
 	cmd.Flags().DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to 48h.")
 	cmd.Flags().StringVar(&opts.context, "context", opts.context, "Kubernetes context to use. Default to current context configured in kubeconfig.")
 	cmd.Flags().StringSliceVarP(&opts.namespaces, "namespace", "n", opts.namespaces, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
@@ -297,6 +301,12 @@ func parseConfig(args []string) (*stern.Config, error) {
 		}
 	}
 
+	// --timezone
+	location, err := time.LoadLocation(opts.timezone)
+	if err != nil {
+		return nil, err
+	}
+
 	return &stern.Config{
 		KubeConfig:            opts.kubeConfig,
 		PodQuery:              pod,
@@ -306,6 +316,7 @@ func parseConfig(args []string) (*stern.Config, error) {
 		Exclude:               exclude,
 		Include:               include,
 		Timestamps:            opts.timestamps,
+		Location:              location,
 		Since:                 opts.since,
 		ContextName:           opts.context,
 		Namespaces:            namespaces,
