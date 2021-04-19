@@ -134,6 +134,7 @@ func Run(ctx context.Context, config *Config) error {
 
 			tail := NewTail(clientset, p.Node, p.Namespace, p.Pod, p.Container, config.Template, os.Stdout, os.Stderr, &TailOptions{
 				Timestamps:   config.Timestamps,
+				Location:     config.Location,
 				SinceSeconds: int64(config.Since.Seconds()),
 				Exclude:      config.Exclude,
 				Include:      config.Include,

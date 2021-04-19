@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/fatih/color"
 	corev1 "k8s.io/api/core/v1"
@@ -50,7 +51,9 @@ type Tail struct {
 }
 
 type TailOptions struct {
-	Timestamps   bool
+	Timestamps bool
+	Location   *time.Location
+
 	SinceSeconds int64
 	Exclude      []*regexp.Regexp
 	Include      []*regexp.Regexp
@@ -80,6 +83,20 @@ func (o TailOptions) IsInclude(msg string) bool {
 	}
 
 	return false
+}
+
+func (o TailOptions) UpdateTimezoneIfNeeded(message string) (string, error) {
+	if !o.Timestamps {
+		return message, nil
+	}
+
+	datetime := message[:30]
+	t, err := time.ParseInLocation(time.RFC3339Nano, datetime, time.UTC)
+	if err != nil {
+		return "", err
+	}
+
+	return t.In(o.Location).Format("2006-01-02T15:04:05.000000000Z07:00") + message[30:], nil
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
@@ -185,9 +202,16 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper)
 			// Remove a line break
 			msg = strings.TrimSuffix(msg, "\n")
 
-			if !t.Options.IsExclude(msg) && t.Options.IsInclude(msg) {
-				t.Print(msg)
+			if t.Options.IsExclude(msg) || !t.Options.IsInclude(msg) {
+				continue
 			}
+
+			msg, err := t.Options.UpdateTimezoneIfNeeded(msg)
+			if err != nil {
+				return err
+			}
+
+			t.Print(msg)
 		}
 
 		if err != nil {

@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"testing"
 	"text/template"
+	"time"
 
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
@@ -59,6 +60,62 @@ func TestIsIncludeTestOptions(t *testing.T) {
 		if o.IsInclude(msg) != tt.expected {
 			t.Errorf("%d: expected %s, but actual %s", i, fmt.Sprint(tt.expected), fmt.Sprint(!tt.expected))
 		}
+	}
+}
+
+func TestUpdateTimezoneIfNeeded(t *testing.T) {
+	location, _ := time.LoadLocation("Asia/Tokyo")
+
+	tests := []struct {
+		name        string
+		tailOptions *TailOptions
+		message     string
+		expected    string
+		err         string
+	}{
+		{
+			"normal case",
+			&TailOptions{
+				Timestamps: true,
+				Location:   location,
+			},
+			"2021-04-18T03:54:44.764981564Z Connection: keep-alive",
+			"2021-04-18T12:54:44.764981564+09:00 Connection: keep-alive",
+			"",
+		},
+		{
+			"padding",
+			&TailOptions{
+				Timestamps: true,
+				Location:   location,
+			},
+			"2021-04-18T03:54:44.764981500Z Connection: keep-alive",
+			"2021-04-18T12:54:44.764981500+09:00 Connection: keep-alive",
+			"",
+		},
+		{
+			"no timestamp",
+			&TailOptions{
+				Timestamps: false,
+				Location:   location,
+			},
+			"Connection: keep-alive",
+			"Connection: keep-alive",
+			"",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			message, err := tt.tailOptions.UpdateTimezoneIfNeeded(tt.message)
+			if tt.expected != message {
+				t.Errorf("expected %q, but actual %q", tt.expected, message)
+			}
+
+			if err != nil && tt.err != err.Error() {
+				t.Errorf("expected %q, but actual %q", tt.err, err)
+			}
+		})
 	}
 }
 

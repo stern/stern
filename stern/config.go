@@ -30,6 +30,7 @@ type Config struct {
 	Namespaces            []string
 	PodQuery              *regexp.Regexp
 	Timestamps            bool
+	Location              *time.Location
 	ContainerQuery        *regexp.Regexp
 	ExcludeContainerQuery *regexp.Regexp
 	ContainerState        ContainerState
