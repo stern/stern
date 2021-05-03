@@ -63,6 +63,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 | `--context`                 |            | Kubernetes context to use. Default to `kubectl config current-context`                                                                                             |
 | `--exclude`, `-e`           |            | Log lines to exclude; specify multiple with additional `--exclude`; (regular expression)                                                                           |
 | `--exclude-container`, `-E` |            | Container name to exclude when multiple containers in pod (regular expression)                                                                                     |
+| `--exclude-pod`             |            | Pod name to exclude (regular expression)                                                                                                                           |
 | `--help`, `-h`              |            | Output Usage and Flags details                                                                                                                                     |
 | `--include`, `-i`           |            | Log lines to include; specify multiple with additional `--include`; (regular expression)                                                                           |
 | `--init-containers`         | `true`     | Include or exclude init containers                                                                                                                                 |
@@ -127,6 +128,11 @@ stern envvars --context staging --container gateway
 Tail the `staging` namespace excluding logs from `istio-proxy` container
 ```
 stern -n staging --exclude-container istio-proxy .
+```
+
+Tail the `kube-system` namespace excluding logs from `kube-apiserver` pod
+```
+stern -n kube-system --exclude-pod kube-apiserver .
 ```
 
 Show auth activity from 15min ago with timestamps
