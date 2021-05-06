@@ -45,7 +45,7 @@ func (t *Target) GetID() string {
 // Watch starts listening to Kubernetes events and emits modified
 // containers/pods. The first result is targets added, the second is targets
 // removed
-func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, containerFilter *regexp.Regexp, containerExcludeFilter *regexp.Regexp, initContainers bool, containerState ContainerState, labelSelector labels.Selector, fieldSelector fields.Selector) (chan *Target, chan *Target, error) {
+func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, excludePodFilter *regexp.Regexp, containerFilter *regexp.Regexp, containerExcludeFilter *regexp.Regexp, initContainers bool, containerState ContainerState, labelSelector labels.Selector, fieldSelector fields.Selector) (chan *Target, chan *Target, error) {
 	watcher, err := i.Watch(ctx, metav1.ListOptions{Watch: true, LabelSelector: labelSelector.String(), FieldSelector: fieldSelector.String()})
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to set up watch")
@@ -71,6 +71,10 @@ func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, con
 				}
 
 				if !podFilter.MatchString(pod.Name) {
+					continue
+				}
+
+				if excludePodFilter != nil && excludePodFilter.MatchString(pod.Name) {
 					continue
 				}
 

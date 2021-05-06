@@ -87,6 +87,7 @@ func Run(ctx context.Context, config *Config) error {
 		a, r, err := Watch(ctx,
 			clientset.Pods(n),
 			config.PodQuery,
+			config.ExcludePodQuery,
 			config.ContainerQuery,
 			config.ExcludeContainerQuery,
 			config.InitContainers,
