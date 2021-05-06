@@ -1,6 +1,6 @@
 SHELL:=/usr/bin/env bash
 
-GO ?= GO111MODULE=on GOPROXY=https://gocenter.io go
+GO ?= GO111MODULE=on go
 
 .PHONY: build
 build:
