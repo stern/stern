@@ -330,6 +330,7 @@ func parseConfig(args []string) (*stern.Config, error) {
 		ContainerState:        containerState,
 		Exclude:               exclude,
 		Include:               include,
+		InitContainers:        opts.initContainers,
 		Since:                 opts.since,
 		AllNamespaces:         opts.allNamespaces,
 		LabelSelector:         labelSelector,
