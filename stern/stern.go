@@ -92,7 +92,7 @@ func Run(ctx context.Context, config *Config) error {
 			config.ExcludeContainerQuery,
 			config.InitContainers,
 			config.EphemeralContainers,
-			config.ContainerState,
+			config.ContainerStates,
 			config.LabelSelector,
 			config.FieldSelector)
 		if err != nil {

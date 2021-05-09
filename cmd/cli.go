@@ -44,7 +44,7 @@ type Options struct {
 	excludePod          string
 	container           string
 	excludeContainer    string
-	containerState      string
+	containerStates     []string
 	timestamps          bool
 	timezone            string
 	since               time.Duration
@@ -68,7 +68,7 @@ type Options struct {
 
 var opts = &Options{
 	container:           ".*",
-	containerState:      "running",
+	containerStates:     []string{"running"},
 	timestamps:          false,
 	timezone:            "Local",
 	initContainers:      true,
@@ -87,7 +87,7 @@ func Run() {
 	cmd.Flags().StringVar(&opts.excludePod, "exclude-pod", opts.excludePod, "Regex of pod query to exclude")
 	cmd.Flags().StringVarP(&opts.container, "container", "c", opts.container, "Container name when multiple containers in pod")
 	cmd.Flags().StringVarP(&opts.excludeContainer, "exclude-container", "E", opts.excludeContainer, "Exclude a Container name")
-	cmd.Flags().StringVar(&opts.containerState, "container-state", opts.containerState, "If present, tail containers with status in running, waiting or terminated. Default to running.")
+	cmd.Flags().StringSliceVar(&opts.containerStates, "container-state", opts.containerStates, "If present, tail containers with state in running, waiting or terminated. Default to running. To specify multiple states, repeat this or set comma-separated value.")
 	cmd.Flags().BoolVarP(&opts.timestamps, "timestamps", "t", opts.timestamps, "Print timestamps")
 	cmd.Flags().StringVar(&opts.timezone, "timezone", opts.timezone, "Set timestamps to specific timezone")
 	cmd.Flags().DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to 48h.")
@@ -214,9 +214,15 @@ func parseConfig(args []string) (*stern.Config, error) {
 		include = append(include, rin)
 	}
 
-	containerState, err := stern.NewContainerState(opts.containerState)
-	if err != nil {
-		return nil, err
+	containerStates := []stern.ContainerState{}
+	if opts.containerStates != nil {
+		for _, containerStateStr := range makeUnique(opts.containerStates) {
+			containerState, err := stern.NewContainerState(containerStateStr)
+			if err != nil {
+				return nil, err
+			}
+			containerStates = append(containerStates, containerState)
+		}
 	}
 
 	var labelSelector labels.Selector
@@ -298,20 +304,9 @@ func parseConfig(args []string) (*stern.Config, error) {
 		opts.since = 172800000000000 // 48h
 	}
 
-	// Make namespaces array unique
 	namespaces := []string{}
 	if opts.namespaces != nil {
-		m := make(map[string]struct{})
-		for _, namespace := range opts.namespaces {
-			if namespace == "" {
-				continue
-			}
-
-			if _, ok := m[namespace]; !ok {
-				m[namespace] = struct{}{}
-				namespaces = append(namespaces, namespace)
-			}
-		}
+		namespaces = makeUnique(opts.namespaces)
 	}
 
 	// --timezone
@@ -330,7 +325,7 @@ func parseConfig(args []string) (*stern.Config, error) {
 		Location:              location,
 		ContainerQuery:        container,
 		ExcludeContainerQuery: excludeContainer,
-		ContainerState:        containerState,
+		ContainerStates:       containerStates,
 		Exclude:               exclude,
 		Include:               include,
 		InitContainers:        opts.initContainers,
@@ -353,6 +348,25 @@ func buildVersion(version, commit, date string) string {
 
 	if date != "" {
 		result = fmt.Sprintf("%s\nbuilt at: %s", result, date)
+	}
+
+	return result
+}
+
+// makeUnique makes items in string slice unique
+func makeUnique(items []string) []string {
+	result := []string{}
+	m := make(map[string]struct{})
+
+	for _, item := range items {
+		if item == "" {
+			continue
+		}
+
+		if _, ok := m[item]; !ok {
+			m[item] = struct{}{}
+			result = append(result, item)
+		}
 	}
 
 	return result
