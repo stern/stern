@@ -45,7 +45,7 @@ func (t *Target) GetID() string {
 // Watch starts listening to Kubernetes events and emits modified
 // containers/pods. The first result is targets added, the second is targets
 // removed
-func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, excludePodFilter *regexp.Regexp, containerFilter *regexp.Regexp, containerExcludeFilter *regexp.Regexp, initContainers bool, containerState ContainerState, labelSelector labels.Selector, fieldSelector fields.Selector) (chan *Target, chan *Target, error) {
+func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, excludePodFilter *regexp.Regexp, containerFilter *regexp.Regexp, containerExcludeFilter *regexp.Regexp, initContainers bool, ephemeralContainers bool, containerState ContainerState, labelSelector labels.Selector, fieldSelector fields.Selector) (chan *Target, chan *Target, error) {
 	watcher, err := i.Watch(ctx, metav1.ListOptions{Watch: true, LabelSelector: labelSelector.String(), FieldSelector: fieldSelector.String()})
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to set up watch")
@@ -86,6 +86,10 @@ func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, exc
 						statuses = append(statuses, pod.Status.InitContainerStatuses...)
 					}
 
+					if ephemeralContainers {
+						statuses = append(statuses, pod.Status.EphemeralContainerStatuses...)
+					}
+
 					for _, c := range statuses {
 						if !containerFilter.MatchString(c.Name) {
 							continue
@@ -107,17 +111,21 @@ func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, exc
 						}
 					}
 				case watch.Deleted:
-					var containers []corev1.Container
-					containers = append(containers, pod.Spec.Containers...)
+					var containerNames []string
+					containerNames = append(containerNames, getContainerNames(pod.Spec.Containers)...)
 					if initContainers {
-						containers = append(containers, pod.Spec.InitContainers...)
+						containerNames = append(containerNames, getContainerNames(pod.Spec.InitContainers)...)
 					}
 
-					for _, c := range containers {
-						if !containerFilter.MatchString(c.Name) {
+					if ephemeralContainers {
+						containerNames = append(containerNames, getEphemeralContainerNames(pod.Spec.EphemeralContainers)...)
+					}
+
+					for _, cn := range containerNames {
+						if !containerFilter.MatchString(cn) {
 							continue
 						}
-						if containerExcludeFilter != nil && containerExcludeFilter.MatchString(c.Name) {
+						if containerExcludeFilter != nil && containerExcludeFilter.MatchString(cn) {
 							continue
 						}
 
@@ -125,7 +133,7 @@ func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, exc
 							Node:      pod.Spec.NodeName,
 							Namespace: pod.Namespace,
 							Pod:       pod.Name,
-							Container: c.Name,
+							Container: cn,
 						}
 					}
 				}
@@ -139,4 +147,22 @@ func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, exc
 	}()
 
 	return added, removed, nil
+}
+
+// getContainerNames returns names of containers
+func getContainerNames(containers []corev1.Container) []string {
+	var result []string
+	for _, c := range containers {
+		result = append(result, c.Name)
+	}
+	return result
+}
+
+// getContainerNames returns names of ephemeral containers
+func getEphemeralContainerNames(containers []corev1.EphemeralContainer) []string {
+	var result []string
+	for _, c := range containers {
+		result = append(result, c.Name)
+	}
+	return result
 }

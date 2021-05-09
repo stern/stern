@@ -67,6 +67,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 | `--help`, `-h`              |            | Output Usage and Flags details                                                                                                                                     |
 | `--include`, `-i`           |            | Log lines to include; specify multiple with additional `--include`; (regular expression)                                                                           |
 | `--init-containers`         | `true`     | Include or exclude init containers                                                                                                                                 |
+| `--ephemeral-containers`    | `true`     | Include or exclude ephemeral containers                                                                                                                            |
 | `--kubeconfig`              | *see note* | Path to kubeconfig file to use. Default to `KUBECONFIG` variable then `~/.kube/config` path                                                                        |
 | `--namespace`, `-n`         |            | Kubernetes namespace to use. Default to namespace configured in Kubernetes context. To watch multiple namespaces, repeat this flag or set comma-separated value.   |
 | `--output`, `-o`            | `default`  | Specify predefined template. Currently support: [default, raw, json] See templates section                                                                         |

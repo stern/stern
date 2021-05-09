@@ -41,40 +41,42 @@ var (
 )
 
 type Options struct {
-	excludePod       string
-	container        string
-	excludeContainer string
-	containerState   string
-	timestamps       bool
-	timezone         string
-	since            time.Duration
-	context          string
-	namespaces       []string
-	kubeConfig       string
-	exclude          []string
-	include          []string
-	initContainers   bool
-	allNamespaces    bool
-	selector         string
-	fieldSelector    string
-	tail             int64
-	color            string
-	version          bool
-	completion       string
-	template         string
-	output           string
+	excludePod          string
+	container           string
+	excludeContainer    string
+	containerState      string
+	timestamps          bool
+	timezone            string
+	since               time.Duration
+	context             string
+	namespaces          []string
+	kubeConfig          string
+	exclude             []string
+	include             []string
+	initContainers      bool
+	ephemeralContainers bool
+	allNamespaces       bool
+	selector            string
+	fieldSelector       string
+	tail                int64
+	color               string
+	version             bool
+	completion          string
+	template            string
+	output              string
 }
 
 var opts = &Options{
-	container:      ".*",
-	containerState: "running",
-	timestamps:     false,
-	timezone:       "Local",
-	initContainers: true,
-	tail:           -1,
-	color:          "auto",
-	template:       "",
-	output:         "default",
+	container:           ".*",
+	containerState:      "running",
+	timestamps:          false,
+	timezone:            "Local",
+	initContainers:      true,
+	ephemeralContainers: true,
+	tail:                -1,
+	color:               "auto",
+	template:            "",
+	output:              "default",
 }
 
 func Run() {
@@ -97,6 +99,7 @@ func Run() {
 	cmd.Flags().StringSliceVarP(&opts.exclude, "exclude", "e", opts.exclude, "Regex of log lines to exclude")
 	cmd.Flags().StringSliceVarP(&opts.include, "include", "i", opts.include, "Regex of log lines to include")
 	cmd.Flags().BoolVar(&opts.initContainers, "init-containers", opts.initContainers, "Include or exclude init containers")
+	cmd.Flags().BoolVar(&opts.ephemeralContainers, "ephemeral-containers", opts.ephemeralContainers, "Include or exclude ephemeral containers")
 	cmd.Flags().BoolVarP(&opts.allNamespaces, "all-namespaces", "A", opts.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
 	cmd.Flags().StringVarP(&opts.selector, "selector", "l", opts.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
 	cmd.Flags().StringVar(&opts.fieldSelector, "field-selector", opts.fieldSelector, "Selector (field query) to filter on. If present, default to \".*\" for the pod-query.")
@@ -331,6 +334,7 @@ func parseConfig(args []string) (*stern.Config, error) {
 		Exclude:               exclude,
 		Include:               include,
 		InitContainers:        opts.initContainers,
+		EphemeralContainers:   opts.ephemeralContainers,
 		Since:                 opts.since,
 		AllNamespaces:         opts.allNamespaces,
 		LabelSelector:         labelSelector,

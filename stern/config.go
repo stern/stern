@@ -38,6 +38,7 @@ type Config struct {
 	Exclude               []*regexp.Regexp
 	Include               []*regexp.Regexp
 	InitContainers        bool
+	EphemeralContainers   bool
 	Since                 time.Duration
 	AllNamespaces         bool
 	LabelSelector         labels.Selector

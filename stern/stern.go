@@ -91,6 +91,7 @@ func Run(ctx context.Context, config *Config) error {
 			config.ContainerQuery,
 			config.ExcludeContainerQuery,
 			config.InitContainers,
+			config.EphemeralContainers,
 			config.ContainerState,
 			config.LabelSelector,
 			config.FieldSelector)
