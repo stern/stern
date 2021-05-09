@@ -59,7 +59,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 | `--color`                   | `auto`     | Force set color output. `auto`: colorize if tty attached, `always`: always colorize, `never`: never colorize                                                       |
 | `--completion`              |            | Outputs stern command-line completion code for the specified shell. Can be 'bash' or 'zsh'                                                                         |
 | `--container`, `-c`         | `.*`       | Container name when multiple containers in pod (regular expression)                                                                                                |
-| `--container-state`         | `running`  | Tail containers with status in running, waiting or terminated. Default to running.                                                                                 |
+| `--container-state`         | `running`  | Tail containers with state in running, waiting or terminated. Default to running. To watch multiple states, repeat this flag or set comma-separated value.         |
 | `--context`                 |            | Kubernetes context to use. Default to `kubectl config current-context`                                                                                             |
 | `--exclude`, `-e`           |            | Log lines to exclude; specify multiple with additional `--exclude`; (regular expression)                                                                           |
 | `--exclude-container`, `-E` |            | Container name to exclude when multiple containers in pod (regular expression)                                                                                     |
