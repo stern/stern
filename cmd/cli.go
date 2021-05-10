@@ -413,7 +413,7 @@ func promptHandler(ctx context.Context, config *stern.Config) error {
 
 	selector := fmt.Sprintf("%v=%v", labelsMap[choice], choice)
 
-	fmt.Printf("Selector: %v", color.BlueString(selector))
+	fmt.Printf("Selector: %v\n", color.BlueString(selector))
 
 	labelSelector, err := labels.Parse(selector)
 	if err != nil {
