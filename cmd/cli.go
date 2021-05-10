@@ -420,8 +420,6 @@ func promptHandler(ctx context.Context, config *stern.Config) error {
 		return err
 	}
 
-	fmt.Println("LabelSelector: ", labelSelector)
-
 	config.LabelSelector = labelSelector
 
 	return nil
