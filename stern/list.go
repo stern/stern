@@ -16,6 +16,7 @@ package stern
 
 import (
 	"context"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/stern/stern/kubernetes"
@@ -54,25 +55,34 @@ func List(ctx context.Context, config *Config) (map[string]string, error) {
 	labels := make(map[string]string)
 	options := metav1.ListOptions{}
 
-	// Iterate through provided namespaces.
+	wg := sync.WaitGroup{}
+
+	// Concurrently iterate through provided namespaces.
 	for _, n := range namespaces {
-		pods, err := clientset.Pods(n).List(ctx, options)
+		wg.Add(1)
 
-		if err != nil {
-			return nil, err
-		}
-
-		match := "app.kubernetes.io/instance"
-		// Iterate through pods in namespace, looking for matching labels.
-		for _, pod := range pods.Items {
-			key := pod.Labels[match]
-
-			if key == "" {
-				continue
+		go func(n string) {
+			pods, err := clientset.Pods(n).List(ctx, options)
+			if err != nil {
+				return
 			}
 
-			labels[key] = match
-		}
+			match := "app.kubernetes.io/instance"
+			// Iterate through pods in namespace, looking for matching labels.
+			for _, pod := range pods.Items {
+				key := pod.Labels[match]
+
+				if key == "" {
+					continue
+				}
+
+				labels[key] = match
+			}
+
+			wg.Done()
+		}(n)
+
+		wg.Wait()
 	}
 
 	return labels, nil
