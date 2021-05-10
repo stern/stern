@@ -28,6 +28,7 @@ const (
 	TERMINATED = "terminated"
 )
 
+// NewContainerState returns corresponding ContainerState
 func NewContainerState(stateConfig string) (ContainerState, error) {
 	if stateConfig == RUNNING {
 		return RUNNING, nil
@@ -40,6 +41,7 @@ func NewContainerState(stateConfig string) (ContainerState, error) {
 	return "", errors.New("containerState should be one of 'running', 'waiting', or 'terminated'")
 }
 
+// Match returns ContainerState is matched
 func (stateConfig ContainerState) Match(containerState v1.ContainerState) bool {
 	return (stateConfig == RUNNING && containerState.Running != nil) ||
 		(stateConfig == WAITING && containerState.Waiting != nil) ||
