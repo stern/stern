@@ -93,7 +93,7 @@ stern supports outputting custom log messages.  There are a few predefined
 templates which you can use by specifying the `--output` flag:
 
 | output    | description                                                                                           |
-|-----------|-------------------------------------------------------------------------------------------------------|
+| --------- | ----------------------------------------------------------------------------------------------------- |
 | `default` | Displays the namespace, pod and container, and decorates it with color depending on --color           |
 | `raw`     | Only outputs the log message itself, useful when your logs are json and you want to pipe them to `jq` |
 | `json`    | Marshals the log struct to json. Useful for programmatic purposes                                     |
@@ -103,7 +103,7 @@ compiled to a Go template and then used for every log message. This Go template
 will receive the following struct:
 
 | property        | type   | description                                 |
-|-----------------|--------|---------------------------------------------|
+| --------------- | ------ | ------------------------------------------- |
 | `Message`       | string | The log message itself                      |
 | `NodeName`      | string | The node name where the pod is scheduled on |
 | `Namespace`     | string | The namespace of the pod                    |
@@ -114,7 +114,7 @@ The following functions are available within the template (besides the [builtin
 functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 
 | func    | arguments             | description                                                     |
-|---------|-----------------------|-----------------------------------------------------------------|
+| ------- | --------------------- | --------------------------------------------------------------- |
 | `json`  | `object`              | Marshal the object and output it as a json text                 |
 | `color` | `color.Color, string` | Wrap the text in color (.ContainerColor and .PodColor provided) |
 
@@ -192,6 +192,12 @@ Output using a custom template with stern-provided colors:
 
 ```
 stern --template '{{.Message}} ({{.Namespace}}/{{color .PodColor .PodName}}/{{color .ContainerColor .ContainerName}}){{"\n"}}' backend
+```
+
+Trigger the interactive prompt to select an 'app.kubernetes.io/instance' label value:
+
+```
+stern -p
 ```
 
 ## Completion
