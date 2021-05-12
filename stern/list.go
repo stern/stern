@@ -57,11 +57,13 @@ func List(ctx context.Context, config *Config) (map[string]string, error) {
 
 	wg := sync.WaitGroup{}
 
+	wg.Add(len(namespaces))
+
 	// Concurrently iterate through provided namespaces.
 	for _, n := range namespaces {
-		wg.Add(1)
-
 		go func(n string) {
+			defer wg.Done()
+
 			pods, err := clientset.Pods(n).List(ctx, options)
 			if err != nil {
 				return
@@ -78,12 +80,10 @@ func List(ctx context.Context, config *Config) (map[string]string, error) {
 
 				labels[key] = match
 			}
-
-			wg.Done()
 		}(n)
-
-		wg.Wait()
 	}
+
+	wg.Wait()
 
 	return labels, nil
 }
