@@ -42,7 +42,6 @@ var (
 )
 
 type Options struct {
-<<<<<<< HEAD
 	excludePod          string
 	container           string
 	excludeContainer    string
@@ -66,7 +65,7 @@ type Options struct {
 	completion          string
 	template            string
 	output              string
-	prompt bool
+	prompt              bool
 }
 
 var opts = &Options{
@@ -81,7 +80,7 @@ var opts = &Options{
 	template:            "",
 	timestamps:          false,
 	timezone:            "Local",
-	prompt: false,
+	prompt:              false,
 }
 
 func Run() {
@@ -386,6 +385,7 @@ func makeUnique(items []string) []string {
 	}
 
 	return result
+}
 
 // promptHandler invokes the interactive prompt and updates config.LabelSelector with the selected value.
 func promptHandler(ctx context.Context, config *stern.Config) error {
