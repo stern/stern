@@ -73,6 +73,7 @@ var opts = &Options{
 	initContainers:      true,
 	ephemeralContainers: true,
 	output:              "default",
+	since:               48 * time.Hour,
 	tail:                -1,
 	template:            "",
 	timestamps:          false,
@@ -298,10 +299,6 @@ func parseConfig(args []string) (*stern.Config, error) {
 	template, err := template.New("log").Funcs(funs).Parse(t)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to parse template")
-	}
-
-	if opts.since == 0 {
-		opts.since = 172800000000000 // 48h
 	}
 
 	namespaces := []string{}
