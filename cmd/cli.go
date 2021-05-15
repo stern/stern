@@ -67,16 +67,16 @@ type Options struct {
 }
 
 var opts = &Options{
+	color:               "auto",
 	container:           ".*",
 	containerStates:     []string{"running"},
-	timestamps:          false,
-	timezone:            "Local",
 	initContainers:      true,
 	ephemeralContainers: true,
-	tail:                -1,
-	color:               "auto",
-	template:            "",
 	output:              "default",
+	tail:                -1,
+	template:            "",
+	timestamps:          false,
+	timezone:            "Local",
 }
 
 func Run() {
