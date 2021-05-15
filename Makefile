@@ -39,6 +39,10 @@ fmt:
 vet:
 	go vet ./...
 
+.PHONY: update-readme
+update-readme:
+	$(GO) run hack/update-readme/update-readme.go ./README.md
+
 .PHONY: dist
 dist: $(GORELEASER)
 	$(GORELEASER) release --rm-dist --skip-publish --snapshot
