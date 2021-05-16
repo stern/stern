@@ -118,7 +118,6 @@ func Run() {
 		defer cancel()
 
 		narg := len(args)
-
 		if (narg > 1) || (narg == 0 && opts.selector == "" && opts.fieldSelector == "") && !opts.prompt {
 			return cmd.Help()
 		}
