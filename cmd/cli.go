@@ -435,7 +435,7 @@ func selectPods(pods []string) (string, error) {
 	})
 
 	prompt := &survey.Select{
-		Message: "Select label value:",
+		Message: "Select \"app.kubernetes.io/instance\" label value:",
 		Options: pods,
 	}
 
