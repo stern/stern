@@ -29,6 +29,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/stern/stern/stern"
 
 	"github.com/fatih/color"
@@ -67,16 +68,17 @@ type Options struct {
 }
 
 var opts = &Options{
+	color:               "auto",
 	container:           ".*",
 	containerStates:     []string{"running"},
-	timestamps:          false,
-	timezone:            "Local",
 	initContainers:      true,
 	ephemeralContainers: true,
-	tail:                -1,
-	color:               "auto",
-	template:            "",
 	output:              "default",
+	since:               48 * time.Hour,
+	tail:                -1,
+	template:            "",
+	timestamps:          false,
+	timezone:            "Local",
 }
 
 func Run() {
@@ -84,31 +86,7 @@ func Run() {
 	cmd.Use = "stern pod-query"
 	cmd.Short = "Tail multiple pods and containers from Kubernetes"
 
-	cmd.Flags().StringVar(&opts.excludePod, "exclude-pod", opts.excludePod, "Regex of pod query to exclude")
-	cmd.Flags().StringVarP(&opts.container, "container", "c", opts.container, "Container name when multiple containers in pod")
-	cmd.Flags().StringVarP(&opts.excludeContainer, "exclude-container", "E", opts.excludeContainer, "Exclude a Container name")
-	cmd.Flags().StringSliceVar(&opts.containerStates, "container-state", opts.containerStates, "If present, tail containers with state in running, waiting or terminated. Default to running. To specify multiple states, repeat this or set comma-separated value.")
-	cmd.Flags().BoolVarP(&opts.timestamps, "timestamps", "t", opts.timestamps, "Print timestamps")
-	cmd.Flags().StringVar(&opts.timezone, "timezone", opts.timezone, "Set timestamps to specific timezone")
-	cmd.Flags().DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to 48h.")
-	cmd.Flags().StringVar(&opts.context, "context", opts.context, "Kubernetes context to use. Default to current context configured in kubeconfig.")
-	cmd.Flags().StringSliceVarP(&opts.namespaces, "namespace", "n", opts.namespaces, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
-	cmd.Flags().StringVar(&opts.kubeConfig, "kubeconfig", opts.kubeConfig, "Path to kubeconfig file to use")
-	cmd.Flags().StringVar(&opts.kubeConfig, "kube-config", opts.kubeConfig, "Path to kubeconfig file to use")
-	_ = cmd.Flags().MarkDeprecated("kube-config", "Use --kubeconfig instead.")
-	cmd.Flags().StringSliceVarP(&opts.exclude, "exclude", "e", opts.exclude, "Regex of log lines to exclude")
-	cmd.Flags().StringSliceVarP(&opts.include, "include", "i", opts.include, "Regex of log lines to include")
-	cmd.Flags().BoolVar(&opts.initContainers, "init-containers", opts.initContainers, "Include init containers")
-	cmd.Flags().BoolVar(&opts.ephemeralContainers, "ephemeral-containers", opts.ephemeralContainers, "Include or exclude ephemeral containers")
-	cmd.Flags().BoolVarP(&opts.allNamespaces, "all-namespaces", "A", opts.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
-	cmd.Flags().StringVarP(&opts.selector, "selector", "l", opts.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
-	cmd.Flags().StringVar(&opts.fieldSelector, "field-selector", opts.fieldSelector, "Selector (field query) to filter on. If present, default to \".*\" for the pod-query.")
-	cmd.Flags().Int64Var(&opts.tail, "tail", opts.tail, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
-	cmd.Flags().StringVar(&opts.color, "color", opts.color, "Color output. Can be 'always', 'never', or 'auto'")
-	cmd.Flags().BoolVarP(&opts.version, "version", "v", opts.version, "Print the version and exit")
-	cmd.Flags().StringVar(&opts.completion, "completion", opts.completion, "Outputs stern command-line completion code for the specified shell. Can be 'bash' or 'zsh'")
-	cmd.Flags().StringVar(&opts.template, "template", opts.template, "Template to use for log lines, leave empty to use --output flag")
-	cmd.Flags().StringVarP(&opts.output, "output", "o", opts.output, "Specify predefined template. Currently support: [default, raw, json]")
+	AddFlags(cmd.Flags())
 
 	// Specify custom bash completion function
 	cmd.BashCompletionFunction = bash_completion_func
@@ -159,6 +137,35 @@ func Run() {
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// AddFlags adds all the flags used by stern.
+func AddFlags(fs *pflag.FlagSet) {
+	fs.BoolVarP(&opts.allNamespaces, "all-namespaces", "A", opts.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
+	fs.StringVar(&opts.color, "color", opts.color, "Force set color output. 'auto':  colorize if tty attached, 'always': always colorize, 'never': never colorize.")
+	fs.StringVar(&opts.completion, "completion", opts.completion, "Output stern command-line completion code for the specified shell. Can be 'bash' or 'zsh'.")
+	fs.StringVarP(&opts.container, "container", "c", opts.container, "Container name when multiple containers in pod. (regular expression)")
+	fs.StringSliceVar(&opts.containerStates, "container-state", opts.containerStates, "Tail containers with state in running, waiting or terminated. To specify multiple states, repeat this or set comma-separated value.")
+	fs.StringVar(&opts.context, "context", opts.context, "Kubernetes context to use. Default to current context configured in kubeconfig.")
+	fs.StringSliceVarP(&opts.exclude, "exclude", "e", opts.exclude, "Log lines to exclude. (regular expression)")
+	fs.StringVarP(&opts.excludeContainer, "exclude-container", "E", opts.excludeContainer, "Container name to exclude when multiple containers in pod. (regular expression)")
+	fs.StringVar(&opts.excludePod, "exclude-pod", opts.excludePod, "Pod name to exclude. (regular expression)")
+	fs.StringSliceVarP(&opts.include, "include", "i", opts.include, "Log lines to include. (regular expression")
+	fs.BoolVar(&opts.initContainers, "init-containers", opts.initContainers, "Include or exclude init containers.")
+	fs.BoolVar(&opts.ephemeralContainers, "ephemeral-containers", opts.ephemeralContainers, "Include or exclude ephemeral containers.")
+	fs.StringVar(&opts.kubeConfig, "kubeconfig", opts.kubeConfig, "Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.")
+	fs.StringVar(&opts.kubeConfig, "kube-config", opts.kubeConfig, "Path to kubeconfig file to use.")
+	_ = fs.MarkDeprecated("kube-config", "Use --kubeconfig instead.")
+	fs.StringSliceVarP(&opts.namespaces, "namespace", "n", opts.namespaces, "Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
+	fs.StringVarP(&opts.output, "output", "o", opts.output, "Specify predefined template. Currently support: [default, raw, json]")
+	fs.StringVarP(&opts.selector, "selector", "l", opts.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
+	fs.StringVar(&opts.fieldSelector, "field-selector", opts.fieldSelector, "Selector (field query) to filter on. If present, default to \".*\" for the pod-query.")
+	fs.DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h.")
+	fs.Int64Var(&opts.tail, "tail", opts.tail, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
+	fs.StringVar(&opts.template, "template", opts.template, "Template to use for log lines, leave empty to use --output flag.")
+	fs.BoolVarP(&opts.timestamps, "timestamps", "t", opts.timestamps, "Print timestamps.")
+	fs.StringVar(&opts.timezone, "timezone", opts.timezone, "Set timestamps to specific timezone.")
+	fs.BoolVarP(&opts.version, "version", "v", opts.version, "Print the version and exit.")
 }
 
 func parseConfig(args []string) (*stern.Config, error) {
@@ -298,10 +305,6 @@ func parseConfig(args []string) (*stern.Config, error) {
 	template, err := template.New("log").Funcs(funs).Parse(t)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to parse template")
-	}
-
-	if opts.since == 0 {
-		opts.since = 172800000000000 // 48h
 	}
 
 	namespaces := []string{}
