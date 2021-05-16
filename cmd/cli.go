@@ -107,7 +107,6 @@ func Run() {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if opts.version {
 			fmt.Println(buildVersion(version, commit, date))
-
 			return nil
 		}
 
@@ -123,7 +122,6 @@ func Run() {
 		if (narg > 1) || (narg == 0 && opts.selector == "" && opts.fieldSelector == "") && !opts.prompt {
 			return cmd.Help()
 		}
-
 		config, err := parseConfig(args)
 		if err != nil {
 			log.Println(err)
