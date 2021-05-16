@@ -24,7 +24,7 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-// List returns a list of all
+// List returns a map of all 'app.kubernetes.io/instance' values.
 func List(ctx context.Context, config *Config) (map[string]string, error) {
 	clientConfig := kubernetes.NewClientConfig(config.KubeConfig, config.ContextName)
 	cc, err := clientConfig.ClientConfig()
