@@ -21,18 +21,18 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"sort"
 	"text/template"
 	"time"
 
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/labels"
-
+	survey "github.com/AlecAivazis/survey/v2"
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stern/stern/stern"
-
-	"github.com/fatih/color"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 var (
@@ -65,6 +65,7 @@ type Options struct {
 	completion          string
 	template            string
 	output              string
+	prompt              bool
 }
 
 var opts = &Options{
@@ -79,6 +80,7 @@ var opts = &Options{
 	template:            "",
 	timestamps:          false,
 	timezone:            "Local",
+	prompt:              false,
 }
 
 func Run() {
@@ -112,8 +114,11 @@ func Run() {
 			return runCompletion(opts.completion, cmd)
 		}
 
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		narg := len(args)
-		if (narg > 1) || (narg == 0 && opts.selector == "" && opts.fieldSelector == "") {
+		if (narg > 1) || (narg == 0 && opts.selector == "" && opts.fieldSelector == "") && !opts.prompt {
 			return cmd.Help()
 		}
 		config, err := parseConfig(args)
@@ -122,8 +127,11 @@ func Run() {
 			os.Exit(2)
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		if opts.prompt {
+			if err := promptHandler(ctx, config); err != nil {
+				return err
+			}
+		}
 
 		err = stern.Run(ctx, config)
 		if err != nil {
@@ -158,6 +166,7 @@ func AddFlags(fs *pflag.FlagSet) {
 	_ = fs.MarkDeprecated("kube-config", "Use --kubeconfig instead.")
 	fs.StringSliceVarP(&opts.namespaces, "namespace", "n", opts.namespaces, "Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
 	fs.StringVarP(&opts.output, "output", "o", opts.output, "Specify predefined template. Currently support: [default, raw, json]")
+	fs.BoolVarP(&opts.prompt, "prompt", "p", opts.prompt, "Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.")
 	fs.StringVarP(&opts.selector, "selector", "l", opts.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
 	fs.StringVar(&opts.fieldSelector, "field-selector", opts.fieldSelector, "Selector (field query) to filter on. If present, default to \".*\" for the pod-query.")
 	fs.DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h.")
@@ -373,4 +382,65 @@ func makeUnique(items []string) []string {
 	}
 
 	return result
+}
+
+// promptHandler invokes the interactive prompt and updates config.LabelSelector with the selected value.
+func promptHandler(ctx context.Context, config *stern.Config) error {
+	labelsMap, err := stern.List(ctx, config)
+	if err != nil {
+		return err
+	}
+
+	if len(labelsMap) == 0 {
+		log.Fatal("No matching labels.")
+	}
+
+	var choices []string
+
+	for key := range labelsMap {
+		choices = append(choices, key)
+	}
+
+	sort.Strings(choices)
+
+	choice, err := selectPods(choices)
+	if err != nil {
+		return err
+	}
+
+	selector := fmt.Sprintf("%v=%v", labelsMap[choice], choice)
+
+	fmt.Printf("Selector: %v\n", color.BlueString(selector))
+
+	labelSelector, err := labels.Parse(selector)
+	if err != nil {
+		return err
+	}
+
+	config.LabelSelector = labelSelector
+
+	return nil
+}
+
+// selectPods surfaces an interactive prompt for selecting an app.kubernetes.io/instance.
+func selectPods(pods []string) (string, error) {
+	arrow := survey.WithIcons(func(icons *survey.IconSet) {
+		icons.Question.Text = "❯"
+		icons.SelectFocus.Text = "❯"
+		icons.Question.Format = "blue"
+		icons.SelectFocus.Format = "blue"
+	})
+
+	prompt := &survey.Select{
+		Message: "Select \"app.kubernetes.io/instance\" label value:",
+		Options: pods,
+	}
+
+	var pod string
+
+	if err := survey.AskOne(prompt, &pod, arrow); err != nil {
+		return "", err
+	}
+
+	return pod, nil
 }
