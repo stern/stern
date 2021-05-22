@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stern/stern/cmd"
 )
@@ -46,13 +45,13 @@ func main() {
 //  `--flag1`, `-f` |                 | This is flag1.
 //  `--flag2`       | `flag2-default` | This is flag2.
 func GenerateFlagsMarkdownTable() string {
-	c := &cobra.Command{}
-	cmd.AddFlags(c.Flags())
-	allFlags := c.NonInheritedFlags()
+	fs := pflag.NewFlagSet("", pflag.ExitOnError)
+	o := cmd.NewOptions()
+	o.AddFlags(fs)
 
 	flagMaxlen, defaultMaxlen := len(" flag "), len(" default ")
 	allTexts := make([][]string, 0)
-	allFlags.VisitAll(func(flag *pflag.Flag) {
+	fs.VisitAll(func(flag *pflag.Flag) {
 		// won't append deprecated flag
 		if flag.Deprecated != "" {
 			return
@@ -74,7 +73,7 @@ func GenerateFlagsMarkdownTable() string {
 			switch flagTypeName {
 			// convert []string{"aaa", "bbb"} to "aaa,bbb"
 			case "strings":
-				stirngSlice, err := allFlags.GetStringSlice(flag.Name)
+				stirngSlice, err := fs.GetStringSlice(flag.Name)
 				if err != nil {
 					panic(err)
 				}

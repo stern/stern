@@ -14,8 +14,14 @@
 
 package main
 
-import "github.com/stern/stern/cmd"
+import (
+	"os"
+
+	"github.com/stern/stern/cmd"
+)
 
 func main() {
-	cmd.Run()
+	if err := cmd.NewSternCmd().Execute(); err != nil {
+		os.Exit(1)
+	}
 }
