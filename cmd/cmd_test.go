@@ -41,3 +41,74 @@ func TestSternCommand(t *testing.T) {
 		})
 	}
 }
+
+func TestOptionsValidate(t *testing.T) {
+	streams := genericclioptions.NewTestIOStreamsDiscard()
+
+	tests := []struct {
+		name string
+		o    *options
+		err  string
+	}{
+		{
+			"No required options",
+			NewOptions(streams),
+			"One of pod-query, --selector, --field-selector or --prompt is required",
+		},
+		{
+			"Use prompt",
+			func() *options {
+				o := NewOptions(streams)
+				o.prompt = true
+
+				return o
+			}(),
+			"",
+		},
+		{
+			"Specify pod-query",
+			func() *options {
+				o := NewOptions(streams)
+				o.podQuery = "."
+
+				return o
+			}(),
+			"",
+		},
+		{
+			"Specify selector",
+			func() *options {
+				o := NewOptions(streams)
+				o.selector = "app=nginx"
+
+				return o
+			}(),
+			"",
+		},
+		{
+			"Specify fieldSelector",
+			func() *options {
+				o := NewOptions(streams)
+				o.fieldSelector = "spec.nodeName=kind-kind"
+
+				return o
+			}(),
+			"",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.o.Validate()
+			if err == nil {
+				if tt.err != "" {
+					t.Errorf("expected %q err, but actual no err", tt.err)
+				}
+			} else {
+				if tt.err != err.Error() {
+					t.Errorf("expected %q err, but actual %q", tt.err, err)
+				}
+			}
+		})
+	}
+}
