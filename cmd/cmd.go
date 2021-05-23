@@ -325,7 +325,7 @@ func NewSternCmd(stream genericclioptions.IOStreams) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Output version information and exit
 			if o.version {
-				fmt.Fprintln(o.Out, buildVersion(version, commit, date))
+				outputVersionInfo(o.Out)
 				return nil
 			}
 

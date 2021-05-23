@@ -1,6 +1,9 @@
 package cmd
 
-import "fmt"
+import (
+	"fmt"
+	"io"
+)
 
 var (
 	version = "dev"
@@ -8,16 +11,14 @@ var (
 	date    = ""
 )
 
-func buildVersion(version, commit, date string) string {
-	result := fmt.Sprintf("version: %s", version)
+func outputVersionInfo(out io.Writer) {
+	fmt.Fprintf(out, "version: %s\n", version)
 
 	if commit != "" {
-		result = fmt.Sprintf("%s\ncommit: %s", result, commit)
+		fmt.Fprintf(out, "commit: %s\n", commit)
 	}
 
 	if date != "" {
-		result = fmt.Sprintf("%s\nbuilt at: %s", result, date)
+		fmt.Fprintf(out, "built at: %s\n", date)
 	}
-
-	return result
 }
