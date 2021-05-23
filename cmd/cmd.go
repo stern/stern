@@ -35,12 +35,6 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
-var (
-	version = "dev"
-	commit  = ""
-	date    = ""
-)
-
 type options struct {
 	genericclioptions.IOStreams
 
@@ -374,20 +368,6 @@ func NewSternCmd(stream genericclioptions.IOStreams) *cobra.Command {
 	}
 
 	return cmd
-}
-
-func buildVersion(version, commit, date string) string {
-	result := fmt.Sprintf("version: %s", version)
-
-	if commit != "" {
-		result = fmt.Sprintf("%s\ncommit: %s", result, commit)
-	}
-
-	if date != "" {
-		result = fmt.Sprintf("%s\nbuilt at: %s", result, date)
-	}
-
-	return result
 }
 
 // makeUnique makes items in string slice unique
