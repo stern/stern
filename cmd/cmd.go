@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"io"
 	"regexp"
 	"sort"
 	"text/template"
@@ -32,6 +32,7 @@ import (
 	"github.com/stern/stern/stern"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 var (
@@ -41,6 +42,8 @@ var (
 )
 
 type options struct {
+	genericclioptions.IOStreams
+
 	excludePod          string
 	container           string
 	excludeContainer    string
@@ -68,8 +71,10 @@ type options struct {
 	podQuery            string
 }
 
-func NewOptions() *options {
+func NewOptions(streams genericclioptions.IOStreams) *options {
 	return &options{
+		IOStreams: streams,
+
 		color:               "auto",
 		container:           ".*",
 		containerStates:     []string{"running"},
@@ -111,7 +116,7 @@ func (o *options) Run(cmd *cobra.Command) error {
 	defer cancel()
 
 	if o.prompt {
-		if err := promptHandler(ctx, config); err != nil {
+		if err := promptHandler(ctx, config, o.Out); err != nil {
 			return err
 		}
 	}
@@ -284,6 +289,9 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		FieldSelector:         fieldSelector,
 		TailLines:             tailLines,
 		Template:              template,
+
+		Out:    o.Out,
+		ErrOut: o.ErrOut,
 	}, nil
 }
 
@@ -317,8 +325,8 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&o.version, "version", "v", o.version, "Print the version and exit.")
 }
 
-func NewSternCmd() *cobra.Command {
-	o := NewOptions()
+func NewSternCmd(stream genericclioptions.IOStreams) *cobra.Command {
+	o := NewOptions(stream)
 
 	cmd := &cobra.Command{
 		Use:   "stern pod-query",
@@ -326,13 +334,13 @@ func NewSternCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Output version information and exit
 			if o.version {
-				fmt.Println(buildVersion(version, commit, date))
+				fmt.Fprintln(o.Out, buildVersion(version, commit, date))
 				return nil
 			}
 
 			// Output shell completion code for the specified shell and exit
 			if o.completion != "" {
-				return runCompletion(o.completion, cmd)
+				return runCompletion(o.completion, cmd, o.Out)
 			}
 
 			if err := o.Complete(args); err != nil {
@@ -402,14 +410,14 @@ func makeUnique(items []string) []string {
 }
 
 // promptHandler invokes the interactive prompt and updates config.LabelSelector with the selected value.
-func promptHandler(ctx context.Context, config *stern.Config) error {
+func promptHandler(ctx context.Context, config *stern.Config, out io.Writer) error {
 	labelsMap, err := stern.List(ctx, config)
 	if err != nil {
 		return err
 	}
 
 	if len(labelsMap) == 0 {
-		log.Fatal("No matching labels.")
+		return errors.New("No matching labels")
 	}
 
 	var choices []string
@@ -427,7 +435,7 @@ func promptHandler(ctx context.Context, config *stern.Config) error {
 
 	selector := fmt.Sprintf("%v=%v", labelsMap[choice], choice)
 
-	fmt.Printf("Selector: %v\n", color.BlueString(selector))
+	fmt.Fprintf(out, "Selector: %v\n", color.BlueString(selector))
 
 	labelSelector, err := labels.Parse(selector)
 	if err != nil {
