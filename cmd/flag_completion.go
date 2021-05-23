@@ -262,3 +262,19 @@ __stern_bash_source <(__stern_convert_bash_to_zsh)
 
 	return nil
 }
+
+func registerCompletionFunction(cmd *cobra.Command) {
+	// Specify custom bash completion function
+	cmd.BashCompletionFunction = bash_completion_func
+	for name, completion := range bash_completion_flags {
+		if cmd.Flag(name) != nil {
+			if cmd.Flag(name).Annotations == nil {
+				cmd.Flag(name).Annotations = map[string][]string{}
+			}
+			cmd.Flag(name).Annotations[cobra.BashCompCustom] = append(
+				cmd.Flag(name).Annotations[cobra.BashCompCustom],
+				completion,
+			)
+		}
+	}
+}
