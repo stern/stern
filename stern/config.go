@@ -15,6 +15,7 @@
 package stern
 
 import (
+	"io"
 	"regexp"
 	"text/template"
 	"time"
@@ -45,4 +46,7 @@ type Config struct {
 	FieldSelector         fields.Selector
 	TailLines             *int64
 	Template              *template.Template
+
+	Out    io.Writer
+	ErrOut io.Writer
 }

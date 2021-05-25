@@ -17,7 +17,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"os"
+	"io"
 
 	"github.com/spf13/cobra"
 )
@@ -95,14 +95,14 @@ var bash_completion_flags = map[string]string{
 	"context":   "__stern_kubectl_config_get_contexts",
 }
 
-func runCompletion(shell string, cmd *cobra.Command) error {
+func runCompletion(shell string, cmd *cobra.Command, out io.Writer) error {
 	var err error
 
 	switch shell {
 	case "bash":
-		err = runCompletionBash(cmd)
+		err = runCompletionBash(cmd, out)
 	case "zsh":
-		err = runCompletionZsh(cmd)
+		err = runCompletionZsh(cmd, out)
 	default:
 		err = fmt.Errorf("Unsupported shell type: %q", shell)
 	}
@@ -110,15 +110,15 @@ func runCompletion(shell string, cmd *cobra.Command) error {
 	return err
 }
 
-func runCompletionBash(cmd *cobra.Command) error {
-	return cmd.GenBashCompletion(os.Stdout)
+func runCompletionBash(cmd *cobra.Command, out io.Writer) error {
+	return cmd.GenBashCompletion(out)
 }
 
 // runCompletionZsh is based on `kubectl completion zsh`. This function should
 // be replaced by cobra implementation when cobra itself supports zsh completion.
 // https://github.com/kubernetes/kubernetes/blob/v1.6.1/pkg/kubectl/cmd/completion.go#L136
-func runCompletionZsh(cmd *cobra.Command) error {
-	out := new(bytes.Buffer)
+func runCompletionZsh(cmd *cobra.Command, out io.Writer) error {
+	b := new(bytes.Buffer)
 
 	zshInitialization := `
 __stern_bash_source() {
@@ -245,9 +245,9 @@ __stern_convert_bash_to_zsh() {
     -e "s/\\\$(type${RWORD}/\$(__stern_type/g" \
     <<'BASH_COMPLETION_EOF'
 `
-	out.Write([]byte(zshInitialization))
+	b.Write([]byte(zshInitialization))
 
-	if err := cmd.GenBashCompletion(out); err != nil {
+	if err := cmd.GenBashCompletion(b); err != nil {
 		return err
 	}
 
@@ -256,9 +256,25 @@ BASH_COMPLETION_EOF
 }
 __stern_bash_source <(__stern_convert_bash_to_zsh)
 `
-	out.Write([]byte(zshTail))
+	b.Write([]byte(zshTail))
 
-	fmt.Println(out)
+	fmt.Fprintln(out, b.String())
 
 	return nil
+}
+
+func registerCompletionFunction(cmd *cobra.Command) {
+	// Specify custom bash completion function
+	cmd.BashCompletionFunction = bash_completion_func
+	for name, completion := range bash_completion_flags {
+		if cmd.Flag(name) != nil {
+			if cmd.Flag(name).Annotations == nil {
+				cmd.Flag(name).Annotations = map[string][]string{}
+			}
+			cmd.Flag(name).Annotations[cobra.BashCompCustom] = append(
+				cmd.Flag(name).Annotations[cobra.BashCompCustom],
+				completion,
+			)
+		}
+	}
 }

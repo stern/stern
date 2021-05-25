@@ -14,8 +14,16 @@
 
 package main
 
-import "github.com/stern/stern/cmd"
+import (
+	"os"
+
+	"github.com/stern/stern/cmd"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+)
 
 func main() {
-	cmd.Run()
+	streams := genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr}
+	if err := cmd.NewSternCmd(streams).Execute(); err != nil {
+		os.Exit(1)
+	}
 }

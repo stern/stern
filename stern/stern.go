@@ -17,7 +17,6 @@ package stern
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -134,7 +133,7 @@ func Run(ctx context.Context, config *Config) error {
 				}
 			}
 
-			tail := NewTail(clientset, p.Node, p.Namespace, p.Pod, p.Container, config.Template, os.Stdout, os.Stderr, &TailOptions{
+			tail := NewTail(clientset, p.Node, p.Namespace, p.Pod, p.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
 				Timestamps:   config.Timestamps,
 				Location:     config.Location,
 				SinceSeconds: int64(config.Since.Seconds()),
@@ -147,7 +146,7 @@ func Run(ctx context.Context, config *Config) error {
 
 			go func(tail *Tail) {
 				if err := tail.Start(ctx); err != nil {
-					fmt.Fprintf(os.Stderr, "unexpected error: %v\n", err)
+					fmt.Fprintf(config.ErrOut, "unexpected error: %v\n", err)
 				}
 			}(tail)
 		}
