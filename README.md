@@ -58,7 +58,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
 -----------------------------|-----------|---------
  `--all-namespaces`, `-A`    | `false`   | If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.
  `--color`                   | `auto`    | Force set color output. 'auto':  colorize if tty attached, 'always': always colorize, 'never': never colorize.
- `--completion`              |           | Output stern command-line completion code for the specified shell. Can be 'bash' or 'zsh'.
+ `--completion`              |           | Output stern command-line completion code for the specified shell. Can be 'bash', 'zsh' or 'fish'.
  `--container`, `-c`         | `.*`      | Container name when multiple containers in pod. (regular expression)
  `--container-state`         | `running` | Tail containers with state in running, waiting or terminated. To specify multiple states, repeat this or set comma-separated value.
  `--context`                 |           | Kubernetes context to use. Default to current context configured in kubeconfig.
@@ -203,8 +203,8 @@ stern -p
 
 ## Completion
 
-Stern supports command-line auto completion for bash or zsh. `stern
---completion=(bash|zsh)` outputs the shell completion code which work by being
+Stern supports command-line auto completion for bash, zsh or fish. `stern
+--completion=(bash|zsh|fish)` outputs the shell completion code which work by being
 evaluated in `.bashrc`, etc for the specified shell. In addition, Stern
 supports dynamic completion for `--namespace` and `--context`. In order to use
 that, kubectl must be installed on your environment.
@@ -233,6 +233,15 @@ If you use zsh, just source the stern zsh completion code in `.zshrc`.
 
 ```sh
 source <(stern --completion=zsh)
+```
+
+if you use fish shell, just source the stern fish completion code.
+
+```sh
+stern --completion=fish | source
+
+# To load completions for each session, execute once:
+stern --completion=fish >~/.config/fish/completions/stern.fish
 ```
 
 ## Running with container

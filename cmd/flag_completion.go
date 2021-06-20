@@ -34,6 +34,8 @@ func runCompletion(shell string, cmd *cobra.Command, out io.Writer) error {
 		err = cmd.GenBashCompletion(out)
 	case "zsh":
 		err = runCompletionZsh(cmd, out)
+	case "fish":
+		err = cmd.GenFishCompletion(out, true)
 	default:
 		err = fmt.Errorf("Unsupported shell type: %q", shell)
 	}

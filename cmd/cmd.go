@@ -290,7 +290,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&o.allNamespaces, "all-namespaces", "A", o.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
 	fs.StringVar(&o.color, "color", o.color, "Force set color output. 'auto':  colorize if tty attached, 'always': always colorize, 'never': never colorize.")
-	fs.StringVar(&o.completion, "completion", o.completion, "Output stern command-line completion code for the specified shell. Can be 'bash' or 'zsh'.")
+	fs.StringVar(&o.completion, "completion", o.completion, "Output stern command-line completion code for the specified shell. Can be 'bash', 'zsh' or 'fish'.")
 	fs.StringVarP(&o.container, "container", "c", o.container, "Container name when multiple containers in pod. (regular expression)")
 	fs.StringSliceVar(&o.containerStates, "container-state", o.containerStates, "Tail containers with state in running, waiting or terminated. To specify multiple states, repeat this or set comma-separated value.")
 	fs.StringVar(&o.context, "context", o.context, "Kubernetes context to use. Default to current context configured in kubeconfig.")
