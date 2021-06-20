@@ -63,6 +63,10 @@ func registerCompletionFuncForFlags(cmd *cobra.Command, o *options) error {
 		return err
 	}
 
+	if err := cmd.RegisterFlagCompletionFunc("context", contextCompletionFunc(o)); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -85,6 +89,27 @@ func namespaceCompletionFunc(o *options) func(cmd *cobra.Command, args []string,
 		for _, ns := range namespaceList.Items {
 			if strings.HasPrefix(ns.GetName(), toComplete) {
 				comps = append(comps, ns.GetName())
+			}
+		}
+
+		return comps, cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
+// contextCompletionFunc is a completion function that completes contexts
+// that match the toComplete prefix.
+func contextCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		clientConfig := kubernetes.NewClientConfig(o.kubeConfig, o.context)
+		config, err := clientConfig.RawConfig()
+		if err != nil {
+			return compError(err)
+		}
+
+		var comps []string
+		for name := range config.Contexts {
+			if strings.HasPrefix(name, toComplete) {
+				comps = append(comps, name)
 			}
 		}
 
