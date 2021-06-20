@@ -16,10 +16,14 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/stern/stern/kubernetes"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func runCompletion(shell string, cmd *cobra.Command, out io.Writer) error {
@@ -52,4 +56,43 @@ func runCompletionZsh(cmd *cobra.Command, out io.Writer) error {
 	fmt.Fprint(out, b.String())
 
 	return nil
+}
+
+func registerCompletionFuncForFlags(cmd *cobra.Command, o *options) error {
+	if err := cmd.RegisterFlagCompletionFunc("namespace", namespaceCompletionFunc(o)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// namespaceCompletionFunc is a completion function that completes namespaces
+// that match the toComplete prefix.
+func namespaceCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		clientConfig := kubernetes.NewClientConfig(o.kubeConfig, o.context)
+		clientset, err := kubernetes.NewClientSet(clientConfig)
+		if err != nil {
+			return compError(err)
+		}
+
+		namespaceList, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return compError(err)
+		}
+
+		var comps []string
+		for _, ns := range namespaceList.Items {
+			if strings.HasPrefix(ns.GetName(), toComplete) {
+				comps = append(comps, ns.GetName())
+			}
+		}
+
+		return comps, cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
+func compError(err error) ([]string, cobra.ShellCompDirective) {
+	cobra.CompError(err.Error())
+	return nil, cobra.ShellCompDirectiveError
 }

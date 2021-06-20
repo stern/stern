@@ -316,7 +316,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&o.version, "version", "v", o.version, "Print the version and exit.")
 }
 
-func NewSternCmd(stream genericclioptions.IOStreams) *cobra.Command {
+func NewSternCmd(stream genericclioptions.IOStreams) (*cobra.Command, error) {
 	o := NewOptions(stream)
 
 	cmd := &cobra.Command{
@@ -350,7 +350,11 @@ func NewSternCmd(stream genericclioptions.IOStreams) *cobra.Command {
 
 	o.AddFlags(cmd.Flags())
 
-	return cmd
+	if err := registerCompletionFuncForFlags(cmd, o); err != nil {
+		return cmd, err
+	}
+
+	return cmd, nil
 }
 
 // makeUnique makes items in string slice unique
