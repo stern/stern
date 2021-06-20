@@ -15,6 +15,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/stern/stern/cmd"
@@ -23,7 +24,12 @@ import (
 
 func main() {
 	streams := genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr}
-	if err := cmd.NewSternCmd(streams).Execute(); err != nil {
+	stern, err := cmd.NewSternCmd(streams)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := stern.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

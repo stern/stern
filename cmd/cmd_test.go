@@ -28,10 +28,13 @@ func TestSternCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			streams, _, out, _ := genericclioptions.NewTestIOStreams()
-			cmd := NewSternCmd(streams)
-			cmd.SetArgs(tt.args)
+			stern, err := NewSternCmd(streams)
+			if err != nil {
+				t.Fatal(err)
+			}
+			stern.SetArgs(tt.args)
 
-			if err := cmd.Execute(); err != nil {
+			if err := stern.Execute(); err != nil {
 				t.Fatal(err)
 			}
 
