@@ -67,7 +67,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
  `--exclude-container`, `-E` |           | Container name to exclude when multiple containers in pod. (regular expression)
  `--exclude-pod`             |           | Pod name to exclude. (regular expression)
  `--field-selector`          |           | Selector (field query) to filter on. If present, default to ".*" for the pod-query.
- `--include`, `-i`           |           | Log lines to include. (regular expression
+ `--include`, `-i`           |           | Log lines to include. (regular expression)
  `--init-containers`         | `true`    | Include or exclude init containers.
  `--kubeconfig`              |           | Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.
  `--namespace`, `-n`         |           | Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.
