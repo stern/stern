@@ -297,7 +297,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVarP(&o.exclude, "exclude", "e", o.exclude, "Log lines to exclude. (regular expression)")
 	fs.StringVarP(&o.excludeContainer, "exclude-container", "E", o.excludeContainer, "Container name to exclude when multiple containers in pod. (regular expression)")
 	fs.StringVar(&o.excludePod, "exclude-pod", o.excludePod, "Pod name to exclude. (regular expression)")
-	fs.StringSliceVarP(&o.include, "include", "i", o.include, "Log lines to include. (regular expression")
+	fs.StringSliceVarP(&o.include, "include", "i", o.include, "Log lines to include. (regular expression)")
 	fs.BoolVar(&o.initContainers, "init-containers", o.initContainers, "Include or exclude init containers.")
 	fs.BoolVar(&o.ephemeralContainers, "ephemeral-containers", o.ephemeralContainers, "Include or exclude ephemeral containers.")
 	fs.StringVar(&o.kubeConfig, "kubeconfig", o.kubeConfig, "Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.")
