@@ -103,6 +103,26 @@ func TestUpdateTimezoneIfNeeded(t *testing.T) {
 			"Connection: keep-alive",
 			"",
 		},
+		{
+			"not UTC",
+			&TailOptions{
+				Timestamps: true,
+				Location:   location,
+			},
+			"2021-08-03T01:26:29.953994922+02:00 Connection: keep-alive",
+			"2021-08-03T08:26:29.953994922+09:00 Connection: keep-alive",
+			"",
+		},
+		{
+			"RFC3339Nano format removed trailing zeros",
+			&TailOptions{
+				Timestamps: true,
+				Location:   location,
+			},
+			"2021-06-20T08:20:30.331385Z Connection: keep-alive",
+			"2021-06-20T17:20:30.331385000+09:00 Connection: keep-alive",
+			"",
+		},
 	}
 
 	for _, tt := range tests {
