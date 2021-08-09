@@ -27,6 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/watch"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/cache"
+	watchtools "k8s.io/client-go/tools/watch"
 )
 
 // Target is a target to watch
@@ -46,9 +48,16 @@ func (t *Target) GetID() string {
 // containers/pods. The first result is targets added, the second is targets
 // removed
 func Watch(ctx context.Context, i v1.PodInterface, podFilter *regexp.Regexp, excludePodFilter *regexp.Regexp, containerFilter *regexp.Regexp, containerExcludeFilter *regexp.Regexp, initContainers bool, ephemeralContainers bool, containerStates []ContainerState, labelSelector labels.Selector, fieldSelector fields.Selector) (chan *Target, chan *Target, error) {
-	watcher, err := i.Watch(ctx, metav1.ListOptions{Watch: true, LabelSelector: labelSelector.String(), FieldSelector: fieldSelector.String()})
+	// RetryWatcher will make sure that in case the underlying watcher is
+	// closed (e.g. due to API timeout or etcd timeout) it will get restarted
+	// from the last point without the consumer even knowing about it.
+	watcher, err := watchtools.NewRetryWatcher("1", &cache.ListWatch{
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			return i.Watch(ctx, metav1.ListOptions{LabelSelector: labelSelector.String(), FieldSelector: fieldSelector.String()})
+		},
+	})
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to set up watch")
+		return nil, nil, errors.Wrap(err, "failed to create a watcher")
 	}
 
 	added := make(chan *Target)
