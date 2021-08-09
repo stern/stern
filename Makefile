@@ -1,6 +1,6 @@
 SHELL:=/usr/bin/env bash
 
-GO ?= GO111MODULE=on go
+GO ?= go
 
 .PHONY: build
 build:
