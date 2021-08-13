@@ -90,13 +90,18 @@ func (o TailOptions) UpdateTimezoneIfNeeded(message string) (string, error) {
 		return message, nil
 	}
 
-	datetime := message[:30]
+	idx := strings.IndexRune(message, ' ')
+	if idx == -1 {
+		return "", fmt.Errorf("A log message does not seem to have a datetime prefix: %s", message)
+	}
+
+	datetime := message[:idx]
 	t, err := time.ParseInLocation(time.RFC3339Nano, datetime, time.UTC)
 	if err != nil {
 		return "", err
 	}
 
-	return t.In(o.Location).Format("2006-01-02T15:04:05.000000000Z07:00") + message[30:], nil
+	return t.In(o.Location).Format("2006-01-02T15:04:05.000000000Z07:00") + message[idx:], nil
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
