@@ -1,5 +1,3 @@
-env:
-- GO111MODULE=on
 builds:
 - env:
   - CGO_ENABLED=0
