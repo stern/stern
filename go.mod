@@ -12,4 +12,9 @@ require (
 	k8s.io/apimachinery v0.22.0
 	k8s.io/cli-runtime v0.22.0
 	k8s.io/client-go v0.22.0
+	k8s.io/klog/v2 v2.10.0 // indirect
 )
+
+// Workaround to deal with https://github.com/kubernetes/klog/issues/253
+// Should be deleted when https://github.com/kubernetes/klog/pull/242 is merged and released
+replace github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
