@@ -59,6 +59,7 @@ type TailOptions struct {
 	Include      []*regexp.Regexp
 	Namespace    bool
 	TailLines    *int64
+	Follow       bool
 }
 
 func (o TailOptions) IsExclude(msg string) bool {
@@ -92,7 +93,7 @@ func (o TailOptions) UpdateTimezoneIfNeeded(message string) (string, error) {
 
 	idx := strings.IndexRune(message, ' ')
 	if idx == -1 {
-		return "", fmt.Errorf("A log message does not seem to have a datetime prefix: %s", message)
+		return "", fmt.Errorf("a log message does not seem to have a datetime prefix: %s", message)
 	}
 
 	datetime := message[:idx]
@@ -159,7 +160,7 @@ func (t *Tail) Start(ctx context.Context) error {
 	}
 
 	req := t.clientset.Pods(t.Namespace).GetLogs(t.PodName, &corev1.PodLogOptions{
-		Follow:       true,
+		Follow:       t.Options.Follow,
 		Timestamps:   t.Options.Timestamps,
 		Container:    t.ContainerName,
 		SinceSeconds: &t.Options.SinceSeconds,
