@@ -114,11 +114,11 @@ will receive the following struct:
 The following functions are available within the template (besides the [builtin
 functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 
-| func    | arguments             | description                                                     |
-|---------|-----------------------|-----------------------------------------------------------------|
-| `json`  | `object`              | Marshal the object and output it as a json text                 |
-| `color` | `color.Color, string` | Wrap the text in color (.ContainerColor and .PodColor provided) |
-
+| func        | arguments             | description                                                     |
+|-------------|-----------------------|-----------------------------------------------------------------|
+| `json`      | `object`              | Marshal the object and output it as a json text                 |
+| `color`     | `color.Color, string` | Wrap the text in color (.ContainerColor and .PodColor provided) |
+| `parseJSON` | `string`              | Parse string as JSON                                            |
 
 
 ## Examples:
@@ -193,6 +193,12 @@ Output using a custom template with stern-provided colors:
 
 ```
 stern --template '{{.Message}} ({{.Namespace}}/{{color .PodColor .PodName}}/{{color .ContainerColor .ContainerName}}){{"\n"}}' backend
+```
+
+Output using a custom template with `parseJSON`:
+
+```
+stern . --template='{{.PodName}}/{{.ContainerName}} {{with $d := .Message | parseJSON}}[{{$d.level}}] {{$d.message}}{{end}}{{"\n"}}' backend
 ```
 
 Trigger the interactive prompt to select an 'app.kubernetes.io/instance' label value:
