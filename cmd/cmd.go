@@ -239,6 +239,13 @@ func (o *options) sternConfig() (*stern.Config, error) {
 			}
 			return string(b), nil
 		},
+		"parseJSON": func(text string) (map[string]interface{}, error) {
+			obj := make(map[string]interface{})
+			if err := json.Unmarshal([]byte(text), &obj); err != nil {
+				return obj, err
+			}
+			return obj, nil
+		},
 		"color": func(color color.Color, text string) string {
 			return color.SprintFunc()(text)
 		},
