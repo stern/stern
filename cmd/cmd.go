@@ -287,6 +287,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		FieldSelector:         fieldSelector,
 		TailLines:             tailLines,
 		Template:              template,
+		Follow:                true,
 
 		Out:    o.Out,
 		ErrOut: o.ErrOut,
