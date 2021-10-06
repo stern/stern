@@ -141,6 +141,7 @@ func Run(ctx context.Context, config *Config) error {
 				Include:      config.Include,
 				Namespace:    config.AllNamespaces || len(namespaces) > 1,
 				TailLines:    config.TailLines,
+				Follow:       config.Follow,
 			})
 			setTail(targetID, tail)
 

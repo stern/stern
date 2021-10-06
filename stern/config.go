@@ -46,6 +46,7 @@ type Config struct {
 	FieldSelector         fields.Selector
 	TailLines             *int64
 	Template              *template.Template
+	Follow                bool
 
 	Out    io.Writer
 	ErrOut io.Writer
