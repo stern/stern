@@ -24,7 +24,7 @@ Download a [binary release](https://github.com/stern/stern/releases)
 ### Build from source
 
 ```
-go get -u github.com/stern/stern
+go install github.com/stern/stern@latest
 ```
 
 ### asdf (Linux/macOS)
