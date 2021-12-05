@@ -42,6 +42,13 @@ If you use [Homebrew](https://brew.sh), you can install like this:
 brew install stern
 ```
 
+### Krew (Linux/macOS/Windows)
+
+If you use [Krew](https://krew.sigs.k8s.io/) which is the package manager for kubectl plugins, you can install like this:
+```
+kubectl krew install stern
+```
+
 ## Usage
 
 ```
