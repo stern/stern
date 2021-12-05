@@ -30,3 +30,7 @@ jobs:
       run: make test
     - name: Build binary
       run: make build
+    - name: Make dist file
+      run: make dist
+    - name: Validate a krew plugin manifest file
+      run: make validate-krew-manifest
