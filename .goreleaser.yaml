@@ -34,7 +34,7 @@ dockers:
   - "ghcr.io/stern/stern:{{ .Major }}.{{ .Minor }}"
   - "ghcr.io/stern/stern:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
 krews:
-  - skip_upload: false
+  - skip_upload: true
     homepage: https://github.com/stern/stern
     description: |
       Stern allows you to `tail` multiple pods on Kubernetes and multiple containers
