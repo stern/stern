@@ -104,6 +104,16 @@ func TestUpdateTimezoneIfNeeded(t *testing.T) {
 			"",
 		},
 		{
+			"timestamp required on non timestamp message",
+			&TailOptions{
+				Timestamps: true,
+				Location:   location,
+			},
+			"Connection: keep-alive",
+			"",
+			"missing timestamp",
+		},
+		{
 			"not UTC",
 			&TailOptions{
 				Timestamps: true,
