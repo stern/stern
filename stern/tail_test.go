@@ -110,7 +110,7 @@ func TestUpdateTimezoneIfNeeded(t *testing.T) {
 				Location:   location,
 			},
 			"Connection: keep-alive",
-			"",
+			"Connection: keep-alive",
 			"missing timestamp",
 		},
 		{
