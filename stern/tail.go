@@ -93,17 +93,13 @@ func (o TailOptions) UpdateTimezoneIfNeeded(message string) (string, error) {
 
 	idx := strings.IndexRune(message, ' ')
 	if idx == -1 {
-		return message, fmt.Errorf("missing timestamp")
+		return message, errors.New("missing timestamp")
 	}
 
 	datetime := message[:idx]
-	r, _ := regexp.Compile(`\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d(\.\d+([+-][0-2]\d:[0-5]\d|(Z)?))`)
-	if !r.MatchString(datetime) {
-		return message, fmt.Errorf("missing timestamp")
-	}
 	t, err := time.ParseInLocation(time.RFC3339Nano, datetime, time.UTC)
 	if err != nil {
-		return message, err
+		return message, errors.New("missing timestamp")
 	}
 
 	return t.In(o.Location).Format("2006-01-02T15:04:05.000000000Z07:00") + message[idx:], nil
