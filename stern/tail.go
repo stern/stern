@@ -93,13 +93,13 @@ func (o TailOptions) UpdateTimezoneIfNeeded(message string) (string, error) {
 
 	idx := strings.IndexRune(message, ' ')
 	if idx == -1 {
-		return "", fmt.Errorf("a log message does not seem to have a datetime prefix: %s", message)
+		return message, errors.New("missing timestamp")
 	}
 
 	datetime := message[:idx]
 	t, err := time.ParseInLocation(time.RFC3339Nano, datetime, time.UTC)
 	if err != nil {
-		return "", err
+		return message, errors.New("missing timestamp")
 	}
 
 	return t.In(o.Location).Format("2006-01-02T15:04:05.000000000Z07:00") + message[idx:], nil
@@ -214,7 +214,8 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper)
 
 			msg, err := t.Options.UpdateTimezoneIfNeeded(msg)
 			if err != nil {
-				return err
+				t.Print(fmt.Sprintf("[%v] %s", err, msg))
+				continue
 			}
 
 			t.Print(msg)
