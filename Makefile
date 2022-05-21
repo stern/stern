@@ -1,28 +1,25 @@
 SHELL:=/usr/bin/env bash
 
-GO ?= go
-
 .PHONY: build
 build:
-	$(GO) build -o dist/stern .
+	go build -o dist/stern .
 
-TOOLS_DIR := hack/tools
-TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
-GORELEASER_BIN := bin/goreleaser
-GORELEASER := $(TOOLS_DIR)/$(GORELEASER_BIN)
-GOLANGCI_LINT_BIN := bin/golangci-lint
-GOLANGCI_LINT := $(TOOLS_DIR)/$(GOLANGCI_LINT_BIN)
-VALIDATE_KREW_MAIFEST_BIN := bin/validate-krew-manifest
-VALIDATE_KREW_MAIFEST := $(TOOLS_DIR)/$(VALIDATE_KREW_MAIFEST_BIN)
+TOOLS_BIN_DIR := $(CURDIR)/hack/tools/bin
+GORELEASER_VERSION ?= v1.9.1
+GORELEASER := $(TOOLS_BIN_DIR)/goreleaser
+GOLANGCI_LINT_VERSION ?= v1.46.2
+GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
+VALIDATE_KREW_MAIFEST_VERSION ?= v0.4.3
+VALIDATE_KREW_MAIFEST := $(TOOLS_BIN_DIR)/validate-krew-manifest
 
-$(GORELEASER): $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR) && $(GO) build -o $(GORELEASER_BIN) github.com/goreleaser/goreleaser
+$(GORELEASER):
+	GOBIN=$(TOOLS_BIN_DIR) go install github.com/goreleaser/goreleaser@$(GORELEASER_VERSION)
 
-$(GOLANGCI_LINT): $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR) && $(GO) build -o $(GOLANGCI_LINT_BIN) github.com/golangci/golangci-lint/cmd/golangci-lint
+$(GOLANGCI_LINT):
+	GOBIN=$(TOOLS_BIN_DIR) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
-$(VALIDATE_KREW_MAIFEST): $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR) && $(GO) build -o $(VALIDATE_KREW_MAIFEST_BIN) sigs.k8s.io/krew/cmd/validate-krew-manifest
+$(VALIDATE_KREW_MAIFEST):
+	GOBIN=$(TOOLS_BIN_DIR) go install sigs.k8s.io/krew/cmd/validate-krew-manifest@$(VALIDATE_KREW_MAIFEST_VERSION)
 
 .PHONY: build-cross
 build-cross: $(GORELEASER)
@@ -30,7 +27,7 @@ build-cross: $(GORELEASER)
 
 .PHONY: test
 test: fmt vet lint
-	$(GO) test -v ./...
+	go test -v ./...
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT)
@@ -48,7 +45,7 @@ README_FILE ?= ./README.md
 
 .PHONY: update-readme
 update-readme:
-	$(GO) run hack/update-readme/update-readme.go $(README_FILE)
+	go run hack/update-readme/update-readme.go $(README_FILE)
 
 .PHONY: verify-readme
 verify-readme:
