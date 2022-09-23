@@ -259,9 +259,9 @@ func (o *options) sternConfig() (*stern.Config, error) {
 			}
 			return obj, nil
 		},
-		"extjson": func(in interface{}) (string, error) {
-			if json.Valid([]byte(in.(string))) {
-				return strings.TrimSuffix(in.(string), "\n"), nil
+		"extjson": func(in string) (string, error) {
+			if json.Valid([]byte(in)) {
+				return strings.TrimSuffix(in, "\n"), nil
 			}
 			b, err := json.Marshal(in)
 			if err != nil {
