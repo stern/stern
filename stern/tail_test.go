@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"testing"
 	"text/template"
@@ -174,7 +173,7 @@ line 4 (my-node/my-namespace/my-pod/my-container)
 	clientset := fake.NewSimpleClientset()
 	for i, tt := range tests {
 		out := new(bytes.Buffer)
-		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", tt.tmpl, out, ioutil.Discard, &TailOptions{})
+		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", tt.tmpl, out, io.Discard, &TailOptions{})
 
 		if err := tail.ConsumeRequest(context.TODO(), tt.request); err != nil {
 			t.Fatalf("%d: unexpected err %v", i, err)
@@ -191,10 +190,10 @@ type responseWrapperMock struct {
 }
 
 func (r *responseWrapperMock) DoRaw(context.Context) ([]byte, error) {
-	data, _ := ioutil.ReadAll(r.data)
+	data, _ := io.ReadAll(r.data)
 	return data, nil
 }
 
 func (r *responseWrapperMock) Stream(context.Context) (io.ReadCloser, error) {
-	return ioutil.NopCloser(r.data), nil
+	return io.NopCloser(r.data), nil
 }
