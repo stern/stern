@@ -229,13 +229,13 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		case "json":
 			t = "{{json .}}"
 		case "extjson":
-			t = "\"pod\": \"{{color .PodColor .PodName}}\", \"container\": \"{{color .ContainerColor .ContainerName}}\", \"msg\": {{extjson .Message}}"
+			t = "\"pod\": \"{{color .PodColor .PodName}}\", \"container\": \"{{color .ContainerColor .ContainerName}}\", \"message\": {{extjson .Message}}"
 			if o.allNamespaces {
 				t = fmt.Sprintf("\"namespace\": \"{{color .PodColor .Namespace}}\", %s", t)
 			}
 			t = fmt.Sprintf("{%s}", t)
 		case "ppextjson":
-			t = "  \"pod\": \"{{color .PodColor .PodName}}\",\n  \"container\": \"{{color .ContainerColor .ContainerName}}\",\n  \"msg\": {{extjson .Message}}"
+			t = "  \"pod\": \"{{color .PodColor .PodName}}\",\n  \"container\": \"{{color .ContainerColor .ContainerName}}\",\n  \"message\": {{extjson .Message}}"
 			if o.allNamespaces {
 				t = fmt.Sprintf("  \"namespace\": \"{{color .PodColor .Namespace}}\",\n%s", t)
 			}

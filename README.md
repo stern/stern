@@ -126,8 +126,8 @@ functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 | `json`      | `object`              | Marshal the object and output it as a json text                 |
 | `color`     | `color.Color, string` | Wrap the text in color (.ContainerColor and .PodColor provided) |
 | `parseJSON` | `string`              | Parse string as JSON                                            |
-| `extjson`   | `string`              | Parse the object as json and output colorised json              |
-| `ppextjson` | `string`              | Parse the object as json and output pretty-print colorised json |
+| `extjson`   | `string`              | Parse the object as json and output colorized json              |
+| `ppextjson` | `string`              | Parse the object as json and output pretty-print colorized json |
 
 ## Examples:
 
