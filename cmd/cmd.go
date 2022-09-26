@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 	"text/template"
 	"time"
 
@@ -227,6 +228,18 @@ func (o *options) sternConfig() (*stern.Config, error) {
 			t = "{{.Message}}"
 		case "json":
 			t = "{{json .}}"
+		case "extjson":
+			t = "\"pod\": \"{{color .PodColor .PodName}}\", \"container\": \"{{color .ContainerColor .ContainerName}}\", \"message\": {{extjson .Message}}"
+			if o.allNamespaces {
+				t = fmt.Sprintf("\"namespace\": \"{{color .PodColor .Namespace}}\", %s", t)
+			}
+			t = fmt.Sprintf("{%s}", t)
+		case "ppextjson":
+			t = "  \"pod\": \"{{color .PodColor .PodName}}\",\n  \"container\": \"{{color .ContainerColor .ContainerName}}\",\n  \"message\": {{extjson .Message}}"
+			if o.allNamespaces {
+				t = fmt.Sprintf("  \"namespace\": \"{{color .PodColor .Namespace}}\",\n%s", t)
+			}
+			t = fmt.Sprintf("{\n%s\n}", t)
 		}
 		t += "\n"
 	}
@@ -245,6 +258,16 @@ func (o *options) sternConfig() (*stern.Config, error) {
 				return obj, err
 			}
 			return obj, nil
+		},
+		"extjson": func(in string) (string, error) {
+			if json.Valid([]byte(in)) {
+				return strings.TrimSuffix(in, "\n"), nil
+			}
+			b, err := json.Marshal(in)
+			if err != nil {
+				return "", err
+			}
+			return strings.TrimSuffix(string(b), "\n"), nil
 		},
 		"color": func(color color.Color, text string) string {
 			return color.SprintFunc()(text)
@@ -312,7 +335,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.kubeConfig, "kube-config", o.kubeConfig, "Path to kubeconfig file to use.")
 	_ = fs.MarkDeprecated("kube-config", "Use --kubeconfig instead.")
 	fs.StringSliceVarP(&o.namespaces, "namespace", "n", o.namespaces, "Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
-	fs.StringVarP(&o.output, "output", "o", o.output, "Specify predefined template. Currently support: [default, raw, json]")
+	fs.StringVarP(&o.output, "output", "o", o.output, "Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]")
 	fs.BoolVarP(&o.prompt, "prompt", "p", o.prompt, "Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.")
 	fs.StringVarP(&o.selector, "selector", "l", o.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
 	fs.StringVar(&o.fieldSelector, "field-selector", o.fieldSelector, "Selector (field query) to filter on. If present, default to \".*\" for the pod-query.")
