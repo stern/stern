@@ -12,13 +12,13 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-go@v3
       with:
         go-version: 1.19.x
     - name: Ensure go.mod is already tidied
       run: go mod tidy && git diff -s --exit-code go.sum
-    - uses: actions/cache@v2
+    - uses: actions/cache@v3
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
