@@ -206,7 +206,7 @@ stern --template '{{.Message}} ({{.Namespace}}/{{color .PodColor .PodName}}/{{co
 Output using a custom template with `parseJSON`:
 
 ```
-stern . --template='{{.PodName}}/{{.ContainerName}} {{with $d := .Message | parseJSON}}[{{$d.level}}] {{$d.message}}{{end}}{{"\n"}}' backend
+stern --template='{{.PodName}}/{{.ContainerName}} {{with $d := .Message | parseJSON}}[{{$d.level}}] {{$d.message}}{{end}}{{"\n"}}' backend
 ```
 
 Trigger the interactive prompt to select an 'app.kubernetes.io/instance' label value:
