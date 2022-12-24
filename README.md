@@ -70,11 +70,11 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
  `--container-state`         | `running` | Tail containers with state in running, waiting or terminated. To specify multiple states, repeat this or set comma-separated value.
  `--context`                 |           | Kubernetes context to use. Default to current context configured in kubeconfig.
  `--ephemeral-containers`    | `true`    | Include or exclude ephemeral containers.
- `--exclude`, `-e`           |           | Log lines to exclude. (regular expression)
+ `--exclude`, `-e`           | `[]`      | Log lines to exclude. (regular expression)
  `--exclude-container`, `-E` |           | Container name to exclude when multiple containers in pod. (regular expression)
  `--exclude-pod`             |           | Pod name to exclude. (regular expression)
  `--field-selector`          |           | Selector (field query) to filter on. If present, default to ".*" for the pod-query.
- `--include`, `-i`           |           | Log lines to include. (regular expression)
+ `--include`, `-i`           | `[]`      | Log lines to include. (regular expression)
  `--init-containers`         | `true`    | Include or exclude init containers.
  `--kubeconfig`              |           | Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.
  `--namespace`, `-n`         |           | Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.
