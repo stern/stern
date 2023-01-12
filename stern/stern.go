@@ -74,6 +74,16 @@ func Run(ctx context.Context, config *Config) error {
 		}
 	}
 
+	filter := &targetFilter{
+		podFilter:              config.PodQuery,
+		excludePodFilter:       config.ExcludePodQuery,
+		containerFilter:        config.ContainerQuery,
+		containerExcludeFilter: config.ExcludeContainerQuery,
+		initContainers:         config.InitContainers,
+		ephemeralContainers:    config.EphemeralContainers,
+		containerStates:        config.ContainerStates,
+	}
+
 	added := make(chan *Target)
 	removed := make(chan *Target)
 	errCh := make(chan error)
@@ -85,15 +95,10 @@ func Run(ctx context.Context, config *Config) error {
 	for _, n := range namespaces {
 		a, r, err := Watch(ctx,
 			clientset.Pods(n),
-			config.PodQuery,
-			config.ExcludePodQuery,
-			config.ContainerQuery,
-			config.ExcludeContainerQuery,
-			config.InitContainers,
-			config.EphemeralContainers,
-			config.ContainerStates,
 			config.LabelSelector,
-			config.FieldSelector)
+			config.FieldSelector,
+			filter,
+		)
 		if err != nil {
 			return errors.Wrap(err, "failed to set up watch")
 		}
