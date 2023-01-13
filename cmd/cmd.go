@@ -61,6 +61,7 @@ type options struct {
 	output              string
 	prompt              bool
 	podQuery            string
+	noFollow            bool
 }
 
 func NewOptions(streams genericclioptions.IOStreams) *options {
@@ -79,6 +80,7 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 		timestamps:          false,
 		timezone:            "Local",
 		prompt:              false,
+		noFollow:            false,
 	}
 }
 
@@ -310,7 +312,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		FieldSelector:         fieldSelector,
 		TailLines:             tailLines,
 		Template:              template,
-		Follow:                true,
+		Follow:                !o.noFollow,
 
 		Out:    o.Out,
 		ErrOut: o.ErrOut,
@@ -328,6 +330,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringArrayVarP(&o.exclude, "exclude", "e", o.exclude, "Log lines to exclude. (regular expression)")
 	fs.StringVarP(&o.excludeContainer, "exclude-container", "E", o.excludeContainer, "Container name to exclude when multiple containers in pod. (regular expression)")
 	fs.StringVar(&o.excludePod, "exclude-pod", o.excludePod, "Pod name to exclude. (regular expression)")
+	fs.BoolVar(&o.noFollow, "no-follow", o.noFollow, "Exit when all logs have been shown.")
 	fs.StringArrayVarP(&o.include, "include", "i", o.include, "Log lines to include. (regular expression)")
 	fs.BoolVar(&o.initContainers, "init-containers", o.initContainers, "Include or exclude init containers.")
 	fs.BoolVar(&o.ephemeralContainers, "ephemeral-containers", o.ephemeralContainers, "Include or exclude ephemeral containers.")

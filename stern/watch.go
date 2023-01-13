@@ -32,7 +32,7 @@ import (
 // Watch starts listening to Kubernetes events and emits modified
 // containers/pods. The first result is targets added, the second is targets
 // removed
-func Watch(ctx context.Context, i v1.PodInterface, labelSelector labels.Selector, fieldSelector fields.Selector, filter *targetFilter) (chan *Target, chan *Target, error) {
+func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.Selector, fieldSelector fields.Selector, filter *targetFilter) (chan *Target, chan *Target, error) {
 	// RetryWatcher will make sure that in case the underlying watcher is
 	// closed (e.g. due to API timeout or etcd timeout) it will get restarted
 	// from the last point without the consumer even knowing about it.

@@ -78,6 +78,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
  `--init-containers`         | `true`    | Include or exclude init containers.
  `--kubeconfig`              |           | Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.
  `--namespace`, `-n`         |           | Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.
+ `--no-follow`               | `false`   | Exit when all logs have been shown.
  `--output`, `-o`            | `default` | Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]
  `--prompt`, `-p`            | `false`   | Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.
  `--selector`, `-l`          |           | Selector (label query) to filter on. If present, default to ".*" for the pod-query.
