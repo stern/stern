@@ -21,6 +21,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stern/stern/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
@@ -86,4 +88,19 @@ func List(ctx context.Context, config *Config) (map[string]string, error) {
 	wg.Wait()
 
 	return labels, nil
+}
+
+// ListTargets returns targets by listing and filtering pods
+func ListTargets(ctx context.Context, i corev1client.PodInterface, labelSelector labels.Selector, fieldSelector fields.Selector, filter *targetFilter) ([]*Target, error) {
+	list, err := i.List(ctx, metav1.ListOptions{LabelSelector: labelSelector.String(), FieldSelector: fieldSelector.String()})
+	if err != nil {
+		return nil, err
+	}
+	var targets []*Target
+	for i := range list.Items {
+		filter.visit(&list.Items[i], func(t *Target, containerStateMatched bool) {
+			targets = append(targets, t)
+		})
+	}
+	return targets, nil
 }

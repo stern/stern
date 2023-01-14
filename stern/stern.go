@@ -21,6 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stern/stern/kubernetes"
+	"golang.org/x/sync/errgroup"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
@@ -74,6 +75,52 @@ func Run(ctx context.Context, config *Config) error {
 		}
 	}
 
+	filter := &targetFilter{
+		podFilter:              config.PodQuery,
+		excludePodFilter:       config.ExcludePodQuery,
+		containerFilter:        config.ContainerQuery,
+		containerExcludeFilter: config.ExcludeContainerQuery,
+		initContainers:         config.InitContainers,
+		ephemeralContainers:    config.EphemeralContainers,
+		containerStates:        config.ContainerStates,
+	}
+	newTail := func(t *Target) *Tail {
+		return NewTail(clientset, t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
+			Timestamps:   config.Timestamps,
+			Location:     config.Location,
+			SinceSeconds: int64(config.Since.Seconds()),
+			Exclude:      config.Exclude,
+			Include:      config.Include,
+			Namespace:    config.AllNamespaces || len(namespaces) > 1,
+			TailLines:    config.TailLines,
+			Follow:       config.Follow,
+		})
+	}
+
+	if !config.Follow {
+		var eg errgroup.Group
+		for _, n := range namespaces {
+			targets, err := ListTargets(ctx,
+				clientset.Pods(n),
+				config.LabelSelector,
+				config.FieldSelector,
+				filter,
+			)
+			if err != nil {
+				return err
+			}
+			for _, t := range targets {
+				t := t
+				eg.Go(func() error {
+					tail := newTail(t)
+					defer tail.Close()
+					return tail.Start(ctx)
+				})
+			}
+		}
+		return eg.Wait()
+	}
+
 	added := make(chan *Target)
 	removed := make(chan *Target)
 	errCh := make(chan error)
@@ -83,17 +130,12 @@ func Run(ctx context.Context, config *Config) error {
 	defer close(errCh)
 
 	for _, n := range namespaces {
-		a, r, err := Watch(ctx,
+		a, r, err := WatchTargets(ctx,
 			clientset.Pods(n),
-			config.PodQuery,
-			config.ExcludePodQuery,
-			config.ContainerQuery,
-			config.ExcludeContainerQuery,
-			config.InitContainers,
-			config.EphemeralContainers,
-			config.ContainerStates,
 			config.LabelSelector,
-			config.FieldSelector)
+			config.FieldSelector,
+			filter,
+		)
 		if err != nil {
 			return errors.Wrap(err, "failed to set up watch")
 		}
@@ -133,16 +175,7 @@ func Run(ctx context.Context, config *Config) error {
 				}
 			}
 
-			tail := NewTail(clientset, p.Node, p.Namespace, p.Pod, p.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
-				Timestamps:   config.Timestamps,
-				Location:     config.Location,
-				SinceSeconds: int64(config.Since.Seconds()),
-				Exclude:      config.Exclude,
-				Include:      config.Include,
-				Namespace:    config.AllNamespaces || len(namespaces) > 1,
-				TailLines:    config.TailLines,
-				Follow:       config.Follow,
-			})
+			tail := newTail(p)
 			setTail(targetID, tail)
 
 			go func(tail *Tail) {
