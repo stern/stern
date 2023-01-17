@@ -41,10 +41,11 @@ func main() {
 
 // GenerateFlagsMarkdownTable generates markdown table of flag list.
 // This function loads flag list and generates such as following text:
-//  flag            | default         | purpose
-// -----------------|-----------------|---------
-//  `--flag1`, `-f` |                 | This is flag1.
-//  `--flag2`       | `flag2-default` | This is flag2.
+//
+//	 flag            | default         | purpose
+//	-----------------|-----------------|---------
+//	 `--flag1`, `-f` |                 | This is flag1.
+//	 `--flag2`       | `flag2-default` | This is flag2.
 func GenerateFlagsMarkdownTable() string {
 	fs := pflag.NewFlagSet("", pflag.ExitOnError)
 	o := cmd.NewOptions(genericclioptions.NewTestIOStreamsDiscard())
