@@ -81,6 +81,7 @@ The `pod` query is a regular expression so you could provide `"web-\w"` to tail
  `--no-follow`               | `false`   | Exit when all logs have been shown.
  `--output`, `-o`            | `default` | Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]
  `--prompt`, `-p`            | `false`   | Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.
+ `--resource`                |           | Select pods by the specified resource in the form "&lt;resource&gt;/&lt;name&gt;". If present, default to ".*" for the pod-query.
  `--selector`, `-l`          |           | Selector (label query) to filter on. If present, default to ".*" for the pod-query.
  `--since`, `-s`             | `48h0m0s` | Return logs newer than a relative duration like 5s, 2m, or 3h.
  `--tail`                    | `-1`      | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.
@@ -180,6 +181,11 @@ stern frontend --selector release=canary
 Tail the pods on `kind-control-plane` node across all namespaces
 ```
 stern --all-namespaces --field-selector spec.nodeName=kind-control-plane
+```
+
+Tail the pods created by `deployment/nginx`
+```
+stern --resource deployment/nginx
 ```
 
 Pipe the log message to jq:

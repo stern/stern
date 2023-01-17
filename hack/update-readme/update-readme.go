@@ -96,6 +96,8 @@ func GenerateFlagsMarkdownTable() string {
 			defaultMaxlen = len(defaultText)
 		}
 
+		usage = strings.ReplaceAll(usage, "<", "&lt;")
+		usage = strings.ReplaceAll(usage, ">", "&gt;")
 		purposeText := fmt.Sprintf(" %s", usage)
 
 		allTexts = append(allTexts, []string{flagText, defaultText, purposeText})

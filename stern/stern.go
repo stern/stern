@@ -17,12 +17,18 @@ package stern
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
+
 	"github.com/stern/stern/kubernetes"
 	"golang.org/x/sync/errgroup"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"k8s.io/apimachinery/pkg/labels"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientset "k8s.io/client-go/kubernetes"
 )
 
 var tails = make(map[string]*Tail)
@@ -55,7 +61,7 @@ func Run(ctx context.Context, config *Config) error {
 		return err
 	}
 
-	clientset, err := corev1client.NewForConfig(cc)
+	client, err := clientset.NewForConfig(cc)
 	if err != nil {
 		return err
 	}
@@ -85,7 +91,7 @@ func Run(ctx context.Context, config *Config) error {
 		containerStates:        config.ContainerStates,
 	}
 	newTail := func(t *Target) *Tail {
-		return NewTail(clientset, t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
+		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
 			Timestamps:   config.Timestamps,
 			Location:     config.Location,
 			SinceSeconds: int64(config.Since.Seconds()),
@@ -100,9 +106,13 @@ func Run(ctx context.Context, config *Config) error {
 	if !config.Follow {
 		var eg errgroup.Group
 		for _, n := range namespaces {
+			selector, err := chooseSelector(ctx, client, n, config.Resource, config.LabelSelector)
+			if err != nil {
+				return err
+			}
 			targets, err := ListTargets(ctx,
-				clientset.Pods(n),
-				config.LabelSelector,
+				client.CoreV1().Pods(n),
+				selector,
 				config.FieldSelector,
 				filter,
 			)
@@ -130,9 +140,13 @@ func Run(ctx context.Context, config *Config) error {
 	defer close(errCh)
 
 	for _, n := range namespaces {
+		selector, err := chooseSelector(ctx, client, n, config.Resource, config.LabelSelector)
+		if err != nil {
+			return err
+		}
 		a, r, err := WatchTargets(ctx,
-			clientset.Pods(n),
-			config.LabelSelector,
+			client.CoreV1().Pods(n),
+			selector,
 			config.FieldSelector,
 			filter,
 		)
@@ -202,4 +216,80 @@ func Run(ctx context.Context, config *Config) error {
 	case <-ctx.Done():
 		return nil
 	}
+}
+
+func chooseSelector(ctx context.Context, client clientset.Interface, namespace, resource string, selector labels.Selector) (labels.Selector, error) {
+	if resource == "" {
+		return selector, nil
+	}
+	parts := strings.Split(resource, "/")
+	if len(parts) != 2 {
+		return nil, errors.New("resource must be specified in the form \"<resource>/<name>\"")
+	}
+	labelMap, err := retrieveLabelsFromResource(ctx, client, namespace, parts[0], parts[1])
+	if err != nil {
+		return nil, err
+	}
+	return labels.SelectorFromSet(labelMap), nil
+}
+
+func retrieveLabelsFromResource(ctx context.Context, client clientset.Interface, namespace, kind, name string) (map[string]string, error) {
+	opt := metav1.GetOptions{}
+	switch kind {
+	// core
+	case "po", "pods", "pod":
+		o, err := client.CoreV1().Pods(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Labels, nil
+	case "rc", "replicationcontrollers", "replicationcontroller":
+		o, err := client.CoreV1().ReplicationControllers(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		if o.Spec.Template == nil { // RC's spec.template is a pointer field
+			return nil, fmt.Errorf("%s does not have spec.template", name)
+		}
+		return o.Spec.Template.Labels, nil
+	// apps
+	case "deploy", "deployments", "deployment":
+		o, err := client.AppsV1().Deployments(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.Template.Labels, nil
+	case "ds", "daemonsets", "daemonset":
+		o, err := client.AppsV1().DaemonSets(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.Template.Labels, nil
+	case "rs", "replicasets", "replicaset":
+		o, err := client.AppsV1().ReplicaSets(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.Template.Labels, nil
+	case "sts", "statefulsets", "statefulset":
+		o, err := client.AppsV1().StatefulSets(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.Template.Labels, nil
+	// batch
+	case "jobs", "job": // job does not have a short name
+		o, err := client.BatchV1().Jobs(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.Template.Labels, nil
+	case "cj", "cronjobs", "cronjob":
+		o, err := client.BatchV1().CronJobs(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.JobTemplate.Spec.Template.Labels, nil
+	}
+	return nil, fmt.Errorf("unknown resource type %s", kind)
 }

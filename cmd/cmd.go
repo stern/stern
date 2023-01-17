@@ -62,6 +62,7 @@ type options struct {
 	prompt              bool
 	podQuery            string
 	noFollow            bool
+	resource            string
 }
 
 func NewOptions(streams genericclioptions.IOStreams) *options {
@@ -93,8 +94,11 @@ func (o *options) Complete(args []string) error {
 }
 
 func (o *options) Validate() error {
-	if !o.prompt && o.podQuery == "" && o.selector == "" && o.fieldSelector == "" {
-		return errors.New("One of pod-query, --selector, --field-selector or --prompt is required")
+	if !o.prompt && o.podQuery == "" && o.selector == "" && o.fieldSelector == "" && o.resource == "" {
+		return errors.New("One of pod-query, --selector, --field-selector, --prompt or --resource is required")
+	}
+	if o.selector != "" && o.resource != "" {
+		return errors.New("--selector and --resource can not be set at the same time")
 	}
 
 	return nil
@@ -313,6 +317,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		TailLines:             tailLines,
 		Template:              template,
 		Follow:                !o.noFollow,
+		Resource:              o.resource,
 
 		Out:    o.Out,
 		ErrOut: o.ErrOut,
@@ -339,6 +344,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	_ = fs.MarkDeprecated("kube-config", "Use --kubeconfig instead.")
 	fs.StringSliceVarP(&o.namespaces, "namespace", "n", o.namespaces, "Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
 	fs.StringVarP(&o.output, "output", "o", o.output, "Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]")
+	fs.StringVar(&o.resource, "resource", o.resource, "Select pods by the specified resource in the form \"<resource>/<name>\". If present, default to \".*\" for the pod-query.")
 	fs.BoolVarP(&o.prompt, "prompt", "p", o.prompt, "Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.")
 	fs.StringVarP(&o.selector, "selector", "l", o.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
 	fs.StringVar(&o.fieldSelector, "field-selector", o.fieldSelector, "Selector (field query) to filter on. If present, default to \".*\" for the pod-query.")

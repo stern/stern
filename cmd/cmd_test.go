@@ -56,7 +56,18 @@ func TestOptionsValidate(t *testing.T) {
 		{
 			"No required options",
 			NewOptions(streams),
-			"One of pod-query, --selector, --field-selector or --prompt is required",
+			"One of pod-query, --selector, --field-selector, --prompt or --resource is required",
+		},
+		{
+			"Specify both selector and resource",
+			func() *options {
+				o := NewOptions(streams)
+				o.selector = "app=nginx"
+				o.resource = "deployment/nginx"
+
+				return o
+			}(),
+			"--selector and --resource can not be set at the same time",
 		},
 		{
 			"Use prompt",
