@@ -230,6 +230,9 @@ func chooseSelector(ctx context.Context, client clientset.Interface, namespace, 
 	if err != nil {
 		return nil, err
 	}
+	if len(labelMap) == 0 {
+		return nil, fmt.Errorf("resource %s has no labels", resource)
+	}
 	return labels.SelectorFromSet(labelMap), nil
 }
 
