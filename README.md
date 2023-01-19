@@ -6,7 +6,8 @@
 Stern allows you to `tail` multiple pods on Kubernetes and multiple containers
 within the pod. Each result is color coded for quicker debugging.
 
-The query is a regular expression so the pod name can easily be filtered and
+The query is a regular expression or a Kubernetes resource in the form
+ `<resource>/<name>` so the pod name can easily be filtered and
 you don't need to specify the exact id (for instance omitting the deployment
 id). If a pod is deleted it gets removed from tail and if a new pod is added it
 automatically gets tailed.
@@ -55,8 +56,15 @@ kubectl krew install stern
 stern pod-query [flags]
 ```
 
-The `pod` query is a regular expression so you could provide `"web-\w"` to tail
-`web-backend` and `web-frontend` pods but not `web-123`.
+The `pod` query is a regular expression or a Kubernetes resource in the form `<resource>/<name>`.
+
+The query is a regular expression when it is not a Kubernetes resource,
+so you could provide `"web-\w"` to tail `web-backend` and `web-frontend` pods but not `web-123`.
+
+When the query is in the form `<resource>/<name>` (exact match), you can select all pods belonging
+to the specified Kubernetes resource, such as `deployment/nginx`.
+Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `daemonset`, `deployment`,
+`replicaset`, `statefulset` and `job`.
 
 ### cli flags
 
@@ -180,6 +188,11 @@ stern frontend --selector release=canary
 Tail the pods on `kind-control-plane` node across all namespaces
 ```
 stern --all-namespaces --field-selector spec.nodeName=kind-control-plane
+```
+
+Tail the pods created by `deployment/nginx`
+```
+stern deployment/nginx
 ```
 
 Pipe the log message to jq:

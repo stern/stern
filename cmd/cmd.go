@@ -62,6 +62,7 @@ type options struct {
 	prompt              bool
 	podQuery            string
 	noFollow            bool
+	resource            string
 }
 
 func NewOptions(streams genericclioptions.IOStreams) *options {
@@ -86,15 +87,22 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 
 func (o *options) Complete(args []string) error {
 	if len(args) > 0 {
-		o.podQuery = args[0]
+		if s := args[0]; strings.Contains(s, "/") {
+			o.resource = s
+		} else {
+			o.podQuery = s
+		}
 	}
 
 	return nil
 }
 
 func (o *options) Validate() error {
-	if !o.prompt && o.podQuery == "" && o.selector == "" && o.fieldSelector == "" {
+	if !o.prompt && o.podQuery == "" && o.resource == "" && o.selector == "" && o.fieldSelector == "" {
 		return errors.New("One of pod-query, --selector, --field-selector or --prompt is required")
+	}
+	if o.selector != "" && o.resource != "" {
+		return errors.New("--selector and the <resource>/<name> query can not be set at the same time")
 	}
 
 	return nil
@@ -313,6 +321,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		TailLines:             tailLines,
 		Template:              template,
 		Follow:                !o.noFollow,
+		Resource:              o.resource,
 
 		Out:    o.Out,
 		ErrOut: o.ErrOut,
