@@ -29,6 +29,13 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 )
 
+var flagChoices = map[string][]string{
+	"color":           []string{"always", "never", "auto"},
+	"completion":      []string{"bash", "zsh", "fish"},
+	"container-state": []string{stern.RUNNING, stern.WAITING, stern.TERMINATED},
+	"output":          []string{"default", "raw", "json", "extjson", "ppextjson"},
+}
+
 func runCompletion(shell string, cmd *cobra.Command, out io.Writer) error {
 	var err error
 
@@ -70,6 +77,14 @@ func registerCompletionFuncForFlags(cmd *cobra.Command, o *options) error {
 
 	if err := cmd.RegisterFlagCompletionFunc("context", contextCompletionFunc(o)); err != nil {
 		return err
+	}
+
+	// flags with pre-defined choices
+	for flag, choices := range flagChoices {
+		if err := cmd.RegisterFlagCompletionFunc(flag,
+			cobra.FixedCompletions(choices, cobra.ShellCompDirectiveNoFileComp)); err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -234,8 +234,8 @@ stern -p
 Stern supports command-line auto completion for bash, zsh or fish. `stern
 --completion=(bash|zsh|fish)` outputs the shell completion code which work by being
 evaluated in `.bashrc`, etc for the specified shell. In addition, Stern
-supports dynamic completion for `--namespace`, `--context` and a resource query
-in the form `<resource>/<name>`.
+supports dynamic completion for `--namespace`, `--context`, a resource query
+in the form `<resource>/<name>`, and flags with pre-defined choices.
 
 If you use bash, stern bash completion code depends on the
 [bash-completion](https://github.com/scop/bash-completion). On the macOS, you
