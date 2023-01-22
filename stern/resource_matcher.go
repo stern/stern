@@ -49,4 +49,14 @@ var (
 	ReplicaSetMatcher            = ResourceMatcher{name: "replicaset", aliases: []string{"rs", "replicasets"}}
 	StatefulSetMatcher           = ResourceMatcher{name: "statefulset", aliases: []string{"sts", "statefulsets"}}
 	JobMatcher                   = ResourceMatcher{name: "job", aliases: []string{"jobs"}} // job does not have a short name
+	ResourceMatchers             = []ResourceMatcher{
+		PodMatcher,
+		ReplicationControllerMatcher,
+		ServiceMatcher,
+		DeploymentMatcher,
+		DaemonSetMatcher,
+		ReplicaSetMatcher,
+		StatefulSetMatcher,
+		JobMatcher,
+	}
 )

@@ -21,9 +21,12 @@ import (
 	"io"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/stern/stern/kubernetes"
+	"github.com/stern/stern/stern"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientset "k8s.io/client-go/kubernetes"
 )
 
 func runCompletion(shell string, cmd *cobra.Command, out io.Writer) error {
@@ -119,7 +122,137 @@ func contextCompletionFunc(o *options) func(cmd *cobra.Command, args []string, t
 	}
 }
 
+// queryCompletionFunc is a completion function that completes a resource
+// that match the toComplete prefix.
+func queryCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		var comps []string
+		parts := strings.Split(toComplete, "/")
+		if len(parts) != 2 {
+			// list available resources in the form "<resource>/"
+			for _, matcher := range stern.ResourceMatchers {
+				if strings.HasPrefix(matcher.Name(), toComplete) {
+					comps = append(comps, matcher.Name()+"/")
+				}
+			}
+			return comps, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+		}
+
+		// list available names in the resources in the form "<resource>/<name>"
+		uniqueNamespaces := makeUnique(o.namespaces)
+		if o.allNamespaces || len(uniqueNamespaces) > 1 {
+			// do not support multiple namespaces for simplicity
+			return compError(errors.New("multiple namespaces are not supported"))
+		}
+
+		clientConfig := kubernetes.NewClientConfig(o.kubeConfig, o.context)
+		clientset, err := kubernetes.NewClientSet(clientConfig)
+		if err != nil {
+			return compError(err)
+		}
+		var namespace string
+		if len(uniqueNamespaces) == 1 {
+			namespace = uniqueNamespaces[0]
+		} else {
+			n, _, err := clientConfig.Namespace()
+			if err != nil {
+				return compError(err)
+			}
+			namespace = n
+		}
+
+		kind, name := parts[0], parts[1]
+		names, err := retrieveNamesFromResource(context.TODO(), clientset, namespace, kind)
+		if err != nil {
+			return compError(err)
+		}
+		for _, n := range names {
+			if strings.HasPrefix(n, name) {
+				comps = append(comps, kind+"/"+n)
+			}
+		}
+		return comps, cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
 func compError(err error) ([]string, cobra.ShellCompDirective) {
 	cobra.CompError(err.Error())
 	return nil, cobra.ShellCompDirectiveError
+}
+
+func retrieveNamesFromResource(ctx context.Context, client clientset.Interface, namespace, kind string) ([]string, error) {
+	opt := metav1.ListOptions{}
+	var names []string
+	switch {
+	// core
+	case stern.PodMatcher.Matches(kind):
+		l, err := client.CoreV1().Pods(namespace).List(ctx, opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range l.Items {
+			names = append(names, item.GetName())
+		}
+	case stern.ReplicationControllerMatcher.Matches(kind):
+		l, err := client.CoreV1().ReplicationControllers(namespace).List(ctx, opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range l.Items {
+			names = append(names, item.GetName())
+		}
+	case stern.ServiceMatcher.Matches(kind):
+		l, err := client.CoreV1().Services(namespace).List(ctx, opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range l.Items {
+			names = append(names, item.GetName())
+		}
+	// apps
+	case stern.DeploymentMatcher.Matches(kind):
+		l, err := client.AppsV1().Deployments(namespace).List(ctx, opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range l.Items {
+			names = append(names, item.GetName())
+		}
+	case stern.DaemonSetMatcher.Matches(kind):
+		l, err := client.AppsV1().DaemonSets(namespace).List(ctx, opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range l.Items {
+			names = append(names, item.GetName())
+		}
+	case stern.ReplicaSetMatcher.Matches(kind):
+		l, err := client.AppsV1().ReplicaSets(namespace).List(ctx, opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range l.Items {
+			names = append(names, item.GetName())
+		}
+	case stern.StatefulSetMatcher.Matches(kind):
+		l, err := client.AppsV1().StatefulSets(namespace).List(ctx, opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range l.Items {
+			names = append(names, item.GetName())
+		}
+	// batch
+	case stern.JobMatcher.Matches(kind):
+		l, err := client.BatchV1().Jobs(namespace).List(ctx, opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range l.Items {
+			names = append(names, item.GetName())
+		}
+	default:
+		return nil, fmt.Errorf("resource type %s is not supported", kind)
+	}
+	return names, nil
 }

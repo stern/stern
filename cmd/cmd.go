@@ -389,6 +389,7 @@ func NewSternCmd(stream genericclioptions.IOStreams) (*cobra.Command, error) {
 
 			return o.Run(cmd)
 		},
+		ValidArgsFunction: queryCompletionFunc(o),
 	}
 
 	o.AddFlags(cmd.Flags())
