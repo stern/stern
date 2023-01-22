@@ -17,12 +17,19 @@ package stern
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
+
 	"github.com/stern/stern/kubernetes"
 	"golang.org/x/sync/errgroup"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"k8s.io/apimachinery/pkg/labels"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientset "k8s.io/client-go/kubernetes"
 )
 
 var tails = make(map[string]*Tail)
@@ -55,7 +62,7 @@ func Run(ctx context.Context, config *Config) error {
 		return err
 	}
 
-	clientset, err := corev1client.NewForConfig(cc)
+	client, err := clientset.NewForConfig(cc)
 	if err != nil {
 		return err
 	}
@@ -75,6 +82,26 @@ func Run(ctx context.Context, config *Config) error {
 		}
 	}
 
+	var resource struct {
+		kind string
+		name string
+	}
+	if config.Resource != "" {
+		parts := strings.Split(config.Resource, "/")
+		if len(parts) != 2 {
+			return errors.New("resource must be specified in the form \"<resource>/<name>\"")
+		}
+		resource.kind, resource.name = parts[0], parts[1]
+		if PodMatcher.Matches(resource.kind) {
+			// Pods can share the same labels, so we also set the pod query.
+			podName, err := regexp.Compile("^" + resource.name + "$")
+			if err != nil {
+				return errors.Wrap(err, "failed to compile regular expression for pod")
+			}
+			config.PodQuery = podName
+		}
+	}
+
 	filter := &targetFilter{
 		podFilter:              config.PodQuery,
 		excludePodFilter:       config.ExcludePodQuery,
@@ -85,7 +112,7 @@ func Run(ctx context.Context, config *Config) error {
 		containerStates:        config.ContainerStates,
 	}
 	newTail := func(t *Target) *Tail {
-		return NewTail(clientset, t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
+		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
 			Timestamps:   config.Timestamps,
 			Location:     config.Location,
 			SinceSeconds: int64(config.Since.Seconds()),
@@ -100,9 +127,13 @@ func Run(ctx context.Context, config *Config) error {
 	if !config.Follow {
 		var eg errgroup.Group
 		for _, n := range namespaces {
+			selector, err := chooseSelector(ctx, client, n, resource.kind, resource.name, config.LabelSelector)
+			if err != nil {
+				return err
+			}
 			targets, err := ListTargets(ctx,
-				clientset.Pods(n),
-				config.LabelSelector,
+				client.CoreV1().Pods(n),
+				selector,
 				config.FieldSelector,
 				filter,
 			)
@@ -130,9 +161,13 @@ func Run(ctx context.Context, config *Config) error {
 	defer close(errCh)
 
 	for _, n := range namespaces {
+		selector, err := chooseSelector(ctx, client, n, resource.kind, resource.name, config.LabelSelector)
+		if err != nil {
+			return err
+		}
 		a, r, err := WatchTargets(ctx,
-			clientset.Pods(n),
-			config.LabelSelector,
+			client.CoreV1().Pods(n),
+			selector,
 			config.FieldSelector,
 			filter,
 		)
@@ -202,4 +237,80 @@ func Run(ctx context.Context, config *Config) error {
 	case <-ctx.Done():
 		return nil
 	}
+}
+
+func chooseSelector(ctx context.Context, client clientset.Interface, namespace, kind, name string, selector labels.Selector) (labels.Selector, error) {
+	if kind == "" {
+		return selector, nil
+	}
+	labelMap, err := retrieveLabelsFromResource(ctx, client, namespace, kind, name)
+	if err != nil {
+		return nil, err
+	}
+	if len(labelMap) == 0 {
+		return nil, fmt.Errorf("resource %s/%s has no labels to select", kind, name)
+	}
+	return labels.SelectorFromSet(labelMap), nil
+}
+
+func retrieveLabelsFromResource(ctx context.Context, client clientset.Interface, namespace, kind, name string) (map[string]string, error) {
+	opt := metav1.GetOptions{}
+	switch {
+	// core
+	case PodMatcher.Matches(kind):
+		o, err := client.CoreV1().Pods(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Labels, nil
+	case ReplicationControllerMatcher.Matches(kind):
+		o, err := client.CoreV1().ReplicationControllers(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		if o.Spec.Template == nil { // RC's spec.template is a pointer field
+			return nil, fmt.Errorf("%s does not have spec.template", name)
+		}
+		return o.Spec.Template.Labels, nil
+	case ServiceMatcher.Matches(kind):
+		o, err := client.CoreV1().Services(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.Selector, nil
+	// apps
+	case DaemonSetMatcher.Matches(kind):
+		o, err := client.AppsV1().DaemonSets(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.Template.Labels, nil
+	case DeploymentMatcher.Matches(kind):
+		o, err := client.AppsV1().Deployments(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.Template.Labels, nil
+	case ReplicaSetMatcher.Matches(kind):
+		o, err := client.AppsV1().ReplicaSets(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.Template.Labels, nil
+	case StatefulSetMatcher.Matches(kind):
+		o, err := client.AppsV1().StatefulSets(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.Template.Labels, nil
+	// batch
+	// We do not support cronjobs because they might not have labels to select.
+	case JobMatcher.Matches(kind):
+		o, err := client.BatchV1().Jobs(namespace).Get(ctx, name, opt)
+		if err != nil {
+			return nil, err
+		}
+		return o.Spec.Template.Labels, nil
+	}
+	return nil, fmt.Errorf("resource type %s is not supported", kind)
 }

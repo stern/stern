@@ -47,6 +47,7 @@ type Config struct {
 	TailLines             *int64
 	Template              *template.Template
 	Follow                bool
+	Resource              string
 
 	Out    io.Writer
 	ErrOut io.Writer
