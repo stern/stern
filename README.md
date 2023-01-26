@@ -141,10 +141,10 @@ functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 
 ### Log level verbosity
 
-You can configure the log level verbosity by the `--verbose` flag.
+You can configure the log level verbosity by the `--verbosity` flag.
 It is useful when you want to know how stern interacts with a Kubernetes API server in troubleshooting.
 
-Increasing the verbosity increases the number of logs. `--verbose 6` would be a good starting point.
+Increasing the verbosity increases the number of logs. `--verbosity 6` would be a good starting point.
 
 ## Examples:
 
