@@ -95,6 +95,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--template`                |           | Template to use for log lines, leave empty to use --output flag.
  `--timestamps`, `-t`        | `false`   | Print timestamps.
  `--timezone`                | `Local`   | Set timestamps to specific timezone.
+ `--verbosity`               | `0`       | Number of the log level verbosity
  `--version`, `-v`           | `false`   | Print the version and exit.
 <!-- auto generated cli flags end --->
 
@@ -137,6 +138,13 @@ functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 | `parseJSON` | `string`              | Parse string as JSON                                            |
 | `extjson`   | `string`              | Parse the object as json and output colorized json              |
 | `ppextjson` | `string`              | Parse the object as json and output pretty-print colorized json |
+
+### Log level verbosity
+
+You can configure the log level verbosity by the `--verbose` flag.
+It is useful when you want to know how stern interacts with a Kubernetes API server in troubleshooting.
+
+Increasing the verbosity increases the number of logs. `--verbose 6` would be a good starting point.
 
 ## Examples:
 
