@@ -17,11 +17,15 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	goflag "flag"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
+
+	"k8s.io/klog/v2"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -63,6 +67,7 @@ type options struct {
 	podQuery            string
 	noFollow            bool
 	resource            string
+	verbosity           int
 }
 
 func NewOptions(streams genericclioptions.IOStreams) *options {
@@ -109,6 +114,10 @@ func (o *options) Validate() error {
 }
 
 func (o *options) Run(cmd *cobra.Command) error {
+	if err := o.setVerbosity(); err != nil {
+		return err
+	}
+
 	config, err := o.sternConfig()
 	if err != nil {
 		return err
@@ -328,6 +337,19 @@ func (o *options) sternConfig() (*stern.Config, error) {
 	}, nil
 }
 
+// setVerbosity sets the log level verbosity
+func (o *options) setVerbosity() error {
+	if o.verbosity != 0 {
+		// klog does not have an external method to set verbosity,
+		// so we need to set it by a flag.
+		// See https://github.com/kubernetes/klog/issues/336 for details
+		var fs goflag.FlagSet
+		klog.InitFlags(&fs)
+		return fs.Set("v", strconv.Itoa(o.verbosity))
+	}
+	return nil
+}
+
 // AddFlags adds all the flags used by stern.
 func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&o.allNamespaces, "all-namespaces", "A", o.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
@@ -356,6 +378,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.template, "template", o.template, "Template to use for log lines, leave empty to use --output flag.")
 	fs.BoolVarP(&o.timestamps, "timestamps", "t", o.timestamps, "Print timestamps.")
 	fs.StringVar(&o.timezone, "timezone", o.timezone, "Set timestamps to specific timezone.")
+	fs.IntVar(&o.verbosity, "verbosity", o.verbosity, "Number of the log level verbosity")
 	fs.BoolVarP(&o.version, "version", "v", o.version, "Print the version and exit.")
 }
 
