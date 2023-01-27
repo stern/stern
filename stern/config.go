@@ -48,6 +48,7 @@ type Config struct {
 	Template              *template.Template
 	Follow                bool
 	Resource              string
+	OnlyLogLines          bool
 
 	Out    io.Writer
 	ErrOut io.Writer

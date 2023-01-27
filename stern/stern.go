@@ -121,6 +121,7 @@ func Run(ctx context.Context, config *Config) error {
 			Namespace:    config.AllNamespaces || len(namespaces) > 1,
 			TailLines:    config.TailLines,
 			Follow:       config.Follow,
+			OnlyLogLines: config.OnlyLogLines,
 		})
 	}
 
