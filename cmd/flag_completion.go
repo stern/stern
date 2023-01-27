@@ -32,7 +32,7 @@ import (
 var flagChoices = map[string][]string{
 	"color":           []string{"always", "never", "auto"},
 	"completion":      []string{"bash", "zsh", "fish"},
-	"container-state": []string{stern.RUNNING, stern.WAITING, stern.TERMINATED},
+	"container-state": []string{stern.RUNNING, stern.WAITING, stern.TERMINATED, stern.ALL_STATES},
 	"output":          []string{"default", "raw", "json", "extjson", "ppextjson"},
 }
 
