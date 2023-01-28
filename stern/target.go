@@ -37,9 +37,9 @@ func (t *Target) GetID() string {
 // targetFilter is a filter of Target
 type targetFilter struct {
 	podFilter              *regexp.Regexp
-	excludePodFilter       *regexp.Regexp
+	excludePodFilter       []*regexp.Regexp
 	containerFilter        *regexp.Regexp
-	containerExcludeFilter *regexp.Regexp
+	containerExcludeFilter []*regexp.Regexp
 	initContainers         bool
 	ephemeralContainers    bool
 	containerStates        []ContainerState
@@ -51,32 +51,44 @@ func (f *targetFilter) visit(pod *corev1.Pod, visitor func(t *Target, containerS
 	if !f.podFilter.MatchString(pod.Name) {
 		return
 	}
-	if f.excludePodFilter != nil && f.excludePodFilter.MatchString(pod.Name) {
-		return
+
+	for _, re := range f.excludePodFilter {
+		if re.MatchString(pod.Name) {
+			return
+		}
 	}
 
 	// filter by container statuses
 	var statuses []corev1.ContainerStatus
 	statuses = append(statuses, pod.Status.ContainerStatuses...)
+
 	if f.initContainers {
 		statuses = append(statuses, pod.Status.InitContainerStatuses...)
 	}
+
 	if f.ephemeralContainers {
 		statuses = append(statuses, pod.Status.EphemeralContainerStatuses...)
 	}
+
+OUTER:
 	for _, c := range statuses {
 		if !f.containerFilter.MatchString(c.Name) {
 			continue
 		}
-		if f.containerExcludeFilter != nil && f.containerExcludeFilter.MatchString(c.Name) {
-			continue
+
+		for _, re := range f.containerExcludeFilter {
+			if re.MatchString(c.Name) {
+				continue OUTER
+			}
 		}
+
 		t := &Target{
 			Node:      pod.Spec.NodeName,
 			Namespace: pod.Namespace,
 			Pod:       pod.Name,
 			Container: c.Name,
 		}
+
 		visitor(t, f.matchContainerState(c.State))
 	}
 }
