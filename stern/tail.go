@@ -60,6 +60,7 @@ type TailOptions struct {
 	Namespace    bool
 	TailLines    *int64
 	Follow       bool
+	OnlyLogLines bool
 }
 
 func (o TailOptions) IsExclude(msg string) bool {
@@ -107,18 +108,23 @@ func (o TailOptions) UpdateTimezoneIfNeeded(message string) (string, error) {
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
 func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podName, containerName string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions) *Tail {
+	podColor, containerColor := determineColor(podName)
+
 	return &Tail{
-		clientset:     clientset,
-		NodeName:      nodeName,
-		Namespace:     namespace,
-		PodName:       podName,
-		ContainerName: containerName,
-		Options:       options,
-		closed:        make(chan struct{}),
-		tmpl:          tmpl,
-		active:        true,
-		out:           out,
-		errOut:        errOut,
+		clientset:      clientset,
+		NodeName:       nodeName,
+		Namespace:      namespace,
+		PodName:        podName,
+		ContainerName:  containerName,
+		Options:        options,
+		closed:         make(chan struct{}),
+		tmpl:           tmpl,
+		active:         true,
+		podColor:       podColor,
+		containerColor: containerColor,
+
+		out:    out,
+		errOut: errOut,
 	}
 }
 
@@ -142,22 +148,13 @@ func determineColor(podName string) (podColor, containerColor *color.Color) {
 
 // Start starts tailing
 func (t *Tail) Start(ctx context.Context) error {
-	t.podColor, t.containerColor = determineColor(t.PodName)
-
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		<-t.closed
 		cancel()
 	}()
 
-	g := color.New(color.FgHiGreen, color.Bold).SprintFunc()
-	p := t.podColor.SprintFunc()
-	c := t.containerColor.SprintFunc()
-	if t.Options.Namespace {
-		fmt.Fprintf(t.errOut, "%s %s %s › %s\n", g("+"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
-	} else {
-		fmt.Fprintf(t.errOut, "%s %s › %s\n", g("+"), p(t.PodName), c(t.ContainerName))
-	}
+	t.printStarting()
 
 	req := t.clientset.Pods(t.Namespace).GetLogs(t.PodName, &corev1.PodLogOptions{
 		Follow:       t.Options.Follow,
@@ -179,16 +176,35 @@ func (t *Tail) Start(ctx context.Context) error {
 
 // Close stops tailing
 func (t *Tail) Close() {
-	r := color.New(color.FgHiRed, color.Bold).SprintFunc()
-	p := t.podColor.SprintFunc()
-	c := t.containerColor.SprintFunc()
-	if t.Options.Namespace {
-		fmt.Fprintf(t.errOut, "%s %s %s › %s\n", r("-"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
-	} else {
-		fmt.Fprintf(t.errOut, "%s %s › %s\n", r("-"), p(t.PodName), c(t.ContainerName))
-	}
+	t.printStopping()
 
 	close(t.closed)
+}
+
+func (t *Tail) printStarting() {
+	if !t.Options.OnlyLogLines {
+		g := color.New(color.FgHiGreen, color.Bold).SprintFunc()
+		p := t.podColor.SprintFunc()
+		c := t.containerColor.SprintFunc()
+		if t.Options.Namespace {
+			fmt.Fprintf(t.errOut, "%s %s %s › %s\n", g("+"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
+		} else {
+			fmt.Fprintf(t.errOut, "%s %s › %s\n", g("+"), p(t.PodName), c(t.ContainerName))
+		}
+	}
+}
+
+func (t *Tail) printStopping() {
+	if !t.Options.OnlyLogLines {
+		r := color.New(color.FgHiRed, color.Bold).SprintFunc()
+		p := t.podColor.SprintFunc()
+		c := t.containerColor.SprintFunc()
+		if t.Options.Namespace {
+			fmt.Fprintf(t.errOut, "%s %s %s › %s\n", r("-"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
+		} else {
+			fmt.Fprintf(t.errOut, "%s %s › %s\n", r("-"), p(t.PodName), c(t.ContainerName))
+		}
+	}
 }
 
 // ConsumeRequest reads the data from request and writes into the out

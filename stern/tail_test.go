@@ -197,3 +197,87 @@ func (r *responseWrapperMock) DoRaw(context.Context) ([]byte, error) {
 func (r *responseWrapperMock) Stream(context.Context) (io.ReadCloser, error) {
 	return io.NopCloser(r.data), nil
 }
+
+func TestPrintStarting(t *testing.T) {
+	tests := []struct {
+		options  *TailOptions
+		expected []byte
+	}{
+		{
+			&TailOptions{},
+			[]byte("+ my-pod › my-container\n"),
+		},
+		{
+			&TailOptions{
+				Namespace: true,
+			},
+			[]byte("+ my-namespace my-pod › my-container\n"),
+		},
+		{
+			&TailOptions{
+				OnlyLogLines: true,
+			},
+			[]byte{},
+		},
+		{
+			&TailOptions{
+				Namespace:    true,
+				OnlyLogLines: true,
+			},
+			[]byte{},
+		},
+	}
+
+	clientset := fake.NewSimpleClientset()
+	for i, tt := range tests {
+		errOut := new(bytes.Buffer)
+		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", nil, io.Discard, errOut, tt.options)
+		tail.printStarting()
+
+		if !bytes.Equal(tt.expected, errOut.Bytes()) {
+			t.Errorf("%d: expected %q, but actual %q", i, tt.expected, errOut)
+		}
+	}
+}
+
+func TestPrintStopping(t *testing.T) {
+	tests := []struct {
+		options  *TailOptions
+		expected []byte
+	}{
+		{
+			&TailOptions{},
+			[]byte("- my-pod › my-container\n"),
+		},
+		{
+			&TailOptions{
+				Namespace: true,
+			},
+			[]byte("- my-namespace my-pod › my-container\n"),
+		},
+		{
+			&TailOptions{
+				OnlyLogLines: true,
+			},
+			[]byte{},
+		},
+		{
+			&TailOptions{
+				Namespace:    true,
+				OnlyLogLines: true,
+			},
+			[]byte{},
+		},
+	}
+
+	clientset := fake.NewSimpleClientset()
+	for i, tt := range tests {
+		errOut := new(bytes.Buffer)
+		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", nil, io.Discard, errOut, tt.options)
+		tail.printStopping()
+
+		if !bytes.Equal(tt.expected, errOut.Bytes()) {
+			t.Errorf("%d: expected %q, but actual %q", i, tt.expected, errOut)
+		}
+	}
+}
