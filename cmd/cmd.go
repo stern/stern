@@ -68,6 +68,7 @@ type options struct {
 	noFollow            bool
 	resource            string
 	verbosity           int
+	onlyLogLines        bool
 }
 
 func NewOptions(streams genericclioptions.IOStreams) *options {
@@ -335,6 +336,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		Template:              template,
 		Follow:                !o.noFollow,
 		Resource:              o.resource,
+		OnlyLogLines:          o.onlyLogLines,
 
 		Out:    o.Out,
 		ErrOut: o.ErrOut,
@@ -382,6 +384,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.template, "template", o.template, "Template to use for log lines, leave empty to use --output flag.")
 	fs.BoolVarP(&o.timestamps, "timestamps", "t", o.timestamps, "Print timestamps.")
 	fs.StringVar(&o.timezone, "timezone", o.timezone, "Set timestamps to specific timezone.")
+	fs.BoolVar(&o.onlyLogLines, "only-log-lines", o.onlyLogLines, "Print only log lines")
 	fs.IntVar(&o.verbosity, "verbosity", o.verbosity, "Number of the log level verbosity")
 	fs.BoolVarP(&o.version, "version", "v", o.version, "Print the version and exit.")
 }
