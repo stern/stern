@@ -79,8 +79,8 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--context`                 |           | Kubernetes context to use. Default to current context configured in kubeconfig.
  `--ephemeral-containers`    | `true`    | Include or exclude ephemeral containers.
  `--exclude`, `-e`           | `[]`      | Log lines to exclude. (regular expression)
- `--exclude-container`, `-E` |           | Container name to exclude when multiple containers in pod. (regular expression)
- `--exclude-pod`             |           | Pod name to exclude. (regular expression)
+ `--exclude-container`, `-E` | `[]`      | Container name to exclude when multiple containers in pod. (regular expression)
+ `--exclude-pod`             | `[]`      | Pod name to exclude. (regular expression)
  `--field-selector`          |           | Selector (field query) to filter on. If present, default to ".*" for the pod-query.
  `--include`, `-i`           | `[]`      | Log lines to include. (regular expression)
  `--init-containers`         | `true`    | Include or exclude init containers.

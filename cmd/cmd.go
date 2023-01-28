@@ -40,9 +40,9 @@ import (
 type options struct {
 	genericclioptions.IOStreams
 
-	excludePod          string
+	excludePod          []string
 	container           string
-	excludeContainer    string
+	excludeContainer    []string
 	containerStates     []string
 	timestamps          bool
 	timezone            string
@@ -142,12 +142,14 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		return nil, errors.Wrap(err, "failed to compile regular expression from query")
 	}
 
-	var excludePod *regexp.Regexp
-	if o.excludePod != "" {
-		excludePod, err = regexp.Compile(o.excludePod)
+	var excludePod []*regexp.Regexp
+	for _, s := range o.excludePod {
+		re, err := regexp.Compile(s)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to compile regular exression for excluded pod query")
+			return nil, errors.Wrap(err, "failed to compile regular expression for excluded pod query")
 		}
+
+		excludePod = append(excludePod, re)
 	}
 
 	container, err := regexp.Compile(o.container)
@@ -155,12 +157,14 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		return nil, errors.Wrap(err, "failed to compile regular expression for container query")
 	}
 
-	var excludeContainer *regexp.Regexp
-	if o.excludeContainer != "" {
-		excludeContainer, err = regexp.Compile(o.excludeContainer)
+	var excludeContainer []*regexp.Regexp
+	for _, s := range o.excludeContainer {
+		re, err := regexp.Compile(s)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to compile regular expression for exclude container query")
+			return nil, errors.Wrap(err, "failed to compile regular expression for excluded container query")
 		}
+
+		excludeContainer = append(excludeContainer, re)
 	}
 
 	var exclude []*regexp.Regexp
@@ -361,8 +365,8 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&o.containerStates, "container-state", o.containerStates, "Tail containers with state in running, waiting or terminated. To specify multiple states, repeat this or set comma-separated value.")
 	fs.StringVar(&o.context, "context", o.context, "Kubernetes context to use. Default to current context configured in kubeconfig.")
 	fs.StringArrayVarP(&o.exclude, "exclude", "e", o.exclude, "Log lines to exclude. (regular expression)")
-	fs.StringVarP(&o.excludeContainer, "exclude-container", "E", o.excludeContainer, "Container name to exclude when multiple containers in pod. (regular expression)")
-	fs.StringVar(&o.excludePod, "exclude-pod", o.excludePod, "Pod name to exclude. (regular expression)")
+	fs.StringArrayVarP(&o.excludeContainer, "exclude-container", "E", o.excludeContainer, "Container name to exclude when multiple containers in pod. (regular expression)")
+	fs.StringArrayVar(&o.excludePod, "exclude-pod", o.excludePod, "Pod name to exclude. (regular expression)")
 	fs.BoolVar(&o.noFollow, "no-follow", o.noFollow, "Exit when all logs have been shown.")
 	fs.StringArrayVarP(&o.include, "include", "i", o.include, "Log lines to include. (regular expression)")
 	fs.BoolVar(&o.initContainers, "init-containers", o.initContainers, "Include or exclude init containers.")
