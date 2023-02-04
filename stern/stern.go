@@ -93,7 +93,8 @@ func Run(ctx context.Context, config *Config) error {
 		}
 		resource.kind, resource.name = parts[0], parts[1]
 		if PodMatcher.Matches(resource.kind) {
-			// Pods can share the same labels, so we also set the pod query.
+			// Pods might have no labels or share the same labels,
+			// so we use an exact match instead.
 			podName, err := regexp.Compile("^" + resource.name + "$")
 			if err != nil {
 				return errors.Wrap(err, "failed to compile regular expression for pod")
@@ -244,6 +245,10 @@ func chooseSelector(ctx context.Context, client clientset.Interface, namespace, 
 	if kind == "" {
 		return selector, nil
 	}
+	if PodMatcher.Matches(kind) {
+		// We use an exact match for pods instead of a label to select pods without labels.
+		return labels.Everything(), nil
+	}
 	labelMap, err := retrieveLabelsFromResource(ctx, client, namespace, kind, name)
 	if err != nil {
 		return nil, err
@@ -258,12 +263,6 @@ func retrieveLabelsFromResource(ctx context.Context, client clientset.Interface,
 	opt := metav1.GetOptions{}
 	switch {
 	// core
-	case PodMatcher.Matches(kind):
-		o, err := client.CoreV1().Pods(namespace).Get(ctx, name, opt)
-		if err != nil {
-			return nil, err
-		}
-		return o.Labels, nil
 	case ReplicationControllerMatcher.Matches(kind):
 		o, err := client.CoreV1().ReplicationControllers(namespace).Get(ctx, name, opt)
 		if err != nil {

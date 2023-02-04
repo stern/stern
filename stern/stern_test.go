@@ -33,15 +33,6 @@ func TestRetrieveLabelsFromResource(t *testing.T) {
 	}
 	objs := []runtime.Object{
 		// core
-		&corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "pod1",
-				Namespace: "ns1",
-				Labels: map[string]string{
-					"app": "pod-label",
-				},
-			},
-		},
 		&corev1.ReplicationController{
 			ObjectMeta: genMeta("rc1"),
 			Spec: corev1.ReplicationControllerSpec{
@@ -114,12 +105,6 @@ func TestRetrieveLabelsFromResource(t *testing.T) {
 		wantError bool
 	}{
 		// core
-		{
-			desc:  "pods",
-			kinds: []string{"po", "pods", "pod"},
-			name:  "pod1",
-			label: "pod-label",
-		},
 		{
 			desc:  "replicationcontrollers",
 			kinds: []string{"rc", "replicationcontrollers", "replicationcontroller"},
