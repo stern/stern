@@ -3,7 +3,7 @@ package stern
 import (
 	"testing"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 func TestNewContainerState(t *testing.T) {
@@ -25,6 +25,11 @@ func TestNewContainerState(t *testing.T) {
 		{
 			"terminated",
 			ContainerState(TERMINATED),
+			false,
+		},
+		{
+			"all",
+			ContainerState(ALL_STATES),
 			false,
 		},
 		{
@@ -78,6 +83,12 @@ func TestMatch(t *testing.T) {
 				Waiting:    nil,
 				Terminated: &v1.ContainerStateTerminated{},
 			},
+			true,
+		},
+		{
+			// "all" always matches all containers regardless of their states
+			ContainerState(ALL_STATES),
+			v1.ContainerState{},
 			true,
 		},
 		{

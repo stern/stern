@@ -17,7 +17,7 @@ package stern
 import (
 	"errors"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 type ContainerState string
@@ -26,6 +26,7 @@ const (
 	RUNNING    = "running"
 	WAITING    = "waiting"
 	TERMINATED = "terminated"
+	ALL_STATES = "all"
 )
 
 // NewContainerState returns corresponding ContainerState
@@ -36,6 +37,8 @@ func NewContainerState(stateConfig string) (ContainerState, error) {
 		return WAITING, nil
 	} else if stateConfig == TERMINATED {
 		return TERMINATED, nil
+	} else if stateConfig == ALL_STATES {
+		return ALL_STATES, nil
 	}
 
 	return "", errors.New("containerState should be one of 'running', 'waiting', or 'terminated'")
@@ -43,6 +46,9 @@ func NewContainerState(stateConfig string) (ContainerState, error) {
 
 // Match returns ContainerState is matched
 func (stateConfig ContainerState) Match(containerState v1.ContainerState) bool {
+	if stateConfig == ALL_STATES {
+		return true
+	}
 	return (stateConfig == RUNNING && containerState.Running != nil) ||
 		(stateConfig == WAITING && containerState.Waiting != nil) ||
 		(stateConfig == TERMINATED && containerState.Terminated != nil)
