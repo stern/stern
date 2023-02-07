@@ -41,7 +41,7 @@ func NewContainerState(stateConfig string) (ContainerState, error) {
 		return ALL_STATES, nil
 	}
 
-	return "", errors.New("containerState should be one of 'running', 'waiting', or 'terminated'")
+	return "", errors.New("containerState should be one of 'running', 'waiting', 'terminated', or 'all'")
 }
 
 // Match returns ContainerState is matched

@@ -79,7 +79,7 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 
 		color:               "auto",
 		container:           ".*",
-		containerStates:     []string{"running"},
+		containerStates:     []string{stern.ALL_STATES},
 		initContainers:      true,
 		ephemeralContainers: true,
 		output:              "default",
