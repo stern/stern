@@ -85,6 +85,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--include`, `-i`           | `[]`      | Log lines to include. (regular expression)
  `--init-containers`         | `true`    | Include or exclude init containers.
  `--kubeconfig`              |           | Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.
+ `--max-log-requests`        | `-1`      | Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow
  `--namespace`, `-n`         |           | Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.
  `--no-follow`               | `false`   | Exit when all logs have been shown.
  `--only-log-lines`          | `false`   | Print only log lines
@@ -146,6 +147,20 @@ You can configure the log level verbosity by the `--verbosity` flag.
 It is useful when you want to know how stern interacts with a Kubernetes API server in troubleshooting.
 
 Increasing the verbosity increases the number of logs. `--verbosity 6` would be a good starting point.
+
+### Max log requests
+
+Stern has the maximum number of concurrent logs to request to prevent unintentional load to a cluster.
+The number can be configured by the `--max-log-requests` flag.
+
+The behavior and the default are different depending on the presence of the `--no-follow` flag.
+
+| `--no-follow` | default | behavior         |
+|---------------|---------|------------------|
+| specified     | 5       | limits the number of concurrent logs to request |
+| not specified | 50      | exits with an error when if it reaches the concurrent limit |
+
+The combination of `--max-log-requests 1` and `--no-follow` will be helpful if you want to show logs in order.
 
 ## Examples:
 

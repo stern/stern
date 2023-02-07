@@ -69,6 +69,7 @@ type options struct {
 	resource            string
 	verbosity           int
 	onlyLogLines        bool
+	maxLogRequests      int
 }
 
 func NewOptions(streams genericclioptions.IOStreams) *options {
@@ -88,6 +89,7 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 		timezone:            "Local",
 		prompt:              false,
 		noFollow:            false,
+		maxLogRequests:      -1,
 	}
 }
 
@@ -313,6 +315,15 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		return nil, err
 	}
 
+	maxLogRequests := o.maxLogRequests
+	if maxLogRequests == -1 {
+		if o.noFollow {
+			maxLogRequests = 5
+		} else {
+			maxLogRequests = 50
+		}
+	}
+
 	return &stern.Config{
 		KubeConfig:            o.kubeConfig,
 		ContextName:           o.context,
@@ -337,6 +348,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		Follow:                !o.noFollow,
 		Resource:              o.resource,
 		OnlyLogLines:          o.onlyLogLines,
+		MaxLogRequests:        maxLogRequests,
 
 		Out:    o.Out,
 		ErrOut: o.ErrOut,
@@ -375,6 +387,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.kubeConfig, "kube-config", o.kubeConfig, "Path to kubeconfig file to use.")
 	_ = fs.MarkDeprecated("kube-config", "Use --kubeconfig instead.")
 	fs.StringSliceVarP(&o.namespaces, "namespace", "n", o.namespaces, "Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
+	fs.IntVar(&o.maxLogRequests, "max-log-requests", o.maxLogRequests, "Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow")
 	fs.StringVarP(&o.output, "output", "o", o.output, "Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]")
 	fs.BoolVarP(&o.prompt, "prompt", "p", o.prompt, "Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.")
 	fs.StringVarP(&o.selector, "selector", "l", o.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")

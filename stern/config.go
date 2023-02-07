@@ -49,6 +49,7 @@ type Config struct {
 	Follow                bool
 	Resource              string
 	OnlyLogLines          bool
+	MaxLogRequests        int
 
 	Out    io.Writer
 	ErrOut io.Writer

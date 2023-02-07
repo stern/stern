@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"sync/atomic"
+
 	"github.com/pkg/errors"
 
 	"github.com/stern/stern/kubernetes"
@@ -107,6 +109,7 @@ func Run(ctx context.Context, config *Config) error {
 
 	if !config.Follow {
 		var eg errgroup.Group
+		eg.SetLimit(config.MaxLogRequests)
 		for _, n := range namespaces {
 			selector, err := chooseSelector(ctx, client, n, resource.kind, resource.name, config.LabelSelector)
 			if err != nil {
@@ -157,6 +160,7 @@ func Run(ctx context.Context, config *Config) error {
 		}
 	}
 
+	var numRequests atomic.Int64
 	errCh := make(chan error)
 	defer close(errCh)
 	for _, n := range namespaces {
@@ -182,7 +186,18 @@ func Run(ctx context.Context, config *Config) error {
 						errCh <- fmt.Errorf("lost watch connection")
 						return
 					}
-					go tailTarget(ctx, target)
+					numRequests.Add(1)
+					if numRequests.Load() > int64(config.MaxLogRequests) {
+						errCh <- fmt.Errorf(
+							"stern reached the maximum number of log requests (%d),"+
+								" use --max-log-requests to increase the limit",
+							config.MaxLogRequests)
+						return
+					}
+					go func() {
+						tailTarget(ctx, target)
+						numRequests.Add(-1)
+					}()
 				case <-ctx.Done():
 					return
 				}
