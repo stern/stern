@@ -19,40 +19,19 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/stern/stern/kubernetes"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/time/rate"
 
 	"k8s.io/apimachinery/pkg/labels"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 )
-
-var tails = make(map[string]*Tail)
-var tailLock sync.RWMutex
-
-func getTail(targetID string) (*Tail, bool) {
-	tailLock.RLock()
-	defer tailLock.RUnlock()
-	tail, ok := tails[targetID]
-	return tail, ok
-}
-
-func setTail(targetID string, tail *Tail) {
-	tailLock.Lock()
-	defer tailLock.Unlock()
-	tails[targetID] = tail
-}
-
-func clearTail(targetID string) {
-	tailLock.Lock()
-	defer tailLock.Unlock()
-	delete(tails, targetID)
-}
 
 // Run starts the main run loop
 func Run(ctx context.Context, config *Config) error {
@@ -103,7 +82,7 @@ func Run(ctx context.Context, config *Config) error {
 		}
 	}
 
-	filter := &targetFilter{
+	filter := newTargetFilter(targetFilterConfig{
 		podFilter:              config.PodQuery,
 		excludePodFilter:       config.ExcludePodQuery,
 		containerFilter:        config.ContainerQuery,
@@ -111,7 +90,7 @@ func Run(ctx context.Context, config *Config) error {
 		initContainers:         config.InitContainers,
 		ephemeralContainers:    config.EphemeralContainers,
 		containerStates:        config.ContainerStates,
-	}
+	})
 	newTail := func(t *Target) *Tail {
 		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
 			Timestamps:   config.Timestamps,
@@ -155,11 +134,9 @@ func Run(ctx context.Context, config *Config) error {
 	}
 
 	added := make(chan *Target)
-	removed := make(chan *Target)
 	errCh := make(chan error)
 
 	defer close(added)
-	defer close(removed)
 	defer close(errCh)
 
 	for _, n := range namespaces {
@@ -167,7 +144,7 @@ func Run(ctx context.Context, config *Config) error {
 		if err != nil {
 			return err
 		}
-		a, r, err := WatchTargets(ctx,
+		a, err := WatchTargets(ctx,
 			client.CoreV1().Pods(n),
 			selector,
 			config.FieldSelector,
@@ -186,12 +163,6 @@ func Run(ctx context.Context, config *Config) error {
 						return
 					}
 					added <- v
-				case v, ok := <-r:
-					if !ok {
-						errCh <- fmt.Errorf("lost watch connection")
-						return
-					}
-					removed <- v
 				case <-ctx.Done():
 					return
 				}
@@ -199,37 +170,33 @@ func Run(ctx context.Context, config *Config) error {
 		}()
 	}
 
-	go func() {
-		for p := range added {
-			targetID := p.GetID()
-
-			if tail, ok := getTail(targetID); ok {
-				if tail.isActive() {
-					continue
-				} else {
-					tail.Close()
-					clearTail(targetID)
-				}
+	addTarget := func(ctx context.Context, target *Target) {
+		// We use a rate limiter to prevent a burst of retries.
+		// It also enables us to retry immediately, in most cases,
+		// when it is disconnected on the way.
+		limiter := rate.NewLimiter(rate.Every(time.Second*10), 3)
+		for {
+			if err := limiter.Wait(ctx); err != nil {
+				fmt.Fprintf(config.ErrOut, "failed to retry: %v\n", err)
+				return
 			}
-
-			tail := newTail(p)
-			setTail(targetID, tail)
-
-			go func(tail *Tail) {
-				if err := tail.Start(ctx); err != nil {
-					fmt.Fprintf(config.ErrOut, "unexpected error: %v\n", err)
-				}
-			}(tail)
+			tail := newTail(target)
+			err := tail.Start(ctx)
+			tail.Close()
+			if err == nil {
+				return
+			}
+			if !filter.isActive(target) {
+				fmt.Fprintf(config.ErrOut, "failed to tail: %v\n", err)
+				return
+			}
+			fmt.Fprintf(config.ErrOut, "failed to tail: %v, will retry\n", err)
 		}
-	}()
+	}
 
 	go func() {
-		for p := range removed {
-			targetID := p.GetID()
-			if tail, ok := getTail(targetID); ok {
-				tail.Close()
-				clearTail(targetID)
-			}
+		for target := range added {
+			go addTarget(ctx, target)
 		}
 	}()
 

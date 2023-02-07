@@ -30,9 +30,8 @@ import (
 )
 
 // Watch starts listening to Kubernetes events and emits modified
-// containers/pods. The first result is targets added, the second is targets
-// removed
-func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.Selector, fieldSelector fields.Selector, filter *targetFilter) (chan *Target, chan *Target, error) {
+// containers/pods. The result is targets added.
+func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.Selector, fieldSelector fields.Selector, filter *targetFilter) (chan *Target, error) {
 	// RetryWatcher will make sure that in case the underlying watcher is
 	// closed (e.g. due to API timeout or etcd timeout) it will get restarted
 	// from the last point without the consumer even knowing about it.
@@ -42,12 +41,10 @@ func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.S
 		},
 	})
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create a watcher")
+		return nil, errors.Wrap(err, "failed to create a watcher")
 	}
 
 	added := make(chan *Target)
-	removed := make(chan *Target)
-
 	go func() {
 		for {
 			select {
@@ -55,7 +52,6 @@ func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.S
 				if e.Object == nil {
 					// Closed because of error
 					close(added)
-					close(removed)
 					return
 				}
 
@@ -66,26 +62,19 @@ func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.S
 
 				switch e.Type {
 				case watch.Added, watch.Modified:
-					filter.visit(pod, func(t *Target, containerStateMatched bool) {
-						if containerStateMatched {
-							added <- t
-						} else {
-							removed <- t
-						}
+					filter.visit(pod, func(t *Target) {
+						added <- t
 					})
 				case watch.Deleted:
-					filter.visit(pod, func(t *Target, containerStateMatched bool) {
-						removed <- t
-					})
+					filter.forget(string(pod.UID))
 				}
 			case <-ctx.Done():
 				watcher.Stop()
 				close(added)
-				close(removed)
 				return
 			}
 		}
 	}()
 
-	return added, removed, nil
+	return added, nil
 }
