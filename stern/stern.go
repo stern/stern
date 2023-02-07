@@ -133,44 +133,7 @@ func Run(ctx context.Context, config *Config) error {
 		return eg.Wait()
 	}
 
-	added := make(chan *Target)
-	errCh := make(chan error)
-
-	defer close(added)
-	defer close(errCh)
-
-	for _, n := range namespaces {
-		selector, err := chooseSelector(ctx, client, n, resource.kind, resource.name, config.LabelSelector)
-		if err != nil {
-			return err
-		}
-		a, err := WatchTargets(ctx,
-			client.CoreV1().Pods(n),
-			selector,
-			config.FieldSelector,
-			filter,
-		)
-		if err != nil {
-			return errors.Wrap(err, "failed to set up watch")
-		}
-
-		go func() {
-			for {
-				select {
-				case v, ok := <-a:
-					if !ok {
-						errCh <- fmt.Errorf("lost watch connection")
-						return
-					}
-					added <- v
-				case <-ctx.Done():
-					return
-				}
-			}
-		}()
-	}
-
-	addTarget := func(ctx context.Context, target *Target) {
+	tailTarget := func(ctx context.Context, target *Target) {
 		// We use a rate limiter to prevent a burst of retries.
 		// It also enables us to retry immediately, in most cases,
 		// when it is disconnected on the way.
@@ -194,11 +157,38 @@ func Run(ctx context.Context, config *Config) error {
 		}
 	}
 
-	go func() {
-		for target := range added {
-			go addTarget(ctx, target)
+	errCh := make(chan error)
+	defer close(errCh)
+	for _, n := range namespaces {
+		selector, err := chooseSelector(ctx, client, n, resource.kind, resource.name, config.LabelSelector)
+		if err != nil {
+			return err
 		}
-	}()
+		a, err := WatchTargets(ctx,
+			client.CoreV1().Pods(n),
+			selector,
+			config.FieldSelector,
+			filter,
+		)
+		if err != nil {
+			return errors.Wrap(err, "failed to set up watch")
+		}
+
+		go func() {
+			for {
+				select {
+				case target, ok := <-a:
+					if !ok {
+						errCh <- fmt.Errorf("lost watch connection")
+						return
+					}
+					go tailTarget(ctx, target)
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+	}
 
 	select {
 	case e := <-errCh:
