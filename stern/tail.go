@@ -44,6 +44,8 @@ type Tail struct {
 	closed         chan struct{}
 	podColor       *color.Color
 	containerColor *color.Color
+	timestampColor *color.Color
+	callerColor    *color.Color
 	tmpl           *template.Template
 	out            io.Writer
 	errOut         io.Writer
@@ -120,6 +122,8 @@ func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podNam
 		tmpl:           tmpl,
 		podColor:       podColor,
 		containerColor: containerColor,
+		timestampColor: color.New(color.FgGreen),
+		callerColor:    color.New(color.FgCyan),
 
 		out:    out,
 		errOut: errOut,
@@ -253,6 +257,8 @@ func (t *Tail) Print(msg string) {
 		ContainerName:  t.ContainerName,
 		PodColor:       t.podColor,
 		ContainerColor: t.containerColor,
+		TimestampColor: t.timestampColor,
+		CallerColor:    t.callerColor,
 	}
 
 	var buf bytes.Buffer
@@ -284,4 +290,6 @@ type Log struct {
 
 	PodColor       *color.Color `json:"-"`
 	ContainerColor *color.Color `json:"-"`
+	TimestampColor *color.Color `json:"-"`
+	CallerColor    *color.Color `json:"-"`
 }
