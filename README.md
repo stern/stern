@@ -84,6 +84,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--field-selector`          |           | Selector (field query) to filter on. If present, default to ".*" for the pod-query.
  `--include`, `-i`           | `[]`      | Log lines to include. (regular expression)
  `--init-containers`         | `true`    | Include or exclude init containers.
+ `--input-format`, `-I`      | `default` | Specify input format. Currently support: [default, zap-json]
  `--kubeconfig`              |           | Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.
  `--max-log-requests`        | `-1`      | Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow
  `--namespace`, `-n`         |           | Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.
