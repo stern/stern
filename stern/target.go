@@ -81,11 +81,12 @@ func (f *targetFilter) visit(pod *corev1.Pod, visitor func(t *Target)) {
 
 	// filter by container statuses
 	var statuses []corev1.ContainerStatus
-	statuses = append(statuses, pod.Status.ContainerStatuses...)
-
 	if f.c.initContainers {
+		// show initContainers first when --no-follow and --max-log-requests 1
 		statuses = append(statuses, pod.Status.InitContainerStatuses...)
 	}
+
+	statuses = append(statuses, pod.Status.ContainerStatuses...)
 
 	if f.c.ephemeralContainers {
 		statuses = append(statuses, pod.Status.EphemeralContainerStatuses...)
