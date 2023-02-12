@@ -242,7 +242,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		if color.NoColor {
 			messageTpl = `{{ with $msg := .Message | parseJSON }}[{{ $msg.ts }}] {{ $msg.level }} ({{ $msg.caller }}) {{ $msg.msg }}{{ end }}`
 		} else {
-			messageTpl = `{{ with $msg := .Message | parseJSON }}[{{ color $.TimestampColor $msg.ts }}] {{ levelColor $msg.level }} ({{ color $.CallerColor $msg.caller }}) {{ $msg.msg }}{{ end }}`
+			messageTpl = `{{ with $msg := .Message | parseJSON }}[{{ colorGreen $msg.ts }}] {{ levelColor $msg.level }} ({{ colorCyan $msg.caller }}) {{ $msg.msg }}{{ end }}`
 		}
 	case "default":
 	default:
@@ -312,6 +312,14 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		"color": func(color color.Color, text string) string {
 			return color.SprintFunc()(text)
 		},
+		"colorBlack":   color.BlackString,
+		"colorRed":     color.RedString,
+		"colorGreen":   color.GreenString,
+		"colorYellow":  color.YellowString,
+		"colorBlue":    color.BlueString,
+		"colorMagenta": color.MagentaString,
+		"colorCyan":    color.CyanString,
+		"colorWhite":   color.WhiteString,
 		"levelColor": func(level string) string {
 			var levelColor *color.Color
 			switch strings.ToLower(level) {
