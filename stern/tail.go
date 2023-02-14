@@ -26,9 +26,11 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"unicode"
 
 	"github.com/fatih/color"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 )
@@ -45,21 +47,32 @@ type Tail struct {
 	podColor       *color.Color
 	containerColor *color.Color
 	tmpl           *template.Template
-	out            io.Writer
-	errOut         io.Writer
+	last           struct {
+		timestamp string // RFC3339 timestamp (not RFC3339Nano)
+		lines     int    // the number of lines seen during this timestamp
+	}
+	resumeRequest *ResumeRequest
+	out           io.Writer
+	errOut        io.Writer
 }
 
 type TailOptions struct {
 	Timestamps bool
 	Location   *time.Location
 
-	SinceSeconds int64
+	SinceSeconds *int64
+	SinceTime    *metav1.Time
 	Exclude      []*regexp.Regexp
 	Include      []*regexp.Regexp
 	Namespace    bool
 	TailLines    *int64
 	Follow       bool
 	OnlyLogLines bool
+}
+
+type ResumeRequest struct {
+	Timestamp   string // RFC3339 timestamp (not RFC3339Nano)
+	LinesToSkip int    // the number of lines to skip during this timestamp
 }
 
 func (o TailOptions) IsExclude(msg string) bool {
@@ -86,23 +99,12 @@ func (o TailOptions) IsInclude(msg string) bool {
 	return false
 }
 
-func (o TailOptions) UpdateTimezoneIfNeeded(message string) (string, error) {
-	if !o.Timestamps {
-		return message, nil
-	}
-
-	idx := strings.IndexRune(message, ' ')
-	if idx == -1 {
-		return message, errors.New("missing timestamp")
-	}
-
-	datetime := message[:idx]
-	t, err := time.ParseInLocation(time.RFC3339Nano, datetime, time.UTC)
+func (o TailOptions) UpdateTimezone(timestamp string) (string, error) {
+	t, err := time.ParseInLocation(time.RFC3339Nano, timestamp, time.UTC)
 	if err != nil {
-		return message, errors.New("missing timestamp")
+		return "", errors.New("missing timestamp")
 	}
-
-	return t.In(o.Location).Format("2006-01-02T15:04:05.000000000Z07:00") + message[idx:], nil
+	return t.In(o.Location).Format("2006-01-02T15:04:05.000000000Z07:00"), nil
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
@@ -156,9 +158,10 @@ func (t *Tail) Start(ctx context.Context) error {
 
 	req := t.clientset.Pods(t.Namespace).GetLogs(t.PodName, &corev1.PodLogOptions{
 		Follow:       t.Options.Follow,
-		Timestamps:   t.Options.Timestamps,
+		Timestamps:   true,
 		Container:    t.ContainerName,
-		SinceSeconds: &t.Options.SinceSeconds,
+		SinceSeconds: t.Options.SinceSeconds,
+		SinceTime:    t.Options.SinceTime,
 		TailLines:    t.Options.TailLines,
 	})
 
@@ -169,6 +172,18 @@ func (t *Tail) Start(ctx context.Context) error {
 	}
 
 	return err
+}
+
+func (t *Tail) Resume(ctx context.Context, resumeRequest *ResumeRequest) error {
+	sinceTime, err := resumeRequest.sinceTime()
+	if err != nil {
+		fmt.Fprintf(t.errOut, "failed to resume: %s, fallback to Start()\n", err)
+		return t.Start(ctx)
+	}
+	t.resumeRequest = resumeRequest
+	t.Options.SinceTime = sinceTime
+	t.Options.SinceSeconds = nil
+	return t.Start(ctx)
 }
 
 // Close stops tailing
@@ -217,21 +232,7 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper)
 	for {
 		line, err := r.ReadBytes('\n')
 		if len(line) != 0 {
-			msg := string(line)
-			// Remove a line break
-			msg = strings.TrimSuffix(msg, "\n")
-
-			if t.Options.IsExclude(msg) || !t.Options.IsInclude(msg) {
-				continue
-			}
-
-			msg, err := t.Options.UpdateTimezoneIfNeeded(msg)
-			if err != nil {
-				t.Print(fmt.Sprintf("[%v] %s", err, msg))
-				continue
-			}
-
-			t.Print(msg)
+			t.consumeLine(strings.TrimSuffix(string(line), "\n"))
 		}
 
 		if err != nil {
@@ -264,6 +265,53 @@ func (t *Tail) Print(msg string) {
 	fmt.Fprint(t.out, buf.String())
 }
 
+func (t *Tail) GetResumeRequest() *ResumeRequest {
+	if t.last.timestamp == "" {
+		return nil
+	}
+	return &ResumeRequest{Timestamp: t.last.timestamp, LinesToSkip: t.last.lines}
+}
+
+func (t *Tail) consumeLine(line string) {
+	rfc3339Nano, content, err := splitLogLine(line)
+	if err != nil {
+		t.Print(fmt.Sprintf("[%v] %s", err, line))
+		return
+	}
+
+	// PodLogOptions.SinceTime is RFC3339, not RFC3339Nano.
+	// We convert it to RFC3339 to skip the lines seen during this timestamp when resuming.
+	rfc3339 := removeSubsecond(rfc3339Nano)
+	t.rememberLastTimestamp(rfc3339)
+	if t.resumeRequest.shouldSkip(rfc3339) {
+		return
+	}
+
+	if t.Options.IsExclude(content) || !t.Options.IsInclude(content) {
+		return
+	}
+
+	if t.Options.Timestamps {
+		updatedTs, err := t.Options.UpdateTimezone(rfc3339Nano)
+		if err != nil {
+			t.Print(fmt.Sprintf("[%v] %s", err, line))
+			return
+		}
+		t.Print(updatedTs + " " + content)
+		return
+	}
+	t.Print(content)
+}
+
+func (t *Tail) rememberLastTimestamp(timestamp string) {
+	if t.last.timestamp == timestamp {
+		t.last.lines++
+		return
+	}
+	t.last.timestamp = timestamp
+	t.last.lines = 1
+}
+
 // Log is the object which will be used together with the template to generate
 // the output.
 type Log struct {
@@ -284,4 +332,58 @@ type Log struct {
 
 	PodColor       *color.Color `json:"-"`
 	ContainerColor *color.Color `json:"-"`
+}
+
+func (r *ResumeRequest) sinceTime() (*metav1.Time, error) {
+	sinceTime, err := time.Parse(time.RFC3339, r.Timestamp)
+
+	if err != nil {
+		return nil, err
+	}
+	metaTime := metav1.NewTime(sinceTime)
+	return &metaTime, nil
+}
+
+func (r *ResumeRequest) shouldSkip(timestamp string) bool {
+	if r == nil {
+		return false
+	}
+	if r.Timestamp == "" {
+		return false
+	}
+	if r.Timestamp != timestamp {
+		return false
+	}
+	if r.LinesToSkip <= 0 {
+		return false
+	}
+	r.LinesToSkip--
+	return true
+}
+
+func splitLogLine(line string) (timestamp string, content string, err error) {
+	idx := strings.IndexRune(line, ' ')
+	if idx == -1 {
+		return "", "", errors.New("missing timestamp")
+	}
+	return line[:idx], line[idx+1:], nil
+}
+
+// removeSubsecond removes the subsecond of the timestamp.
+// It converts RFC3339Nano to RFC3339 fast.
+func removeSubsecond(timestamp string) string {
+	dot := strings.IndexRune(timestamp, '.')
+	if dot == -1 {
+		return timestamp
+	}
+	var last int
+	for i := dot; i < len(timestamp); i++ {
+		if unicode.IsDigit(rune(timestamp[i])) {
+			last = i
+		}
+	}
+	if last == 0 {
+		return timestamp
+	}
+	return timestamp[:dot] + timestamp[last+1:]
 }
