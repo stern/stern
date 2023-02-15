@@ -63,7 +63,7 @@ type options struct {
 	completion          string
 	template            string
 	output              string
-	inputFormat         string
+	formatter           string
 	prompt              bool
 	podQuery            string
 	noFollow            bool
@@ -83,7 +83,7 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 		initContainers:      true,
 		ephemeralContainers: true,
 		output:              "default",
-		inputFormat:         "default",
+		formatter:           "default",
 		since:               48 * time.Hour,
 		tail:                -1,
 		template:            "",
@@ -237,7 +237,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 	}
 
 	messageTpl := "{{.Message}}"
-	switch o.inputFormat {
+	switch o.formatter {
 	case "zap-json":
 		if color.NoColor {
 			messageTpl = `{{ with $msg := .Message | parseJSON }}[{{ $msg.ts }}] {{ $msg.level }} ({{ $msg.caller }}) {{ $msg.msg }}{{ end }}`
@@ -432,7 +432,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVarP(&o.namespaces, "namespace", "n", o.namespaces, "Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
 	fs.IntVar(&o.maxLogRequests, "max-log-requests", o.maxLogRequests, "Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow")
 	fs.StringVarP(&o.output, "output", "o", o.output, "Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]")
-	fs.StringVarP(&o.inputFormat, "input-format", "I", o.inputFormat, "Specify input format. Currently support: [default, zap-json]")
+	fs.StringVarP(&o.formatter, "formatter", "F", o.formatter, "Specify formatter template (transformation from a specific log format to human-friendly output). Currently support: [default, zap-json]")
 	fs.BoolVarP(&o.prompt, "prompt", "p", o.prompt, "Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.")
 	fs.StringVarP(&o.selector, "selector", "l", o.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
 	fs.StringVar(&o.fieldSelector, "field-selector", o.fieldSelector, "Selector (field query) to filter on. If present, default to \".*\" for the pod-query.")
