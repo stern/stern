@@ -141,7 +141,7 @@ func Run(ctx context.Context, config *Config) error {
 		// We use a rate limiter to prevent a burst of retries.
 		// It also enables us to retry immediately, in most cases,
 		// when it is disconnected on the way.
-		limiter := rate.NewLimiter(rate.Every(time.Second*10), 3)
+		limiter := rate.NewLimiter(rate.Every(time.Second*20), 2)
 		var resumeRequest *ResumeRequest
 		for {
 			if err := limiter.Wait(ctx); err != nil {
