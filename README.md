@@ -82,6 +82,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--exclude-container`, `-E` | `[]`      | Container name to exclude when multiple containers in pod. (regular expression)
  `--exclude-pod`             | `[]`      | Pod name to exclude. (regular expression)
  `--field-selector`          |           | Selector (field query) to filter on. If present, default to ".*" for the pod-query.
+ `--formatter`, `-F`         | `default` | Specify formatter template (transformation from a specific log format to human-friendly output). Currently support: [default, zap-json]
  `--include`, `-i`           | `[]`      | Log lines to include. (regular expression)
  `--init-containers`         | `true`    | Include or exclude init containers.
  `--kubeconfig`              |           | Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.
