@@ -30,6 +30,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/utils/pointer"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -94,11 +95,10 @@ func Run(ctx context.Context, config *Config) error {
 		containerStates:        config.ContainerStates,
 	})
 	newTail := func(t *Target) *Tail {
-		sinceSeconds := int64(config.Since.Seconds())
 		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
 			Timestamps:   config.Timestamps,
 			Location:     config.Location,
-			SinceSeconds: &sinceSeconds,
+			SinceSeconds: pointer.Int64(int64(config.Since.Seconds())),
 			Exclude:      config.Exclude,
 			Include:      config.Include,
 			Namespace:    config.AllNamespaces || len(namespaces) > 1,
