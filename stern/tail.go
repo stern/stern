@@ -23,6 +23,7 @@ import (
 	"hash/fnv"
 	"io"
 	"regexp"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -68,6 +69,9 @@ type TailOptions struct {
 	TailLines    *int64
 	Follow       bool
 	OnlyLogLines bool
+
+	// regexp for highlighting the matched string
+	reHightlight *regexp.Regexp
 }
 
 type ResumeRequest struct {
@@ -97,6 +101,34 @@ func (o TailOptions) IsInclude(msg string) bool {
 	}
 
 	return false
+}
+
+var colorHighlight = color.New(color.FgRed, color.Bold).SprintFunc()
+
+func (o TailOptions) HighlightMatchedString(msg string) string {
+	if len(o.Include) == 0 {
+		return msg
+	}
+
+	if o.reHightlight == nil {
+		ss := make([]string, len(o.Include))
+		for i, rin := range o.Include {
+			ss[i] = rin.String()
+		}
+
+		// We expect a longer match
+		sort.Slice(ss, func(i, j int) bool {
+			return len(ss[i]) > len(ss[j])
+		})
+
+		o.reHightlight = regexp.MustCompile("(" + strings.Join(ss, "|") + ")")
+	}
+
+	msg = o.reHightlight.ReplaceAllStringFunc(msg, func(part string) string {
+		return colorHighlight(part)
+	})
+
+	return msg
 }
 
 func (o TailOptions) UpdateTimezone(timestamp string) (string, error) {
@@ -292,7 +324,8 @@ func (t *Tail) consumeLine(line string) {
 		return
 	}
 
-	msg := content
+	msg := t.Options.HighlightMatchedString(content)
+
 	if t.Options.Timestamps {
 		updatedTs, err := t.Options.UpdateTimezone(rfc3339Nano)
 		if err != nil {
@@ -301,6 +334,7 @@ func (t *Tail) consumeLine(line string) {
 		}
 		msg = updatedTs + " " + msg
 	}
+
 	t.Print(msg)
 }
 

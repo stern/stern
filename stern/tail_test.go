@@ -11,6 +11,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/fatih/color"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -362,6 +363,67 @@ func TestRemoveSubsecond(t *testing.T) {
 		actual := removeSubsecond(tt.ts)
 		if tt.expected != actual {
 			t.Errorf("expected %v, but actual %v", tt.expected, actual)
+		}
+	}
+}
+
+func TestHighlightMatchedString(t *testing.T) {
+	tests := []struct {
+		msg      string
+		include  []*regexp.Regexp
+		expected string
+	}{
+		{
+			"test matched",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`test`),
+			},
+			"\x1b[31;1mtest\x1b[0m matched",
+		},
+		{
+			"test not-matched",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`hoge`),
+			},
+			"test not-matched",
+		},
+		{
+			"test matched",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`not-matched`),
+				regexp.MustCompile(`matched`),
+			},
+			"test \x1b[31;1mmatched\x1b[0m",
+		},
+		{
+			"test multiple matched",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`multiple`),
+				regexp.MustCompile(`matched`),
+			},
+			"test \x1b[31;1mmultiple\x1b[0m \x1b[31;1mmatched\x1b[0m",
+		},
+		{
+			"test match on the longer one",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`match`),
+				regexp.MustCompile(`match on the longer one`),
+			},
+			"test \x1b[31;1mmatch on the longer one\x1b[0m",
+		},
+	}
+
+	orig := color.NoColor
+	color.NoColor = false
+	defer func() {
+		color.NoColor = orig
+	}()
+
+	for i, tt := range tests {
+		o := &TailOptions{Include: tt.include}
+		actual := o.HighlightMatchedString(tt.msg)
+		if actual != tt.expected {
+			t.Errorf("%d: expected %q, but actual %q", i, tt.expected, actual)
 		}
 	}
 }
