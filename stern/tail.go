@@ -183,6 +183,7 @@ func (t *Tail) Resume(ctx context.Context, resumeRequest *ResumeRequest) error {
 	t.resumeRequest = resumeRequest
 	t.Options.SinceTime = sinceTime
 	t.Options.SinceSeconds = nil
+	t.Options.TailLines = nil
 	return t.Start(ctx)
 }
 
@@ -291,16 +292,16 @@ func (t *Tail) consumeLine(line string) {
 		return
 	}
 
+	msg := content
 	if t.Options.Timestamps {
 		updatedTs, err := t.Options.UpdateTimezone(rfc3339Nano)
 		if err != nil {
 			t.Print(fmt.Sprintf("[%v] %s", err, line))
 			return
 		}
-		t.Print(updatedTs + " " + content)
-		return
+		msg = updatedTs + " " + msg
 	}
-	t.Print(content)
+	t.Print(msg)
 }
 
 func (t *Tail) rememberLastTimestamp(timestamp string) {
