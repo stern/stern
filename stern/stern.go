@@ -30,6 +30,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/utils/pointer"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -97,7 +98,7 @@ func Run(ctx context.Context, config *Config) error {
 		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
 			Timestamps:   config.Timestamps,
 			Location:     config.Location,
-			SinceSeconds: int64(config.Since.Seconds()),
+			SinceSeconds: pointer.Int64(int64(config.Since.Seconds())),
 			Exclude:      config.Exclude,
 			Include:      config.Include,
 			Namespace:    config.AllNamespaces || len(namespaces) > 1,
@@ -140,14 +141,20 @@ func Run(ctx context.Context, config *Config) error {
 		// We use a rate limiter to prevent a burst of retries.
 		// It also enables us to retry immediately, in most cases,
 		// when it is disconnected on the way.
-		limiter := rate.NewLimiter(rate.Every(time.Second*10), 3)
+		limiter := rate.NewLimiter(rate.Every(time.Second*20), 2)
+		var resumeRequest *ResumeRequest
 		for {
 			if err := limiter.Wait(ctx); err != nil {
 				fmt.Fprintf(config.ErrOut, "failed to retry: %v\n", err)
 				return
 			}
 			tail := newTail(target)
-			err := tail.Start(ctx)
+			var err error
+			if resumeRequest == nil {
+				err = tail.Start(ctx)
+			} else {
+				err = tail.Resume(ctx, resumeRequest)
+			}
 			tail.Close()
 			if err == nil {
 				return
@@ -157,6 +164,9 @@ func Run(ctx context.Context, config *Config) error {
 				return
 			}
 			fmt.Fprintf(config.ErrOut, "failed to tail: %v, will retry\n", err)
+			if resumeReq := tail.GetResumeRequest(); resumeReq != nil {
+				resumeRequest = resumeReq
+			}
 		}
 	}
 
