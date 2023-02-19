@@ -75,7 +75,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--color`                   | `auto`    | Force set color output. 'auto':  colorize if tty attached, 'always': always colorize, 'never': never colorize.
  `--completion`              |           | Output stern command-line completion code for the specified shell. Can be 'bash', 'zsh' or 'fish'.
  `--container`, `-c`         | `.*`      | Container name when multiple containers in pod. (regular expression)
- `--container-state`         | `running` | Tail containers with state in running, waiting, terminated, or all. 'all' matches all container states. To specify multiple states, repeat this or set comma-separated value.
+ `--container-state`         | `all`     | Tail containers with state in running, waiting, terminated, or all. 'all' matches all container states. To specify multiple states, repeat this or set comma-separated value.
  `--context`                 |           | Kubernetes context to use. Default to current context configured in kubeconfig.
  `--ephemeral-containers`    | `true`    | Include or exclude ephemeral containers.
  `--exclude`, `-e`           | `[]`      | Log lines to exclude. (regular expression)
