@@ -238,17 +238,9 @@ func (o *options) sternConfig() (*stern.Config, error) {
 	if t == "" {
 		switch o.output {
 		case "default":
-			if color.NoColor {
-				t = "{{.PodName}} {{.ContainerName}} {{.Message}}"
-				if o.allNamespaces || len(o.namespaces) > 1 {
-					t = fmt.Sprintf("{{.Namespace}} %s", t)
-				}
-			} else {
-				t = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}"
-				if o.allNamespaces || len(o.namespaces) > 1 {
-					t = fmt.Sprintf("{{color .PodColor .Namespace}} %s", t)
-				}
-
+			t = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}"
+			if o.allNamespaces || len(o.namespaces) > 1 {
+				t = fmt.Sprintf("{{color .PodColor .Namespace}} %s", t)
 			}
 		case "raw":
 			t = "{{.Message}}"
