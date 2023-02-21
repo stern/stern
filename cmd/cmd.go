@@ -234,66 +234,9 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		return nil, errors.New("color should be one of 'always', 'never', or 'auto'")
 	}
 
-	t := o.template
-	if t == "" {
-		switch o.output {
-		case "default":
-			t = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}"
-			if o.allNamespaces || len(o.namespaces) > 1 {
-				t = fmt.Sprintf("{{color .PodColor .Namespace}} %s", t)
-			}
-		case "raw":
-			t = "{{.Message}}"
-		case "json":
-			t = "{{json .}}"
-		case "extjson":
-			t = "\"pod\": \"{{color .PodColor .PodName}}\", \"container\": \"{{color .ContainerColor .ContainerName}}\", \"message\": {{extjson .Message}}"
-			if o.allNamespaces {
-				t = fmt.Sprintf("\"namespace\": \"{{color .PodColor .Namespace}}\", %s", t)
-			}
-			t = fmt.Sprintf("{%s}", t)
-		case "ppextjson":
-			t = "  \"pod\": \"{{color .PodColor .PodName}}\",\n  \"container\": \"{{color .ContainerColor .ContainerName}}\",\n  \"message\": {{extjson .Message}}"
-			if o.allNamespaces {
-				t = fmt.Sprintf("  \"namespace\": \"{{color .PodColor .Namespace}}\",\n%s", t)
-			}
-			t = fmt.Sprintf("{\n%s\n}", t)
-		}
-		t += "\n"
-	}
-
-	funs := map[string]interface{}{
-		"json": func(in interface{}) (string, error) {
-			b, err := json.Marshal(in)
-			if err != nil {
-				return "", err
-			}
-			return string(b), nil
-		},
-		"parseJSON": func(text string) (map[string]interface{}, error) {
-			obj := make(map[string]interface{})
-			if err := json.Unmarshal([]byte(text), &obj); err != nil {
-				return obj, err
-			}
-			return obj, nil
-		},
-		"extjson": func(in string) (string, error) {
-			if json.Valid([]byte(in)) {
-				return strings.TrimSuffix(in, "\n"), nil
-			}
-			b, err := json.Marshal(in)
-			if err != nil {
-				return "", err
-			}
-			return strings.TrimSuffix(string(b), "\n"), nil
-		},
-		"color": func(color color.Color, text string) string {
-			return color.SprintFunc()(text)
-		},
-	}
-	template, err := template.New("log").Funcs(funs).Parse(t)
+	template, err := o.generateTemplate()
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to parse template")
+		return nil, err
 	}
 
 	namespaces := []string{}
@@ -392,6 +335,71 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&o.onlyLogLines, "only-log-lines", o.onlyLogLines, "Print only log lines")
 	fs.IntVar(&o.verbosity, "verbosity", o.verbosity, "Number of the log level verbosity")
 	fs.BoolVarP(&o.version, "version", "v", o.version, "Print the version and exit.")
+}
+
+func (o *options) generateTemplate() (*template.Template, error) {
+	t := o.template
+	if t == "" {
+		switch o.output {
+		case "default":
+			t = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}"
+			if o.allNamespaces || len(o.namespaces) > 1 {
+				t = fmt.Sprintf("{{color .PodColor .Namespace}} %s", t)
+			}
+		case "raw":
+			t = "{{.Message}}"
+		case "json":
+			t = "{{json .}}"
+		case "extjson":
+			t = "\"pod\": \"{{color .PodColor .PodName}}\", \"container\": \"{{color .ContainerColor .ContainerName}}\", \"message\": {{extjson .Message}}"
+			if o.allNamespaces {
+				t = fmt.Sprintf("\"namespace\": \"{{color .PodColor .Namespace}}\", %s", t)
+			}
+			t = fmt.Sprintf("{%s}", t)
+		case "ppextjson":
+			t = "  \"pod\": \"{{color .PodColor .PodName}}\",\n  \"container\": \"{{color .ContainerColor .ContainerName}}\",\n  \"message\": {{extjson .Message}}"
+			if o.allNamespaces {
+				t = fmt.Sprintf("  \"namespace\": \"{{color .PodColor .Namespace}}\",\n%s", t)
+			}
+			t = fmt.Sprintf("{\n%s\n}", t)
+		}
+		t += "\n"
+	}
+
+	funs := map[string]interface{}{
+		"json": func(in interface{}) (string, error) {
+			b, err := json.Marshal(in)
+			if err != nil {
+				return "", err
+			}
+			return string(b), nil
+		},
+		"parseJSON": func(text string) (map[string]interface{}, error) {
+			obj := make(map[string]interface{})
+			if err := json.Unmarshal([]byte(text), &obj); err != nil {
+				return obj, err
+			}
+			return obj, nil
+		},
+		"extjson": func(in string) (string, error) {
+			if json.Valid([]byte(in)) {
+				return strings.TrimSuffix(in, "\n"), nil
+			}
+			b, err := json.Marshal(in)
+			if err != nil {
+				return "", err
+			}
+			return strings.TrimSuffix(string(b), "\n"), nil
+		},
+		"color": func(color color.Color, text string) string {
+			return color.SprintFunc()(text)
+		},
+	}
+	template, err := template.New("log").Funcs(funs).Parse(t)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to parse template")
+	}
+	return template, err
 }
 
 func NewSternCmd(stream genericclioptions.IOStreams) (*cobra.Command, error) {
