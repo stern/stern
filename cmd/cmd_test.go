@@ -255,6 +255,18 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			false,
 		},
 		{
+			"invalid output",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "invalid"
+
+				return o
+			}(),
+			"message",
+			"",
+			true,
+		},
+		{
 			"template",
 			func() *options {
 				o := NewOptions(streams)
