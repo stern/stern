@@ -144,14 +144,9 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		return nil, errors.Wrap(err, "failed to compile regular expression from query")
 	}
 
-	var excludePod []*regexp.Regexp
-	for _, s := range o.excludePod {
-		re, err := regexp.Compile(s)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to compile regular expression for excluded pod query")
-		}
-
-		excludePod = append(excludePod, re)
+	excludePod, err := compileREs(o.excludePod)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compile regular expression for excluded pod query")
 	}
 
 	container, err := regexp.Compile(o.container)
@@ -159,61 +154,40 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		return nil, errors.Wrap(err, "failed to compile regular expression for container query")
 	}
 
-	var excludeContainer []*regexp.Regexp
-	for _, s := range o.excludeContainer {
-		re, err := regexp.Compile(s)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to compile regular expression for excluded container query")
-		}
-
-		excludeContainer = append(excludeContainer, re)
+	excludeContainer, err := compileREs(o.excludeContainer)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compile regular expression for excluded container query")
 	}
 
-	var exclude []*regexp.Regexp
-	for _, ex := range o.exclude {
-		rex, err := regexp.Compile(ex)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to compile regular expression for exclusion filter")
-		}
-
-		exclude = append(exclude, rex)
+	exclude, err := compileREs(o.exclude)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compile regular expression for exclusion filter")
 	}
 
-	var include []*regexp.Regexp
-	for _, inc := range o.include {
-		rin, err := regexp.Compile(inc)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to compile regular expression for inclusion filter")
-		}
-
-		include = append(include, rin)
+	include, err := compileREs(o.include)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compile regular expression for inclusion filter")
 	}
 
 	containerStates := []stern.ContainerState{}
-	if o.containerStates != nil {
-		for _, containerStateStr := range makeUnique(o.containerStates) {
-			containerState, err := stern.NewContainerState(containerStateStr)
-			if err != nil {
-				return nil, err
-			}
-			containerStates = append(containerStates, containerState)
+	for _, containerStateStr := range makeUnique(o.containerStates) {
+		containerState, err := stern.NewContainerState(containerStateStr)
+		if err != nil {
+			return nil, err
 		}
+		containerStates = append(containerStates, containerState)
 	}
 
-	var labelSelector labels.Selector
-	if o.selector == "" {
-		labelSelector = labels.Everything()
-	} else {
+	labelSelector := labels.Everything()
+	if o.selector != "" {
 		labelSelector, err = labels.Parse(o.selector)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse selector as label selector")
 		}
 	}
 
-	var fieldSelector fields.Selector
-	if o.fieldSelector == "" {
-		fieldSelector = fields.Everything()
-	} else {
+	fieldSelector := fields.Everything()
+	if o.fieldSelector != "" {
 		fieldSelector, err = fields.ParseSelector(o.fieldSelector)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse selector as field selector")
@@ -225,12 +199,13 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		tailLines = &o.tail
 	}
 
-	colorFlag := o.color
-	if colorFlag == "always" {
+	switch o.color {
+	case "always":
 		color.NoColor = false
-	} else if colorFlag == "never" {
+	case "never":
 		color.NoColor = true
-	} else if colorFlag != "auto" {
+	case "auto":
+	default:
 		return nil, errors.New("color should be one of 'always', 'never', or 'auto'")
 	}
 
@@ -239,10 +214,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		return nil, err
 	}
 
-	namespaces := []string{}
-	if o.namespaces != nil {
-		namespaces = makeUnique(o.namespaces)
-	}
+	namespaces := makeUnique(o.namespaces)
 
 	// --timezone
 	location, err := time.LoadLocation(o.timezone)
@@ -463,4 +435,16 @@ func makeUnique(items []string) []string {
 	}
 
 	return result
+}
+
+func compileREs(exprs []string) ([]*regexp.Regexp, error) {
+	var regexps []*regexp.Regexp
+	for _, s := range exprs {
+		re, err := regexp.Compile(s)
+		if err != nil {
+			return nil, err
+		}
+		regexps = append(regexps, re)
+	}
+	return regexps, nil
 }
