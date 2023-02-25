@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
+	"github.com/fatih/color"
+	"github.com/stern/stern/stern"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
@@ -122,6 +125,192 @@ func TestOptionsValidate(t *testing.T) {
 				if tt.err != err.Error() {
 					t.Errorf("expected %q err, but actual %q", tt.err, err)
 				}
+			}
+		})
+	}
+}
+
+func TestOptionsGenerateTemplate(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	streams := genericclioptions.NewTestIOStreamsDiscard()
+
+	tests := []struct {
+		name      string
+		o         *options
+		message   string
+		want      string
+		wantError bool
+	}{
+		{
+			"output=default",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "default"
+
+				return o
+			}(),
+			"default message",
+			"pod1 container1 default message\n",
+			false,
+		},
+		{
+			"output=default+allNamespaces",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "default"
+				o.allNamespaces = true
+
+				return o
+			}(),
+			"default message",
+			"ns1 pod1 container1 default message\n",
+			false,
+		},
+		{
+			"output=raw",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "raw"
+
+				return o
+			}(),
+			"raw message",
+			"raw message\n",
+			false,
+		},
+		{
+			"output=json",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "json"
+
+				return o
+			}(),
+			"json message",
+			`{"message":"json message","nodeName":"node1","namespace":"ns1","podName":"pod1","containerName":"container1"}
+`,
+			false,
+		},
+		{
+			"output=extjson",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "extjson"
+
+				return o
+			}(),
+			`{"msg":"extjson message"}`,
+			`{"pod": "pod1", "container": "container1", "message": {"msg":"extjson message"}}
+`,
+			false,
+		},
+		{
+			"output=extjson+allNamespaces",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "extjson"
+				o.allNamespaces = true
+
+				return o
+			}(),
+			`{"msg":"extjson message"}`,
+			`{"namespace": "ns1", "pod": "pod1", "container": "container1", "message": {"msg":"extjson message"}}
+`,
+			false,
+		},
+		{
+			"output=ppextjson",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "ppextjson"
+
+				return o
+			}(),
+			`{"msg":"ppextjson message"}`,
+			`{
+  "pod": "pod1",
+  "container": "container1",
+  "message": {"msg":"ppextjson message"}
+}
+`,
+			false,
+		},
+		{
+			"output=ppextjson+allNamespaces",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "ppextjson"
+				o.allNamespaces = true
+
+				return o
+			}(),
+			`{"msg":"ppextjson message"}`,
+			`{
+  "namespace": "ns1",
+  "pod": "pod1",
+  "container": "container1",
+  "message": {"msg":"ppextjson message"}
+}
+`,
+			false,
+		},
+		{
+			"template",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = "Message={{.Message}} NodeName={{.NodeName}} Namespace={{.Namespace}} PodName={{.PodName}} ContainerName={{.ContainerName}}"
+
+				return o
+			}(),
+			"template message", // no new line
+			"Message=template message NodeName=node1 Namespace=ns1 PodName=pod1 ContainerName=container1",
+			false,
+		},
+		{
+			"invalid template",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = "{{invalid"
+
+				return o
+			}(),
+			"template message",
+			"",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			log := stern.Log{
+				Message:        tt.message,
+				NodeName:       "node1",
+				Namespace:      "ns1",
+				PodName:        "pod1",
+				ContainerName:  "container1",
+				PodColor:       color.New(color.FgRed),
+				ContainerColor: color.New(color.FgBlue),
+			}
+			tmpl, err := tt.o.generateTemplate()
+
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("expected error, but got no error")
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			var buf bytes.Buffer
+			if err := tmpl.Execute(&buf, log); err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+			if want, got := tt.want, buf.String(); want != got {
+				t.Errorf("want %v, but got %v", want, got)
 			}
 		})
 	}
