@@ -370,6 +370,35 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		"color": func(color color.Color, text string) string {
 			return color.SprintFunc()(text)
 		},
+		"colorBlack":   color.BlackString,
+		"colorRed":     color.RedString,
+		"colorGreen":   color.GreenString,
+		"colorYellow":  color.YellowString,
+		"colorBlue":    color.BlueString,
+		"colorMagenta": color.MagentaString,
+		"colorCyan":    color.CyanString,
+		"colorWhite":   color.WhiteString,
+		"levelColor": func(level string) string {
+			var levelColor *color.Color
+			switch strings.ToLower(level) {
+			case "debug":
+				levelColor = color.New(color.FgMagenta)
+			case "info":
+				levelColor = color.New(color.FgBlue)
+			case "warn":
+				levelColor = color.New(color.FgYellow)
+			case "error":
+				levelColor = color.New(color.FgRed)
+			case "dpanic":
+				levelColor = color.New(color.FgRed)
+			case "panic":
+				levelColor = color.New(color.FgRed)
+			case "fatal":
+				levelColor = color.New(color.FgCyan)
+			default:
+			}
+			return levelColor.SprintFunc()(level)
+		},
 	}
 	template, err := template.New("log").Funcs(funs).Parse(t)
 	if err != nil {
