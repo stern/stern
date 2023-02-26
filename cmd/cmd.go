@@ -362,6 +362,8 @@ func (o *options) generateTemplate() (*template.Template, error) {
 				t = fmt.Sprintf("  \"namespace\": \"{{color .PodColor .Namespace}}\",\n%s", t)
 			}
 			t = fmt.Sprintf("{\n%s\n}", t)
+		default:
+			return nil, errors.New("output should be one of 'default', 'raw', 'json', 'extjson', and 'ppextjson'")
 		}
 		t += "\n"
 	}
