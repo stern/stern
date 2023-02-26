@@ -349,8 +349,6 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		default:
 			return nil, errors.New("output should be one of 'default', 'raw', 'json', 'extjson', and 'ppextjson'")
 		}
-	}
-	if !strings.HasSuffix(t, "\n") {
 		t += "\n"
 	}
 
