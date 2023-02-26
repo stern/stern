@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	goflag "flag"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -63,6 +64,7 @@ type options struct {
 	version             bool
 	completion          string
 	template            string
+	templateFile        string
 	output              string
 	prompt              bool
 	podQuery            string
@@ -86,6 +88,7 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 		since:               48 * time.Hour,
 		tail:                -1,
 		template:            "",
+		templateFile:        "",
 		timestamps:          false,
 		timezone:            "Local",
 		prompt:              false,
@@ -303,6 +306,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVarP(&o.since, "since", "s", o.since, "Return logs newer than a relative duration like 5s, 2m, or 3h.")
 	fs.Int64Var(&o.tail, "tail", o.tail, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
 	fs.StringVar(&o.template, "template", o.template, "Template to use for log lines, leave empty to use --output flag.")
+	fs.StringVarP(&o.templateFile, "template-file", "T", o.templateFile, "Path to template to use for log lines, leave empty to use --output flag.")
 	fs.BoolVarP(&o.timestamps, "timestamps", "t", o.timestamps, "Print timestamps.")
 	fs.StringVar(&o.timezone, "timezone", o.timezone, "Set timestamps to specific timezone.")
 	fs.BoolVar(&o.onlyLogLines, "only-log-lines", o.onlyLogLines, "Print only log lines")
@@ -312,6 +316,13 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 
 func (o *options) generateTemplate() (*template.Template, error) {
 	t := o.template
+	if o.templateFile != "" {
+		data, err := os.ReadFile(o.templateFile)
+		if err != nil {
+			return nil, err
+		}
+		t = string(data)
+	}
 	if t == "" {
 		switch o.output {
 		case "default":
