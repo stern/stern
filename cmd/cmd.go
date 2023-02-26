@@ -29,6 +29,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
+	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stern/stern/stern"
@@ -366,6 +367,9 @@ func (o *options) generateTemplate() (*template.Template, error) {
 				return "", err
 			}
 			return strings.TrimSuffix(string(b), "\n"), nil
+		},
+		"formatTsRFC3339Nano": func(ts any) string {
+			return cast.ToTime(ts).Format(time.RFC3339Nano)
 		},
 		"color": func(color color.Color, text string) string {
 			return color.SprintFunc()(text)
