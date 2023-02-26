@@ -362,6 +362,13 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			}
 			return string(b), nil
 		},
+		"tryParseJSON": func(text string) map[string]interface{} {
+			obj := make(map[string]interface{})
+			if err := json.Unmarshal([]byte(text), &obj); err != nil {
+				return nil
+			}
+			return obj
+		},
 		"parseJSON": func(text string) (map[string]interface{}, error) {
 			obj := make(map[string]interface{})
 			if err := json.Unmarshal([]byte(text), &obj); err != nil {
