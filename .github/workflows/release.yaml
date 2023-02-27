@@ -12,12 +12,7 @@ jobs:
     - uses: actions/setup-go@v3
       with:
         go-version: 1.19.x
-    - uses: actions/cache@v3
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+        cache: true
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v1
       with:
