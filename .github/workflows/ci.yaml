@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  # Must keep in sync with ci_for_skipped.yaml
   push:
     branches: [master]
     paths-ignore: ['**.md']
