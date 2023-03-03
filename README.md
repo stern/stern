@@ -248,6 +248,18 @@ Output using a custom template with `parseJSON`:
 stern --template='{{.PodName}}/{{.ContainerName}} {{with $d := .Message | parseJSON}}[{{$d.level}}] {{$d.message}}{{end}}{{"\n"}}' backend
 ```
 
+Output using a custom template that tries to parse JSON or fallbacks to raw format:
+
+```
+stern --template='{{.PodName}}/{{.ContainerName}} {{ with $msg := .Message | tryParseJSON }}[{{ colorGreen (toRFC3339Nano $msg.ts) }}] {{ levelColor $msg.level }} ({{ colorCyan $msg.caller }}) {{ $msg.msg }}{{ else }} {{ .Message }} {{ end }}{{"\n"}}' backend
+```
+
+Load custom template from file:
+
+```
+stern --template-file=~/.stern.tpl backend
+```
+
 Trigger the interactive prompt to select an 'app.kubernetes.io/instance' label value:
 
 ```
