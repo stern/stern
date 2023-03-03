@@ -306,7 +306,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVarP(&o.since, "since", "s", o.since, "Return logs newer than a relative duration like 5s, 2m, or 3h.")
 	fs.Int64Var(&o.tail, "tail", o.tail, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
 	fs.StringVar(&o.template, "template", o.template, "Template to use for log lines, leave empty to use --output flag.")
-	fs.StringVarP(&o.templateFile, "template-file", "T", o.templateFile, "Path to template to use for log lines, leave empty to use --output flag.")
+	fs.StringVarP(&o.templateFile, "template-file", "T", o.templateFile, "Path to template to use for log lines, leave empty to use --output flag. It overrides --template option.")
 	fs.BoolVarP(&o.timestamps, "timestamps", "t", o.timestamps, "Print timestamps.")
 	fs.StringVar(&o.timezone, "timezone", o.timezone, "Set timestamps to specific timezone.")
 	fs.BoolVar(&o.onlyLogLines, "only-log-lines", o.onlyLogLines, "Print only log lines")

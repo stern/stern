@@ -95,7 +95,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--since`, `-s`             | `48h0m0s` | Return logs newer than a relative duration like 5s, 2m, or 3h.
  `--tail`                    | `-1`      | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.
  `--template`                |           | Template to use for log lines, leave empty to use --output flag.
- `--template-file`, `-T`     |           | Path to template to use for log lines, leave empty to use --output flag.
+ `--template-file`, `-T`     |           | Path to template to use for log lines, leave empty to use --output flag. It overrides --template option.
  `--timestamps`, `-t`        | `false`   | Print timestamps.
  `--timezone`                | `Local`   | Set timestamps to specific timezone.
  `--verbosity`               | `0`       | Number of the log level verbosity
