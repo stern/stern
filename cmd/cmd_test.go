@@ -296,6 +296,42 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			"",
 			true,
 		},
+		{
+			"template-file",
+			func() *options {
+				o := NewOptions(streams)
+				o.templateFile = "test.tpl"
+
+				return o
+			}(),
+			"template message",
+			"pod1 container1 template message",
+			false,
+		},
+		{
+			"template-file-json-log-ts-float",
+			func() *options {
+				o := NewOptions(streams)
+				o.templateFile = "test.tpl"
+
+				return o
+			}(),
+			`{"ts": 123, "level": "INFO", "msg": "template message"}`,
+			"pod1 container1 [1970-01-01T00:02:03Z] INFO template message",
+			false,
+		},
+		{
+			"template-file-json-log-ts-str",
+			func() *options {
+				o := NewOptions(streams)
+				o.templateFile = "test.tpl"
+
+				return o
+			}(),
+			`{"ts": "1970-01-01T01:02:03+01:00", "level": "INFO", "msg": "template message"}`,
+			"pod1 container1 [1970-01-01T00:02:03Z] INFO template message",
+			false,
+		},
 	}
 
 	for _, tt := range tests {
