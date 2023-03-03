@@ -384,7 +384,7 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			}
 			return strings.TrimSuffix(string(b), "\n"), nil
 		},
-		"formatTsRFC3339Nano": func(ts any) string {
+		"toRFC3339Nano": func(ts any) string {
 			return cast.ToTime(ts).Format(time.RFC3339Nano)
 		},
 		"color": func(color color.Color, text string) string {
