@@ -1,0 +1,16 @@
+# CI for skipped files
+name: CI
+
+on:
+  push:
+    branches: [master]
+    paths: ['**.md']
+  pull_request:
+    types: [opened, synchronize]
+    paths: ['**.md']
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+    - run: 'echo "No check required"'

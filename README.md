@@ -312,6 +312,13 @@ source "$(brew --prefix)/etc/profile.d/bash_completion.sh"
 source <(stern --completion=bash)
 ```
 
+If installed via Krew, use:
+
+```bash
+source <(kubectl stern --completion bash)
+complete -o default -F __start_stern kubectl stern
+```
+
 If you use zsh, just source the stern zsh completion code in `.zshrc`.
 
 ```sh
