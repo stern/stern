@@ -134,13 +134,25 @@ will receive the following struct:
 The following functions are available within the template (besides the [builtin
 functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 
-| func        | arguments             | description                                                     |
-|-------------|-----------------------|-----------------------------------------------------------------|
-| `json`      | `object`              | Marshal the object and output it as a json text                 |
-| `color`     | `color.Color, string` | Wrap the text in color (.ContainerColor and .PodColor provided) |
-| `parseJSON` | `string`              | Parse string as JSON                                            |
-| `extjson`   | `string`              | Parse the object as json and output colorized json              |
-| `ppextjson` | `string`              | Parse the object as json and output pretty-print colorized json |
+| func            | arguments             | description                                                                       |
+|-----------------|-----------------------|-----------------------------------------------------------------------------------|
+| `json`          | `object`              | Marshal the object and output it as a json text                                   |
+| `color`         | `color.Color, string` | Wrap the text in color (.ContainerColor and .PodColor provided)                   |
+| `parseJSON`     | `string`              | Parse string as JSON                                                              |
+| `tryParseJSON`  | `string`              | Attemp to parse string as JSON, return nil on failure                             |
+| `extjson`       | `string`              | Parse the object as json and output colorized json                                |
+| `ppextjson`     | `string`              | Parse the object as json and output pretty-print colorized json                   |
+| `toRFC3339Nano` | `object`              | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format |
+| `levelColor`    | `string`              | Print log level using appropriate color                                           |
+| `colorBlack`    | `string`              | Print text using black color                                                      |
+| `colorRed`      | `string`              | Print text using red color                                                        |
+| `colorGreen`    | `string`              | Print text using green color                                                      |
+| `colorYellow`   | `string`              | Print text using yellow color                                                     |
+| `colorBlue`     | `string`              | Print text using blue color                                                       |
+| `colorMagenta`  | `string`              | Print text using magenta color                                                    |
+| `colorCyan`     | `string`              | Print text using cyan color                                                       |
+| `colorWhite`    | `string`              | Print text using white color                                                      |
+
 
 ### Log level verbosity
 
