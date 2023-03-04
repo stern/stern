@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	goflag "flag"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
+	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stern/stern/stern"
@@ -62,6 +64,7 @@ type options struct {
 	version             bool
 	completion          string
 	template            string
+	templateFile        string
 	output              string
 	prompt              bool
 	podQuery            string
@@ -85,6 +88,7 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 		since:               48 * time.Hour,
 		tail:                -1,
 		template:            "",
+		templateFile:        "",
 		timestamps:          false,
 		timezone:            "Local",
 		prompt:              false,
@@ -302,6 +306,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVarP(&o.since, "since", "s", o.since, "Return logs newer than a relative duration like 5s, 2m, or 3h.")
 	fs.Int64Var(&o.tail, "tail", o.tail, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
 	fs.StringVar(&o.template, "template", o.template, "Template to use for log lines, leave empty to use --output flag.")
+	fs.StringVarP(&o.templateFile, "template-file", "T", o.templateFile, "Path to template to use for log lines, leave empty to use --output flag. It overrides --template option.")
 	fs.BoolVarP(&o.timestamps, "timestamps", "t", o.timestamps, "Print timestamps.")
 	fs.StringVar(&o.timezone, "timezone", o.timezone, "Set timestamps to specific timezone.")
 	fs.BoolVar(&o.onlyLogLines, "only-log-lines", o.onlyLogLines, "Print only log lines")
@@ -311,6 +316,13 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 
 func (o *options) generateTemplate() (*template.Template, error) {
 	t := o.template
+	if o.templateFile != "" {
+		data, err := os.ReadFile(o.templateFile)
+		if err != nil {
+			return nil, err
+		}
+		t = string(data)
+	}
 	if t == "" {
 		switch o.output {
 		case "default":
@@ -348,6 +360,15 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			}
 			return string(b), nil
 		},
+		"tryParseJSON": func(text string) map[string]interface{} {
+			decoder := json.NewDecoder(strings.NewReader(text))
+			decoder.UseNumber()
+			obj := make(map[string]interface{})
+			if err := decoder.Decode(&obj); err != nil {
+				return nil
+			}
+			return obj
+		},
 		"parseJSON": func(text string) (map[string]interface{}, error) {
 			obj := make(map[string]interface{})
 			if err := json.Unmarshal([]byte(text), &obj); err != nil {
@@ -365,8 +386,43 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			}
 			return strings.TrimSuffix(string(b), "\n"), nil
 		},
+		"toRFC3339Nano": func(ts any) string {
+			return cast.ToTime(ts).Format(time.RFC3339Nano)
+		},
+		"toUTC": func(ts any) time.Time {
+			return cast.ToTime(ts).UTC()
+		},
 		"color": func(color color.Color, text string) string {
 			return color.SprintFunc()(text)
+		},
+		"colorBlack":   color.BlackString,
+		"colorRed":     color.RedString,
+		"colorGreen":   color.GreenString,
+		"colorYellow":  color.YellowString,
+		"colorBlue":    color.BlueString,
+		"colorMagenta": color.MagentaString,
+		"colorCyan":    color.CyanString,
+		"colorWhite":   color.WhiteString,
+		"levelColor": func(level string) string {
+			var levelColor *color.Color
+			switch strings.ToLower(level) {
+			case "debug":
+				levelColor = color.New(color.FgMagenta)
+			case "info":
+				levelColor = color.New(color.FgBlue)
+			case "warn":
+				levelColor = color.New(color.FgYellow)
+			case "error":
+				levelColor = color.New(color.FgRed)
+			case "dpanic":
+				levelColor = color.New(color.FgRed)
+			case "panic":
+				levelColor = color.New(color.FgRed)
+			case "fatal":
+				levelColor = color.New(color.FgCyan)
+			default:
+			}
+			return levelColor.SprintFunc()(level)
 		},
 	}
 	template, err := template.New("log").Funcs(funs).Parse(t)

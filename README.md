@@ -95,6 +95,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--since`, `-s`             | `48h0m0s` | Return logs newer than a relative duration like 5s, 2m, or 3h.
  `--tail`                    | `-1`      | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.
  `--template`                |           | Template to use for log lines, leave empty to use --output flag.
+ `--template-file`, `-T`     |           | Path to template to use for log lines, leave empty to use --output flag. It overrides --template option.
  `--timestamps`, `-t`        | `false`   | Print timestamps.
  `--timezone`                | `Local`   | Set timestamps to specific timezone.
  `--verbosity`               | `0`       | Number of the log level verbosity
@@ -133,13 +134,25 @@ will receive the following struct:
 The following functions are available within the template (besides the [builtin
 functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 
-| func        | arguments             | description                                                     |
-|-------------|-----------------------|-----------------------------------------------------------------|
-| `json`      | `object`              | Marshal the object and output it as a json text                 |
-| `color`     | `color.Color, string` | Wrap the text in color (.ContainerColor and .PodColor provided) |
-| `parseJSON` | `string`              | Parse string as JSON                                            |
-| `extjson`   | `string`              | Parse the object as json and output colorized json              |
-| `ppextjson` | `string`              | Parse the object as json and output pretty-print colorized json |
+| func            | arguments             | description                                                                       |
+|-----------------|-----------------------|-----------------------------------------------------------------------------------|
+| `json`          | `object`              | Marshal the object and output it as a json text                                   |
+| `color`         | `color.Color, string` | Wrap the text in color (.ContainerColor and .PodColor provided)                   |
+| `parseJSON`     | `string`              | Parse string as JSON                                                              |
+| `tryParseJSON`  | `string`              | Attemp to parse string as JSON, return nil on failure                             |
+| `extjson`       | `string`              | Parse the object as json and output colorized json                                |
+| `ppextjson`     | `string`              | Parse the object as json and output pretty-print colorized json                   |
+| `toRFC3339Nano` | `object`              | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format |
+| `levelColor`    | `string`              | Print log level using appropriate color                                           |
+| `colorBlack`    | `string`              | Print text using black color                                                      |
+| `colorRed`      | `string`              | Print text using red color                                                        |
+| `colorGreen`    | `string`              | Print text using green color                                                      |
+| `colorYellow`   | `string`              | Print text using yellow color                                                     |
+| `colorBlue`     | `string`              | Print text using blue color                                                       |
+| `colorMagenta`  | `string`              | Print text using magenta color                                                    |
+| `colorCyan`     | `string`              | Print text using cyan color                                                       |
+| `colorWhite`    | `string`              | Print text using white color                                                      |
+
 
 ### Log level verbosity
 
@@ -245,6 +258,18 @@ Output using a custom template with `parseJSON`:
 
 ```
 stern --template='{{.PodName}}/{{.ContainerName}} {{with $d := .Message | parseJSON}}[{{$d.level}}] {{$d.message}}{{end}}{{"\n"}}' backend
+```
+
+Output using a custom template that tries to parse JSON or fallbacks to raw format:
+
+```
+stern --template='{{.PodName}}/{{.ContainerName}} {{ with $msg := .Message | tryParseJSON }}[{{ colorGreen (toRFC3339Nano $msg.ts) }}] {{ levelColor $msg.level }} ({{ colorCyan $msg.caller }}) {{ $msg.msg }}{{ else }} {{ .Message }} {{ end }}{{"\n"}}' backend
+```
+
+Load custom template from file:
+
+```
+stern --template-file=~/.stern.tpl backend
 ```
 
 Trigger the interactive prompt to select an 'app.kubernetes.io/instance' label value:
