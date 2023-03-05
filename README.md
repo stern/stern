@@ -88,6 +88,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--max-log-requests`        | `-1`      | Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow
  `--namespace`, `-n`         |           | Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.
  `--no-follow`               | `false`   | Exit when all logs have been shown.
+ `--node`                    |           | Node name to filter on.
  `--only-log-lines`          | `false`   | Print only log lines
  `--output`, `-o`            | `default` | Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]
  `--prompt`, `-p`            | `false`   | Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.

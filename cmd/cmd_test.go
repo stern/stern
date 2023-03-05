@@ -376,7 +376,7 @@ func TestOptionsSternConfig(t *testing.T) {
 	local, _ := time.LoadLocation("Local")
 	utc, _ := time.LoadLocation("UTC")
 	labelSelector, _ := labels.Parse("l=sel")
-	fieldSelector, _ := fields.ParseSelector("f=field")
+	fieldSelector, _ := fields.ParseSelector("f=field,spec.nodeName=node1")
 
 	re := regexp.MustCompile
 
@@ -451,6 +451,7 @@ func TestOptionsSternConfig(t *testing.T) {
 				o.maxLogRequests = 30
 				o.resource = "res1"
 				o.onlyLogLines = true
+				o.node = "node1"
 
 				return o
 			}(),
@@ -479,6 +480,40 @@ func TestOptionsSternConfig(t *testing.T) {
 				c.Resource = "res1"
 				c.OnlyLogLines = true
 				c.MaxLogRequests = 30
+
+				return c
+			}(),
+			false,
+		},
+		{
+			"fieldSelector without node",
+			func() *options {
+				o := NewOptions(streams)
+				o.fieldSelector = "f=field"
+
+				return o
+			}(),
+			func() *stern.Config {
+				c := defaultConfig()
+				sel, _ := fields.ParseSelector("f=field")
+				c.FieldSelector = sel
+
+				return c
+			}(),
+			false,
+		},
+		{
+			"node without fieldSelector",
+			func() *options {
+				o := NewOptions(streams)
+				o.node = "node1"
+
+				return o
+			}(),
+			func() *stern.Config {
+				c := defaultConfig()
+				sel, _ := fields.ParseSelector("spec.nodeName=node1")
+				c.FieldSelector = sel
 
 				return c
 			}(),

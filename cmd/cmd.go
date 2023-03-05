@@ -73,6 +73,7 @@ type options struct {
 	verbosity           int
 	onlyLogLines        bool
 	maxLogRequests      int
+	node                string
 }
 
 func NewOptions(streams genericclioptions.IOStreams) *options {
@@ -190,12 +191,9 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		}
 	}
 
-	fieldSelector := fields.Everything()
-	if o.fieldSelector != "" {
-		fieldSelector, err = fields.ParseSelector(o.fieldSelector)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse selector as field selector")
-		}
+	fieldSelector, err := o.generateFieldSelector()
+	if err != nil {
+		return nil, err
 	}
 
 	var tailLines *int64
@@ -298,6 +296,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.kubeConfig, "kube-config", o.kubeConfig, "Path to kubeconfig file to use.")
 	_ = fs.MarkDeprecated("kube-config", "Use --kubeconfig instead.")
 	fs.StringSliceVarP(&o.namespaces, "namespace", "n", o.namespaces, "Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
+	fs.StringVar(&o.node, "node", o.node, "Node name to filter on.")
 	fs.IntVar(&o.maxLogRequests, "max-log-requests", o.maxLogRequests, "Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow")
 	fs.StringVarP(&o.output, "output", "o", o.output, "Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]")
 	fs.BoolVarP(&o.prompt, "prompt", "p", o.prompt, "Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.")
@@ -430,6 +429,25 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		return nil, errors.Wrap(err, "unable to parse template")
 	}
 	return template, err
+}
+
+func (o *options) generateFieldSelector() (fields.Selector, error) {
+	var queries []string
+	if o.fieldSelector != "" {
+		queries = append(queries, o.fieldSelector)
+	}
+	if o.node != "" {
+		queries = append(queries, fmt.Sprintf("spec.nodeName=%s", o.node))
+	}
+	if len(queries) == 0 {
+		return fields.Everything(), nil
+	}
+
+	fieldSelector, err := fields.ParseSelector(strings.Join(queries, ","))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse selector as field selector")
+	}
+	return fieldSelector, nil
 }
 
 func NewSternCmd(stream genericclioptions.IOStreams) (*cobra.Command, error) {
