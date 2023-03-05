@@ -75,6 +75,10 @@ func registerCompletionFuncForFlags(cmd *cobra.Command, o *options) error {
 		return err
 	}
 
+	if err := cmd.RegisterFlagCompletionFunc("node", nodeCompletionFunc(o)); err != nil {
+		return err
+	}
+
 	if err := cmd.RegisterFlagCompletionFunc("context", contextCompletionFunc(o)); err != nil {
 		return err
 	}
@@ -109,6 +113,32 @@ func namespaceCompletionFunc(o *options) func(cmd *cobra.Command, args []string,
 		for _, ns := range namespaceList.Items {
 			if strings.HasPrefix(ns.GetName(), toComplete) {
 				comps = append(comps, ns.GetName())
+			}
+		}
+
+		return comps, cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
+// nodeCompletionFunc is a completion function that completes node names
+// that match the toComplete prefix.
+func nodeCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		clientConfig := kubernetes.NewClientConfig(o.kubeConfig, o.context)
+		clientset, err := kubernetes.NewClientSet(clientConfig)
+		if err != nil {
+			return compError(err)
+		}
+
+		nodeList, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return compError(err)
+		}
+
+		var comps []string
+		for _, node := range nodeList.Items {
+			if strings.HasPrefix(node.GetName(), toComplete) {
+				comps = append(comps, node.GetName())
 			}
 		}
 
