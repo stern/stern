@@ -96,15 +96,16 @@ func Run(ctx context.Context, config *Config) error {
 	})
 	newTail := func(t *Target) *Tail {
 		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
-			Timestamps:   config.Timestamps,
-			Location:     config.Location,
-			SinceSeconds: pointer.Int64(int64(config.Since.Seconds())),
-			Exclude:      config.Exclude,
-			Include:      config.Include,
-			Namespace:    config.AllNamespaces || len(namespaces) > 1,
-			TailLines:    config.TailLines,
-			Follow:       config.Follow,
-			OnlyLogLines: config.OnlyLogLines,
+			Timestamps:      config.Timestamps,
+			TimestampFormat: config.TimestampFormat,
+			Location:        config.Location,
+			SinceSeconds:    pointer.Int64(int64(config.Since.Seconds())),
+			Exclude:         config.Exclude,
+			Include:         config.Include,
+			Namespace:       config.AllNamespaces || len(namespaces) > 1,
+			TailLines:       config.TailLines,
+			Follow:          config.Follow,
+			OnlyLogLines:    config.OnlyLogLines,
 		})
 	}
 

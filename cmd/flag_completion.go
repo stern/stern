@@ -34,6 +34,7 @@ var flagChoices = map[string][]string{
 	"completion":      []string{"bash", "zsh", "fish"},
 	"container-state": []string{stern.RUNNING, stern.WAITING, stern.TERMINATED, stern.ALL_STATES},
 	"output":          []string{"default", "raw", "json", "extjson", "ppextjson"},
+	"timestamps":      []string{"default", "short"},
 }
 
 func runCompletion(shell string, cmd *cobra.Command, out io.Writer) error {

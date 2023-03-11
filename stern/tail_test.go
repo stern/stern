@@ -63,23 +63,26 @@ func TestIsIncludeTestOptions(t *testing.T) {
 	}
 }
 
-func TestUpdateTimezone(t *testing.T) {
+func TestUpdateTimezoneAndFormat(t *testing.T) {
 	location, _ := time.LoadLocation("Asia/Tokyo")
 
 	tests := []struct {
 		name     string
+		format   string
 		message  string
 		expected string
 		err      string
 	}{
 		{
 			"normal case",
+			"", // default format is used if empty
 			"2021-04-18T03:54:44.764981564Z",
 			"2021-04-18T12:54:44.764981564+09:00",
 			"",
 		},
 		{
 			"padding",
+			"",
 			"2021-04-18T03:54:44.764981500Z",
 			"2021-04-18T12:54:44.764981500+09:00",
 			"",
@@ -88,28 +91,40 @@ func TestUpdateTimezone(t *testing.T) {
 			"timestamp required on non timestamp message",
 			"",
 			"",
+			"",
 			"missing timestamp",
 		},
 		{
 			"not UTC",
+			"",
 			"2021-08-03T01:26:29.953994922+02:00",
 			"2021-08-03T08:26:29.953994922+09:00",
 			"",
 		},
 		{
 			"RFC3339Nano format removed trailing zeros",
+			"",
 			"2021-06-20T08:20:30.331385Z",
 			"2021-06-20T17:20:30.331385000+09:00",
 			"",
 		},
+		{
+			"Specified the short format",
+			TimestampFormatShort,
+			"2021-06-20T08:20:30.331385Z",
+			"06-20 17:20:30",
+			"",
+		},
 	}
 
-	tailOptions := &TailOptions{
-		Location: location,
-	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			message, err := tailOptions.UpdateTimezone(tt.message)
+			tailOptions := &TailOptions{
+				Location:        location,
+				TimestampFormat: tt.format,
+			}
+
+			message, err := tailOptions.UpdateTimezoneAndFormat(tt.message)
 			if tt.expected != message {
 				t.Errorf("expected %q, but actual %q", tt.expected, message)
 			}
