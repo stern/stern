@@ -46,7 +46,7 @@ type options struct {
 	container           string
 	excludeContainer    []string
 	containerStates     []string
-	timestamps          bool
+	timestamps          string
 	timezone            string
 	since               time.Duration
 	context             string
@@ -90,7 +90,7 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 		tail:                -1,
 		template:            "",
 		templateFile:        "",
-		timestamps:          false,
+		timestamps:          "",
 		timezone:            "Local",
 		prompt:              false,
 		noFollow:            false,
@@ -218,6 +218,17 @@ func (o *options) sternConfig() (*stern.Config, error) {
 
 	namespaces := makeUnique(o.namespaces)
 
+	var timestampFormat string
+	switch o.timestamps {
+	case "default":
+		timestampFormat = stern.TimestampFormatDefault
+	case "short":
+		timestampFormat = stern.TimestampFormatShort
+	case "":
+	default:
+		return nil, errors.New("timestamps should be one of 'default', or 'short'")
+	}
+
 	// --timezone
 	location, err := time.LoadLocation(o.timezone)
 	if err != nil {
@@ -239,7 +250,8 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		Namespaces:            namespaces,
 		PodQuery:              pod,
 		ExcludePodQuery:       excludePod,
-		Timestamps:            o.timestamps,
+		Timestamps:            timestampFormat != "",
+		TimestampFormat:       timestampFormat,
 		Location:              location,
 		ContainerQuery:        container,
 		ExcludeContainerQuery: excludeContainer,
@@ -306,11 +318,13 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.Int64Var(&o.tail, "tail", o.tail, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
 	fs.StringVar(&o.template, "template", o.template, "Template to use for log lines, leave empty to use --output flag.")
 	fs.StringVarP(&o.templateFile, "template-file", "T", o.templateFile, "Path to template to use for log lines, leave empty to use --output flag. It overrides --template option.")
-	fs.BoolVarP(&o.timestamps, "timestamps", "t", o.timestamps, "Print timestamps.")
+	fs.StringVarP(&o.timestamps, "timestamps", "t", o.timestamps, "Print timestamps with the specified format. One of 'default' or 'short'. If specified but without value, 'default' is used.")
 	fs.StringVar(&o.timezone, "timezone", o.timezone, "Set timestamps to specific timezone.")
 	fs.BoolVar(&o.onlyLogLines, "only-log-lines", o.onlyLogLines, "Print only log lines")
 	fs.IntVar(&o.verbosity, "verbosity", o.verbosity, "Number of the log level verbosity")
 	fs.BoolVarP(&o.version, "version", "v", o.version, "Print the version and exit.")
+
+	fs.Lookup("timestamps").NoOptDefVal = "default"
 }
 
 func (o *options) generateTemplate() (*template.Template, error) {

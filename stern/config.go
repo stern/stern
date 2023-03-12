@@ -32,6 +32,7 @@ type Config struct {
 	PodQuery              *regexp.Regexp
 	ExcludePodQuery       []*regexp.Regexp
 	Timestamps            bool
+	TimestampFormat       string
 	Location              *time.Location
 	ContainerQuery        *regexp.Regexp
 	ExcludeContainerQuery []*regexp.Regexp

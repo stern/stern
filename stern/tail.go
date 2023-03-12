@@ -36,6 +36,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// RFC3339Nano with trailing zeros
+const TimestampFormatDefault = "2006-01-02T15:04:05.000000000Z07:00"
+
+// time.DateTime without year
+const TimestampFormatShort = "01-02 15:04:05"
+
 type Tail struct {
 	clientset corev1client.CoreV1Interface
 
@@ -58,8 +64,9 @@ type Tail struct {
 }
 
 type TailOptions struct {
-	Timestamps bool
-	Location   *time.Location
+	Timestamps      bool
+	TimestampFormat string
+	Location        *time.Location
 
 	SinceSeconds *int64
 	SinceTime    *metav1.Time
@@ -131,12 +138,16 @@ func (o TailOptions) HighlightMatchedString(msg string) string {
 	return msg
 }
 
-func (o TailOptions) UpdateTimezone(timestamp string) (string, error) {
+func (o TailOptions) UpdateTimezoneAndFormat(timestamp string) (string, error) {
 	t, err := time.ParseInLocation(time.RFC3339Nano, timestamp, time.UTC)
 	if err != nil {
 		return "", errors.New("missing timestamp")
 	}
-	return t.In(o.Location).Format("2006-01-02T15:04:05.000000000Z07:00"), nil
+	format := TimestampFormatDefault
+	if o.TimestampFormat != "" {
+		format = o.TimestampFormat
+	}
+	return t.In(o.Location).Format(format), nil
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
@@ -327,7 +338,7 @@ func (t *Tail) consumeLine(line string) {
 	msg := t.Options.HighlightMatchedString(content)
 
 	if t.Options.Timestamps {
-		updatedTs, err := t.Options.UpdateTimezone(rfc3339Nano)
+		updatedTs, err := t.Options.UpdateTimezoneAndFormat(rfc3339Nano)
 		if err != nil {
 			t.Print(fmt.Sprintf("[%v] %s", err, line))
 			return

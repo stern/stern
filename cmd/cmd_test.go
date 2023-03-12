@@ -388,6 +388,7 @@ func TestOptionsSternConfig(t *testing.T) {
 			PodQuery:              re(""),
 			ExcludePodQuery:       nil,
 			Timestamps:            false,
+			TimestampFormat:       "",
 			Location:              local,
 			ContainerQuery:        re(".*"),
 			ExcludeContainerQuery: nil,
@@ -433,7 +434,7 @@ func TestOptionsSternConfig(t *testing.T) {
 				o.namespaces = []string{"ns1", "ns2"}
 				o.podQuery = "query1"
 				o.excludePod = []string{"exp1", "exp2"}
-				o.timestamps = true
+				o.timestamps = "default"
 				o.timezone = "UTC" // Location
 				o.container = "container1"
 				o.excludeContainer = []string{"exc1", "exc2"}
@@ -463,6 +464,7 @@ func TestOptionsSternConfig(t *testing.T) {
 				c.PodQuery = re("query1")
 				c.ExcludePodQuery = []*regexp.Regexp{re("exp1"), re("exp2")}
 				c.Timestamps = true
+				c.TimestampFormat = stern.TimestampFormatDefault
 				c.Location = utc
 				c.ContainerQuery = re("container1")
 				c.ExcludeContainerQuery = []*regexp.Regexp{re("exc1"), re("exc2")}
@@ -514,6 +516,23 @@ func TestOptionsSternConfig(t *testing.T) {
 				c := defaultConfig()
 				sel, _ := fields.ParseSelector("spec.nodeName=node1")
 				c.FieldSelector = sel
+
+				return c
+			}(),
+			false,
+		},
+		{
+			"timestamp=short",
+			func() *options {
+				o := NewOptions(streams)
+				o.timestamps = "short"
+
+				return o
+			}(),
+			func() *stern.Config {
+				c := defaultConfig()
+				c.Timestamps = true
+				c.TimestampFormat = stern.TimestampFormatShort
 
 				return c
 			}(),
@@ -683,6 +702,17 @@ func TestOptionsSternConfig(t *testing.T) {
 			func() *options {
 				o := NewOptions(streams)
 				o.timezone = "invalid"
+
+				return o
+			}(),
+			nil,
+			true,
+		},
+		{
+			"error timestamps",
+			func() *options {
+				o := NewOptions(streams)
+				o.timestamps = "invalid"
 
 				return o
 			}(),
