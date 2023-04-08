@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -9,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/spf13/pflag"
 	"github.com/stern/stern/stern"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -49,6 +52,47 @@ func TestSternCommand(t *testing.T) {
 
 			if !strings.Contains(out.String(), tt.out) {
 				t.Errorf("expected to contain %s, but actual %s", tt.out, out.String())
+			}
+		})
+	}
+}
+
+func TestOptionsComplete(t *testing.T) {
+	streams := genericclioptions.NewTestIOStreamsDiscard()
+
+	tests := []struct {
+		name                   string
+		env                    map[string]string
+		args                   []string
+		expectedConfigFilePath string
+	}{
+		{
+			name:                   "No environment variables",
+			env:                    map[string]string{},
+			args:                   []string{},
+			expectedConfigFilePath: defaultConfigFilePath,
+		},
+		{
+			name: "Set STERNCONFIG env to ./config.yaml",
+			env: map[string]string{
+				"STERNCONFIG": "./config.yaml",
+			},
+			args:                   []string{},
+			expectedConfigFilePath: "./config.yaml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for k, v := range tt.env {
+				t.Setenv(k, v)
+			}
+
+			o := NewOptions(streams)
+			_ = o.Complete(tt.args)
+
+			if tt.expectedConfigFilePath != o.configFilePath {
+				t.Errorf("expected %s for configFilePath, but got %s", tt.expectedConfigFilePath, o.configFilePath)
 			}
 		})
 	}
@@ -741,6 +785,100 @@ func TestOptionsSternConfig(t *testing.T) {
 
 			if !reflect.DeepEqual(tt.want, got) {
 				t.Errorf("want %+v, but got %+v", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestOptionsOverrideFlagSetDefaultFromConfig(t *testing.T) {
+	orig := defaultConfigFilePath
+	defer func() {
+		defaultConfigFilePath = orig
+	}()
+
+	defaultConfigFilePath = "./config.yaml"
+	wd, _ := os.Getwd()
+
+	tests := []struct {
+		name                    string
+		flagConfigFilePathValue string
+		flagTailValue           string
+		expectedTailValue       int64
+		wantErr                 bool
+	}{
+		{
+			name:                    "--config=testdata/config-tail1.yaml",
+			flagConfigFilePathValue: filepath.Join(wd, "testdata/config-tail1.yaml"),
+			expectedTailValue:       1,
+			wantErr:                 false,
+		},
+		{
+			name:                    "--config=config-not-exist.yaml",
+			flagConfigFilePathValue: filepath.Join(wd, "config-not-exist.yaml"),
+			wantErr:                 true,
+		},
+		{
+			name:                    "--config=config-invalid.yaml",
+			flagConfigFilePathValue: filepath.Join(wd, "testdata/config-invalid.yaml"),
+			wantErr:                 true,
+		},
+		{
+			name:                    "--config=config-unknown-option.yaml",
+			flagConfigFilePathValue: filepath.Join(wd, "testdata/config-unknown-option.yaml"),
+			expectedTailValue:       1,
+			wantErr:                 false,
+		},
+		{
+			name:                    "--config=config-tail-invalid-value.yaml",
+			flagConfigFilePathValue: filepath.Join(wd, "testdata/config-tail-invalid-value.yaml"),
+			wantErr:                 true,
+		},
+		{
+			name:              "config file path is not specified and config file does not exist",
+			expectedTailValue: -1,
+			wantErr:           false,
+		},
+		{
+			name:                    "--config=testdata/config-tail1.yaml and --tail=2",
+			flagConfigFilePathValue: filepath.Join(wd, "testdata/config-tail1.yaml"),
+			flagTailValue:           "2",
+			expectedTailValue:       2,
+			wantErr:                 false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := NewOptions(genericclioptions.NewTestIOStreamsDiscard())
+			fs := pflag.NewFlagSet("", pflag.ExitOnError)
+			o.AddFlags(fs)
+
+			args := []string{}
+			if tt.flagConfigFilePathValue != "" {
+				args = append(args, "--config="+tt.flagConfigFilePathValue)
+			}
+			if tt.flagTailValue != "" {
+				args = append(args, "--tail="+tt.flagTailValue)
+			}
+
+			if err := fs.Parse(args); err != nil {
+				t.Fatal(err)
+			}
+
+			err := o.overrideFlagSetDefaultFromConfig(fs)
+			if tt.wantErr {
+				if err == nil {
+					t.Error("expected err, but got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected err: %v", err)
+			}
+
+			if tt.expectedTailValue != o.tail {
+				t.Errorf("expected %d for tail, but got %d", tt.expectedTailValue, o.tail)
 			}
 		})
 	}

@@ -26,18 +26,22 @@ import (
 	"text/template"
 	"time"
 
-	"k8s.io/klog/v2"
-
 	"github.com/fatih/color"
+	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stern/stern/stern"
+	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/klog/v2"
 )
+
+// Use "~" to avoid exposing the user name in the help message
+var defaultConfigFilePath = "~/.config/stern/config.yaml"
 
 type options struct {
 	genericclioptions.IOStreams
@@ -74,6 +78,7 @@ type options struct {
 	onlyLogLines        bool
 	maxLogRequests      int
 	node                string
+	configFilePath      string
 }
 
 func NewOptions(streams genericclioptions.IOStreams) *options {
@@ -95,6 +100,7 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 		prompt:              false,
 		noFollow:            false,
 		maxLogRequests:      -1,
+		configFilePath:      defaultConfigFilePath,
 	}
 }
 
@@ -105,6 +111,11 @@ func (o *options) Complete(args []string) error {
 		} else {
 			o.podQuery = s
 		}
+	}
+
+	envVar, ok := os.LookupEnv("STERNCONFIG")
+	if ok {
+		o.configFilePath = envVar
 	}
 
 	return nil
@@ -289,6 +300,54 @@ func (o *options) setVerbosity() error {
 	return nil
 }
 
+// overrideFlagSetDefaultFromConfig overrides the default value of the flagSets
+// from the config file
+func (o *options) overrideFlagSetDefaultFromConfig(fs *pflag.FlagSet) error {
+	expanded, err := homedir.Expand(o.configFilePath)
+	if err != nil {
+		return err
+	}
+
+	if o.configFilePath == defaultConfigFilePath {
+		if _, err := os.Stat(expanded); os.IsNotExist(err) {
+			return nil
+		}
+	}
+
+	configFile, err := os.Open(expanded)
+	if err != nil {
+		return err
+	}
+
+	data := make(map[string]interface{})
+
+	if err := yaml.NewDecoder(configFile).Decode(data); err != nil {
+		return err
+	}
+
+	for name, value := range data {
+		flag := fs.Lookup(name)
+		if flag == nil {
+			// To avoid command execution failure, we only output a warning
+			// message instead of exiting with an error if an unknown option is
+			// specified.
+			klog.Warningf("Unknown option specified in the config file: %s", name)
+			continue
+		}
+
+		// flag has higher priority than the config file
+		if flag.Changed {
+			continue
+		}
+
+		if err := flag.Value.Set(fmt.Sprint(value)); err != nil {
+			return fmt.Errorf("invalid value %q for %q in the config file: %v", value, name, err)
+		}
+	}
+
+	return nil
+}
+
 // AddFlags adds all the flags used by stern.
 func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&o.allNamespaces, "all-namespaces", "A", o.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
@@ -321,6 +380,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.timestamps, "timestamps", "t", o.timestamps, "Print timestamps with the specified format. One of 'default' or 'short'. If specified but without value, 'default' is used.")
 	fs.StringVar(&o.timezone, "timezone", o.timezone, "Set timestamps to specific timezone.")
 	fs.BoolVar(&o.onlyLogLines, "only-log-lines", o.onlyLogLines, "Print only log lines")
+	fs.StringVar(&o.configFilePath, "config", o.configFilePath, "Path to the stern config file")
 	fs.IntVar(&o.verbosity, "verbosity", o.verbosity, "Number of the log level verbosity")
 	fs.BoolVarP(&o.version, "version", "v", o.version, "Print the version and exit.")
 
@@ -483,6 +543,10 @@ func NewSternCmd(stream genericclioptions.IOStreams) (*cobra.Command, error) {
 			}
 
 			if err := o.Complete(args); err != nil {
+				return err
+			}
+
+			if err := o.overrideFlagSetDefaultFromConfig(cmd.Flags()); err != nil {
 				return err
 			}
 
