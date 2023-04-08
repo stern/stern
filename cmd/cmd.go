@@ -531,10 +531,6 @@ func NewSternCmd(stream genericclioptions.IOStreams) (*cobra.Command, error) {
 		Use:   "stern pod-query",
 		Short: "Tail multiple pods and containers from Kubernetes",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := o.overrideFlagSetDefaultFromConfig(cmd.Flags()); err != nil {
-				return err
-			}
-
 			// Output version information and exit
 			if o.version {
 				outputVersionInfo(o.Out)
@@ -547,6 +543,10 @@ func NewSternCmd(stream genericclioptions.IOStreams) (*cobra.Command, error) {
 			}
 
 			if err := o.Complete(args); err != nil {
+				return err
+			}
+
+			if err := o.overrideFlagSetDefaultFromConfig(cmd.Flags()); err != nil {
 				return err
 			}
 
