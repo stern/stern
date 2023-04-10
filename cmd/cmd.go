@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	goflag "flag"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strconv"
@@ -321,7 +322,7 @@ func (o *options) overrideFlagSetDefaultFromConfig(fs *pflag.FlagSet) error {
 
 	data := make(map[string]interface{})
 
-	if err := yaml.NewDecoder(configFile).Decode(data); err != nil {
+	if err := yaml.NewDecoder(configFile).Decode(data); err != nil && err != io.EOF {
 		return err
 	}
 

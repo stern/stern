@@ -813,6 +813,12 @@ func TestOptionsOverrideFlagSetDefaultFromConfig(t *testing.T) {
 			wantErr:                 false,
 		},
 		{
+			name:                    "--config=testdata/config-empty.yaml",
+			flagConfigFilePathValue: filepath.Join(wd, "testdata/config-empty.yaml"),
+			expectedTailValue:       -1,
+			wantErr:                 false,
+		},
+		{
 			name:                    "--config=config-not-exist.yaml",
 			flagConfigFilePathValue: filepath.Join(wd, "config-not-exist.yaml"),
 			wantErr:                 true,
