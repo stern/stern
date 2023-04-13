@@ -25,7 +25,7 @@ You can change the config file path with `--config` flag or `STERNCONFIG` enviro
 
 # v1.24.0
 
-## :zap: Nortable Changes
+## :zap: Notable Changes
 
 ### Add a short format for timestamps
 
