@@ -110,7 +110,7 @@ Stern will use the `$KUBECONFIG` environment variable if set. If both the
 environment variable and `--kubeconfig` flag are passed the cli flag will be
 used.
 
-## config file
+### config file
 
 You can use the config file to change the default values of stern options. The default config file path is `~/.config/stern/config.yaml`. 
 
