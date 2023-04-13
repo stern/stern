@@ -1,6 +1,31 @@
+# v1.25.0
+
+## :zap: Notable Changes
+
+### Add support for the config file
+
+You can now use the config file to change the default values of stern options. The default config file path is `~/.config/stern/config.yaml`.
+
+```yaml
+# <flag name>: <value>
+tail: 10
+max-log-requests: 999
+timestamps: short
+```
+
+You can change the config file path with `--config` flag or `STERNCONFIG` environment variable.
+
+## Changes
+
+* Fix the heading level in README.md ([#257](https://github.com/stern/stern/pull/257)) [c2290b4](https://github.com/stern/stern/commit/c2290b4) (Kazuki Suda)
+* Update dependencies and tools ([#256](https://github.com/stern/stern/pull/256)) [531f869](https://github.com/stern/stern/commit/531f869) (Kazuki Suda)
+* Allow an empty config file ([#255](https://github.com/stern/stern/pull/255)) [c76ea87](https://github.com/stern/stern/commit/c76ea87) (Takashi Kusumi)
+* Add support for the config file ([#254](https://github.com/stern/stern/pull/254)) [2fdc298](https://github.com/stern/stern/commit/2fdc298) (Kazuki Suda)
+* Make setup-go get Go version from go.mod ([#253](https://github.com/stern/stern/pull/253)) [23feff7](https://github.com/stern/stern/commit/23feff7) (Takashi Kusumi)
+
 # v1.24.0
 
-## :zap: Nortable Changes
+## :zap: Notable Changes
 
 ### Add a short format for timestamps
 
