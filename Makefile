@@ -28,7 +28,7 @@ $(GORELEASER_FILTER):
 
 .PHONY: build-cross
 build-cross: $(GORELEASER)
-	$(GORELEASER) build --snapshot --rm-dist
+	$(GORELEASER) build --snapshot --clean
 
 .PHONY: test
 test: fmt vet lint
@@ -62,15 +62,15 @@ validate-krew-manifest: $(VALIDATE_KREW_MAIFEST)
 
 .PHONY: dist
 dist: $(GORELEASER) $(GORELEASER_FILTER)
-	cat .goreleaser.yaml | $(GORELEASER_FILTER) -goos $(shell go env GOOS) -goarch $(shell go env GOARCH) | $(GORELEASER) release -f- --rm-dist --skip-publish --snapshot
+	cat .goreleaser.yaml | $(GORELEASER_FILTER) -goos $(shell go env GOOS) -goarch $(shell go env GOARCH) | $(GORELEASER) release -f- --clean --skip-publish --snapshot
 
 .PHONY: dist-all
 dist-all: $(GORELEASER)
-	$(GORELEASER) release --rm-dist --skip-publish --snapshot
+	$(GORELEASER) release --clean --skip-publish --snapshot
 
 .PHONY: release
 release: $(GORELEASER)
-	$(GORELEASER) release --rm-dist --skip-validate
+	$(GORELEASER) release --clean --skip-validate
 
 .PHONY: clean
 clean: clean-tools clean-dist
