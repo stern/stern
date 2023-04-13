@@ -5,9 +5,9 @@ build:
 	go build -o dist/stern .
 
 TOOLS_BIN_DIR := $(CURDIR)/hack/tools/bin
-GORELEASER_VERSION ?= v1.14.1
+GORELEASER_VERSION ?= v1.17.0
 GORELEASER := $(TOOLS_BIN_DIR)/goreleaser
-GOLANGCI_LINT_VERSION ?= v1.51.2
+GOLANGCI_LINT_VERSION ?= v1.52.2
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 VALIDATE_KREW_MAIFEST_VERSION ?= v0.4.3
 VALIDATE_KREW_MAIFEST := $(TOOLS_BIN_DIR)/validate-krew-manifest
@@ -28,7 +28,7 @@ $(GORELEASER_FILTER):
 
 .PHONY: build-cross
 build-cross: $(GORELEASER)
-	$(GORELEASER) build --snapshot --rm-dist
+	$(GORELEASER) build --snapshot --clean
 
 .PHONY: test
 test: fmt vet lint
@@ -62,15 +62,15 @@ validate-krew-manifest: $(VALIDATE_KREW_MAIFEST)
 
 .PHONY: dist
 dist: $(GORELEASER) $(GORELEASER_FILTER)
-	cat .goreleaser.yaml | $(GORELEASER_FILTER) -goos $(shell go env GOOS) -goarch $(shell go env GOARCH) | $(GORELEASER) release -f- --rm-dist --skip-publish --snapshot
+	cat .goreleaser.yaml | $(GORELEASER_FILTER) -goos $(shell go env GOOS) -goarch $(shell go env GOARCH) | $(GORELEASER) release -f- --clean --skip-publish --snapshot
 
 .PHONY: dist-all
 dist-all: $(GORELEASER)
-	$(GORELEASER) release --rm-dist --skip-publish --snapshot
+	$(GORELEASER) release --clean --skip-publish --snapshot
 
 .PHONY: release
 release: $(GORELEASER)
-	$(GORELEASER) release --rm-dist --skip-validate
+	$(GORELEASER) release --clean --skip-validate
 
 .PHONY: clean
 clean: clean-tools clean-dist
