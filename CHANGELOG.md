@@ -1,6 +1,6 @@
 # v1.25.0
 
-## :zap: Nortable Changes
+## :zap: Notable Changes
 
 ### Add support for the config file
 
