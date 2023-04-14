@@ -30,11 +30,11 @@ import (
 )
 
 var flagChoices = map[string][]string{
-	"color":           []string{"always", "never", "auto"},
-	"completion":      []string{"bash", "zsh", "fish"},
-	"container-state": []string{stern.RUNNING, stern.WAITING, stern.TERMINATED, stern.ALL_STATES},
-	"output":          []string{"default", "raw", "json", "extjson", "ppextjson"},
-	"timestamps":      []string{"default", "short"},
+	"color":           {"always", "never", "auto"},
+	"completion":      {"bash", "zsh", "fish"},
+	"container-state": {stern.RUNNING, stern.WAITING, stern.TERMINATED, stern.ALL_STATES},
+	"output":          {"default", "raw", "json", "extjson", "ppextjson"},
+	"timestamps":      {"default", "short"},
 }
 
 func runCompletion(shell string, cmd *cobra.Command, out io.Writer) error {
