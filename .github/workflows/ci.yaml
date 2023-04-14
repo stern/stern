@@ -14,10 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
+    - uses: actions/setup-go@v4
       with:
         go-version-file: go.mod
-        cache: true
     - name: Ensure go.mod is already tidied
       run: go mod tidy && git diff -s --exit-code go.sum
     - name: Run verify-readme
