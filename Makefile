@@ -31,20 +31,16 @@ build-cross: $(GORELEASER)
 	$(GORELEASER) build --snapshot --clean
 
 .PHONY: test
-test: fmt vet lint
+test: lint
 	go test -v ./...
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run
 
-.PHONY: fmt
-fmt:
-	go fmt ./...
-
-.PHONY: vet
-vet:
-	go vet ./...
+.PHONY: lint-fix
+lint-fix: $(GOLANGCI_LINT)
+	$(GOLANGCI_LINT) run --fix
 
 README_FILE ?= ./README.md
 
