@@ -486,6 +486,8 @@ func (o *options) generateTemplate() (*template.Template, error) {
 				levelColor = color.New(color.FgBlue)
 			case "warn":
 				levelColor = color.New(color.FgYellow)
+			case "warning":
+				levelColor = color.New(color.FgYellow)
 			case "error":
 				levelColor = color.New(color.FgRed)
 			case "dpanic":
@@ -494,7 +496,10 @@ func (o *options) generateTemplate() (*template.Template, error) {
 				levelColor = color.New(color.FgRed)
 			case "fatal":
 				levelColor = color.New(color.FgCyan)
+			case "critical":
+				levelColor = color.New(color.FgCyan)
 			default:
+				return level
 			}
 			return levelColor.SprintFunc()(level)
 		},
