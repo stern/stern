@@ -499,7 +499,7 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			case "critical":
 				levelColor = color.New(color.FgCyan)
 			default:
-				levelColor = color.New(color.FgWhite)
+				return level
 			}
 			return levelColor.SprintFunc()(level)
 		},
