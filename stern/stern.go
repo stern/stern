@@ -171,15 +171,14 @@ func Run(ctx context.Context, config *Config) error {
 		}
 	}
 
+	eg, nctx := errgroup.WithContext(ctx)
 	var numRequests atomic.Int64
-	errCh := make(chan error)
-	defer close(errCh)
 	for _, n := range namespaces {
-		selector, err := chooseSelector(ctx, client, n, resource.kind, resource.name, config.LabelSelector)
+		selector, err := chooseSelector(nctx, client, n, resource.kind, resource.name, config.LabelSelector)
 		if err != nil {
 			return err
 		}
-		a, err := WatchTargets(ctx,
+		a, err := WatchTargets(nctx,
 			client.CoreV1().Pods(n),
 			selector,
 			config.FieldSelector,
@@ -189,39 +188,31 @@ func Run(ctx context.Context, config *Config) error {
 			return errors.Wrap(err, "failed to set up watch")
 		}
 
-		go func() {
+		eg.Go(func() error {
 			for {
 				select {
 				case target, ok := <-a:
 					if !ok {
-						errCh <- fmt.Errorf("lost watch connection")
-						return
+						return fmt.Errorf("lost watch connection")
 					}
 					numRequests.Add(1)
 					if numRequests.Load() > int64(config.MaxLogRequests) {
-						errCh <- fmt.Errorf(
+						return fmt.Errorf(
 							"stern reached the maximum number of log requests (%d),"+
 								" use --max-log-requests to increase the limit",
 							config.MaxLogRequests)
-						return
 					}
 					go func() {
-						tailTarget(ctx, target)
+						tailTarget(nctx, target)
 						numRequests.Add(-1)
 					}()
-				case <-ctx.Done():
-					return
+				case <-nctx.Done():
+					return nil
 				}
 			}
-		}()
+		})
 	}
-
-	select {
-	case e := <-errCh:
-		return e
-	case <-ctx.Done():
-		return nil
-	}
+	return eg.Wait()
 }
 
 func chooseSelector(ctx context.Context, client clientset.Interface, namespace, kind, name string, selector labels.Selector) (labels.Selector, error) {
