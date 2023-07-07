@@ -155,6 +155,8 @@ functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 | `color`         | `color.Color, string` | Wrap the text in color (.ContainerColor and .PodColor provided)                   |
 | `parseJSON`     | `string`              | Parse string as JSON                                                              |
 | `tryParseJSON`  | `string`              | Attempt to parse string as JSON, return nil on failure                             |
+| `extractJSONParts`  | `...string`       | Parse string as JSON and concatenate the given keys.                                     |
+| `tryExtractJSONParts` | `string`        | Attempt to parse string as JSON and concatenate the given keys. , return text on failure |
 | `extjson`       | `string`              | Parse the object as json and output colorized json                                |
 | `ppextjson`     | `string`              | Parse the object as json and output pretty-print colorized json                   |
 | `toRFC3339Nano` | `object`              | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format |

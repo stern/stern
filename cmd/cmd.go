@@ -450,6 +450,28 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			}
 			return obj, nil
 		},
+		"extractJSONParts": func(text string, part ...string) (interface{}, error) {
+			obj := make(map[string]interface{})
+			if err := json.Unmarshal([]byte(text), &obj); err != nil {
+				return "obj", err
+			}
+			parts := make([]string, 0)
+			for _, key := range part {
+				parts = append(parts, fmt.Sprintf("%v", obj[key]))
+			}
+			return strings.Join(parts, ", "), nil
+		},
+		"tryExtractJSONParts": func(text string, part ...string) interface{} {
+			obj := make(map[string]interface{})
+			if err := json.Unmarshal([]byte(text), &obj); err != nil {
+				return text
+			}
+			parts := make([]string, 0)
+			for _, key := range part {
+				parts = append(parts, fmt.Sprintf("%v", obj[key]))
+			}
+			return strings.Join(parts, ", ")
+		},
 		"extjson": func(in string) (string, error) {
 			if json.Valid([]byte(in)) {
 				return strings.TrimSuffix(in, "\n"), nil
