@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestSternCommand(t *testing.T) {
@@ -521,7 +521,7 @@ func TestOptionsSternConfig(t *testing.T) {
 				c.AllNamespaces = true
 				c.LabelSelector = labelSelector
 				c.FieldSelector = fieldSelector
-				c.TailLines = pointer.Int64(10)
+				c.TailLines = ptr.To[int64](10)
 				c.Follow = false
 				c.Resource = "res1"
 				c.OnlyLogLines = true
