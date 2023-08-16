@@ -30,7 +30,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -99,7 +99,7 @@ func Run(ctx context.Context, config *Config) error {
 			Timestamps:      config.Timestamps,
 			TimestampFormat: config.TimestampFormat,
 			Location:        config.Location,
-			SinceSeconds:    pointer.Int64(int64(config.Since.Seconds())),
+			SinceSeconds:    ptr.To[int64](int64(config.Since.Seconds())),
 			Exclude:         config.Exclude,
 			Include:         config.Include,
 			Namespace:       config.AllNamespaces || len(namespaces) > 1,
