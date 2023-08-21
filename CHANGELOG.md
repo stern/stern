@@ -1,3 +1,25 @@
+# v1.26.0
+
+## :zap: Notable Changes
+
+### Add new template functions
+
+The following template functions have been added in v1.26.0:
+
+- `extractJSONParts`: Parse string as JSON and concatenate the given keys
+- `tryExtractJSONParts`: Attempt to parse string as JSON and concatenate the given keys, returning text on failure
+
+## Changes
+
+* Fix the release workflow ([#275](https://github.com/stern/stern/pull/275)) [91d4cd6](https://github.com/stern/stern/commit/91d4cd6) (Kazuki Suda)
+* Update dependencies and tools ([#273](https://github.com/stern/stern/pull/273)) [cb94677](https://github.com/stern/stern/commit/cb94677) (Takashi Kusumi)
+* Possibility to extract parts of a json-message. ([#271](https://github.com/stern/stern/pull/271)) [d49142c](https://github.com/stern/stern/commit/d49142c) (Niels)
+* Fix potential panic in stern.Run() ([#267](https://github.com/stern/stern/pull/267)) [dcba2dd](https://github.com/stern/stern/commit/dcba2dd) (Takashi Kusumi)
+* Add log level color keys and handle default ([#264](https://github.com/stern/stern/pull/264)) [65204cc](https://github.com/stern/stern/commit/65204cc) (Jimmie Högklint)
+* Fix typo in README.md ([#261](https://github.com/stern/stern/pull/261)) [d7d5a4f](https://github.com/stern/stern/commit/d7d5a4f) (Will May)
+* Integrate fmt and vet checks into golangci-lint ([#260](https://github.com/stern/stern/pull/260)) [1d242bc](https://github.com/stern/stern/commit/1d242bc) (Takashi Kusumi)
+* Update Github Actions dependencies ([#259](https://github.com/stern/stern/pull/259)) [9e833da](https://github.com/stern/stern/commit/9e833da) (Takashi Kusumi)
+
 # v1.25.0
 
 ## :zap: Notable Changes
