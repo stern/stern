@@ -25,4 +25,4 @@ jobs:
     - name: Update new version in krew-index
       uses: rajatjindal/krew-release-bot@v0.0.46
       with:
-        krew_template_file: dist/stern.yaml
+        krew_template_file: dist/krew/stern.yaml
