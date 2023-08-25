@@ -90,6 +90,7 @@ func Run(ctx context.Context, config *Config) error {
 		excludePodFilter:       config.ExcludePodQuery,
 		containerFilter:        config.ContainerQuery,
 		containerExcludeFilter: config.ExcludeContainerQuery,
+		condition:              config.Condition,
 		initContainers:         config.InitContainers,
 		ephemeralContainers:    config.EphemeralContainers,
 		containerStates:        config.ContainerStates,

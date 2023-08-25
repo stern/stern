@@ -17,6 +17,7 @@ package stern
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"sync"
 
 	corev1 "k8s.io/api/core/v1"
@@ -54,6 +55,7 @@ type targetFilterConfig struct {
 	excludePodFilter       []*regexp.Regexp
 	containerFilter        *regexp.Regexp
 	containerExcludeFilter []*regexp.Regexp
+	condition              string
 	initContainers         bool
 	ephemeralContainers    bool
 	containerStates        []ContainerState
@@ -75,6 +77,32 @@ func (f *targetFilter) visit(pod *corev1.Pod, visitor func(t *Target)) {
 
 	for _, re := range f.c.excludePodFilter {
 		if re.MatchString(pod.Name) {
+			return
+		}
+	}
+
+	// filter by condition
+	if f.c.condition != "" {
+		// condition can be: condition-name or condition-name=condition-value
+		conditionName := f.c.condition
+		conditionValue := "true"
+		if equalsIndex := strings.Index(conditionName, "="); equalsIndex != -1 {
+			conditionValue = conditionName[equalsIndex+1:]
+			conditionName = conditionName[0:equalsIndex]
+		}
+
+		conditionValue = strings.ToLower(conditionValue)
+		conditionName = strings.ToLower(conditionName)
+
+		conditionFound := false
+		for _, condition := range pod.Status.Conditions {
+			if strings.ToLower(string(condition.Type)) == conditionName && strings.ToLower(string(condition.Status)) == conditionValue {
+				conditionFound = true
+			}
+		}
+
+		if !conditionFound {
+			// How do I make stern stop streaming pod when !conditionFound?
 			return
 		}
 	}

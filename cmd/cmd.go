@@ -58,6 +58,7 @@ type options struct {
 	namespaces          []string
 	kubeConfig          string
 	exclude             []string
+	condition           string
 	include             []string
 	initContainers      bool
 	ephemeralContainers bool
@@ -267,6 +268,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		Location:              location,
 		ContainerQuery:        container,
 		ExcludeContainerQuery: excludeContainer,
+		Condition:             o.condition,
 		ContainerStates:       containerStates,
 		Exclude:               exclude,
 		Include:               include,
@@ -360,6 +362,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringArrayVarP(&o.exclude, "exclude", "e", o.exclude, "Log lines to exclude. (regular expression)")
 	fs.StringArrayVarP(&o.excludeContainer, "exclude-container", "E", o.excludeContainer, "Container name to exclude when multiple containers in pod. (regular expression)")
 	fs.StringArrayVar(&o.excludePod, "exclude-pod", o.excludePod, "Pod name to exclude. (regular expression)")
+	fs.StringVar(&o.condition, "condition", o.condition, "The condition to wait on: [condition-name[=condition-value]. The default condition-value is true.")
 	fs.BoolVar(&o.noFollow, "no-follow", o.noFollow, "Exit when all logs have been shown.")
 	fs.StringArrayVarP(&o.include, "include", "i", o.include, "Log lines to include. (regular expression)")
 	fs.BoolVar(&o.initContainers, "init-containers", o.initContainers, "Include or exclude init containers.")
