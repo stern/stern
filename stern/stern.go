@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"sync/atomic"
@@ -172,6 +173,7 @@ func Run(ctx context.Context, config *Config) error {
 		}
 	}
 
+	m := sync.Map{}
 	eg, nctx := errgroup.WithContext(ctx)
 	var numRequests atomic.Int64
 	for _, n := range namespaces {
@@ -179,7 +181,7 @@ func Run(ctx context.Context, config *Config) error {
 		if err != nil {
 			return err
 		}
-		a, err := WatchTargets(nctx,
+		a, d, err := WatchTargets(nctx,
 			client.CoreV1().Pods(n),
 			selector,
 			config.FieldSelector,
@@ -203,10 +205,24 @@ func Run(ctx context.Context, config *Config) error {
 								" use --max-log-requests to increase the limit",
 							config.MaxLogRequests)
 					}
+					ctx, cancel := context.WithCancel(context.Background())
+					m.Store(target.GetID(), cancel)
 					go func() {
-						tailTarget(nctx, target)
+						go tailTarget(ctx, target)
+						select {
+						case <-ctx.Done():
+						case <-nctx.Done():
+							cancel()
+						}
 						numRequests.Add(-1)
 					}()
+				case target := <-d:
+					_, _ = m.Load(target.GetID())
+					cancel, ok := m.Load(target.GetID())
+					if !ok {
+						continue
+					}
+					cancel.(func())()
 				case <-nctx.Done():
 					return nil
 				}

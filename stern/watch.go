@@ -31,7 +31,7 @@ import (
 
 // Watch starts listening to Kubernetes events and emits modified
 // containers/pods. The result is targets added.
-func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.Selector, fieldSelector fields.Selector, filter *targetFilter) (chan *Target, error) {
+func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.Selector, fieldSelector fields.Selector, filter *targetFilter) (added, deleted chan *Target, err error) {
 	// RetryWatcher will make sure that in case the underlying watcher is
 	// closed (e.g. due to API timeout or etcd timeout) it will get restarted
 	// from the last point without the consumer even knowing about it.
@@ -41,10 +41,11 @@ func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.S
 		},
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create a watcher")
+		return nil, nil, errors.Wrap(err, "failed to create a watcher")
 	}
 
-	added := make(chan *Target)
+	added = make(chan *Target)
+	deleted = make(chan *Target)
 	go func() {
 		for {
 			select {
@@ -62,8 +63,12 @@ func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.S
 
 				switch e.Type {
 				case watch.Added, watch.Modified:
-					filter.visit(pod, func(t *Target) {
-						added <- t
+					filter.visit(pod, func(t *Target, conditionFound bool) {
+						if conditionFound {
+							added <- t
+						} else {
+							deleted <- t
+						}
 					})
 				case watch.Deleted:
 					filter.forget(string(pod.UID))
@@ -76,5 +81,5 @@ func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.S
 		}
 	}()
 
-	return added, nil
+	return added, deleted, nil
 }

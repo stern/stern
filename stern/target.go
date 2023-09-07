@@ -69,7 +69,7 @@ func newTargetFilter(c targetFilterConfig) *targetFilter {
 }
 
 // visit passes filtered Targets to the visitor function
-func (f *targetFilter) visit(pod *corev1.Pod, visitor func(t *Target)) {
+func (f *targetFilter) visit(pod *corev1.Pod, visitor func(t *Target, conditionFound bool)) {
 	// filter by pod
 	if !f.c.podFilter.MatchString(pod.Name) {
 		return
@@ -82,7 +82,10 @@ func (f *targetFilter) visit(pod *corev1.Pod, visitor func(t *Target)) {
 	}
 
 	// filter by condition
-	if f.c.condition != "" {
+	conditionFound := false
+	if f.c.condition == "" {
+		conditionFound = true
+	} else {
 		// condition can be: condition-name or condition-name=condition-value
 		conditionName := f.c.condition
 		conditionValue := "true"
@@ -94,16 +97,10 @@ func (f *targetFilter) visit(pod *corev1.Pod, visitor func(t *Target)) {
 		conditionValue = strings.ToLower(conditionValue)
 		conditionName = strings.ToLower(conditionName)
 
-		conditionFound := false
 		for _, condition := range pod.Status.Conditions {
 			if strings.ToLower(string(condition.Type)) == conditionName && strings.ToLower(string(condition.Status)) == conditionValue {
 				conditionFound = true
 			}
-		}
-
-		if !conditionFound {
-			// How do I make stern stop streaming pod when !conditionFound?
-			return
 		}
 	}
 
@@ -140,7 +137,7 @@ OUTER:
 		}
 
 		if f.shouldAdd(t, string(pod.UID), c) {
-			visitor(t)
+			visitor(t, conditionFound)
 		}
 	}
 }
