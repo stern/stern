@@ -222,7 +222,7 @@ func Run(ctx context.Context, config *Config) error {
 					if !ok {
 						continue
 					}
-					cancel.(func())()
+					cancel.(context.CancelFunc)()
 				case <-nctx.Done():
 					return nil
 				}

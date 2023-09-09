@@ -136,8 +136,14 @@ OUTER:
 			Container: c.Name,
 		}
 
+		if !conditionFound {
+			visitor(t, false)
+			f.forget(string(pod.UID))
+			continue
+		}
+
 		if f.shouldAdd(t, string(pod.UID), c) {
-			visitor(t, conditionFound)
+			visitor(t, true)
 		}
 	}
 }
