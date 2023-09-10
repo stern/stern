@@ -129,10 +129,10 @@ func (o *options) Validate() error {
 		return errors.New("One of pod-query, --selector, --field-selector or --prompt is required")
 	}
 	if o.selector != "" && o.resource != "" {
-		return errors.New("--selector and the <resource>/<name> query can not be set at the same time")
+		return errors.New("--selector and the <resource>/<name> query cannot be set at the same time")
 	}
-	if o.condition != "" && o.noFollow && o.tail != 0 {
-		return errors.New("Currently, --condition and --no-follow only work with --tail=0")
+	if o.noFollow && o.tail == 0 {
+		return errors.New("--no-follow cannot be used with --tail=0")
 	}
 
 	return nil
