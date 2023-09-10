@@ -303,10 +303,10 @@ Output log lines only:
 stern . --only-log-lines
 ```
 
-Display logs from pods which are not ready:
+Display logs for unhealthy pods only:
 
 ```
-stern . --condition=ready=false --tail=0
+stern . --condition=ready=false --tail=0 --only-condition-pods-with-readiness
 ```
 
 ## Completion
