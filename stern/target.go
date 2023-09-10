@@ -51,14 +51,15 @@ type targetFilter struct {
 }
 
 type targetFilterConfig struct {
-	podFilter              *regexp.Regexp
-	excludePodFilter       []*regexp.Regexp
-	containerFilter        *regexp.Regexp
-	containerExcludeFilter []*regexp.Regexp
-	condition              string
-	initContainers         bool
-	ephemeralContainers    bool
-	containerStates        []ContainerState
+	podFilter                      *regexp.Regexp
+	excludePodFilter               []*regexp.Regexp
+	containerFilter                *regexp.Regexp
+	containerExcludeFilter         []*regexp.Regexp
+	condition                      string
+	onlyConditionPodsWithReadiness bool
+	initContainers                 bool
+	ephemeralContainers            bool
+	containerStates                []ContainerState
 }
 
 func newTargetFilter(c targetFilterConfig) *targetFilter {
@@ -66,6 +67,46 @@ func newTargetFilter(c targetFilterConfig) *targetFilter {
 		c:            c,
 		targetStates: make(map[string]*targetState),
 	}
+}
+
+func isConditionFound(pod *corev1.Pod, condition string, onlyConditionPodsWithReadiness bool) bool {
+	if condition == "" {
+		return true
+	}
+	if onlyConditionPodsWithReadiness {
+		// Try to find a readiness probe
+		hasReadinessProbe := false
+		for _, container := range pod.Spec.Containers {
+			if container.ReadinessProbe != nil {
+				hasReadinessProbe = true
+				break
+			}
+		}
+
+		// Or try to find a readiness gate
+		if !hasReadinessProbe && (pod.Spec.ReadinessGates == nil || len(pod.Spec.ReadinessGates) == 0) {
+			return true
+		}
+	}
+
+	// condition can be: condition-name or condition-name=condition-value
+	conditionName := condition
+	conditionValue := "true"
+	if equalsIndex := strings.Index(conditionName, "="); equalsIndex != -1 {
+		conditionValue = conditionName[equalsIndex+1:]
+		conditionName = conditionName[0:equalsIndex]
+	}
+
+	conditionValue = strings.ToLower(conditionValue)
+	conditionName = strings.ToLower(conditionName)
+
+	for _, condition := range pod.Status.Conditions {
+		if strings.ToLower(string(condition.Type)) == conditionName && strings.ToLower(string(condition.Status)) == conditionValue {
+			return true
+		}
+	}
+
+	return false
 }
 
 // visit passes filtered Targets to the visitor function
@@ -82,27 +123,7 @@ func (f *targetFilter) visit(pod *corev1.Pod, visitor func(t *Target, conditionF
 	}
 
 	// filter by condition
-	conditionFound := false
-	if f.c.condition == "" {
-		conditionFound = true
-	} else {
-		// condition can be: condition-name or condition-name=condition-value
-		conditionName := f.c.condition
-		conditionValue := "true"
-		if equalsIndex := strings.Index(conditionName, "="); equalsIndex != -1 {
-			conditionValue = conditionName[equalsIndex+1:]
-			conditionName = conditionName[0:equalsIndex]
-		}
-
-		conditionValue = strings.ToLower(conditionValue)
-		conditionName = strings.ToLower(conditionName)
-
-		for _, condition := range pod.Status.Conditions {
-			if strings.ToLower(string(condition.Type)) == conditionName && strings.ToLower(string(condition.Status)) == conditionValue {
-				conditionFound = true
-			}
-		}
-	}
+	conditionFound := isConditionFound(pod, f.c.condition, f.c.onlyConditionPodsWithReadiness)
 
 	// filter by container statuses
 	var statuses []corev1.ContainerStatus

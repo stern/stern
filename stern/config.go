@@ -26,32 +26,33 @@ import (
 
 // Config contains the config for stern
 type Config struct {
-	KubeConfig            string
-	ContextName           string
-	Namespaces            []string
-	PodQuery              *regexp.Regexp
-	ExcludePodQuery       []*regexp.Regexp
-	Timestamps            bool
-	TimestampFormat       string
-	Location              *time.Location
-	ContainerQuery        *regexp.Regexp
-	ExcludeContainerQuery []*regexp.Regexp
-	Condition             string
-	ContainerStates       []ContainerState
-	Exclude               []*regexp.Regexp
-	Include               []*regexp.Regexp
-	InitContainers        bool
-	EphemeralContainers   bool
-	Since                 time.Duration
-	AllNamespaces         bool
-	LabelSelector         labels.Selector
-	FieldSelector         fields.Selector
-	TailLines             *int64
-	Template              *template.Template
-	Follow                bool
-	Resource              string
-	OnlyLogLines          bool
-	MaxLogRequests        int
+	KubeConfig                     string
+	ContextName                    string
+	Namespaces                     []string
+	PodQuery                       *regexp.Regexp
+	ExcludePodQuery                []*regexp.Regexp
+	Timestamps                     bool
+	TimestampFormat                string
+	Location                       *time.Location
+	ContainerQuery                 *regexp.Regexp
+	ExcludeContainerQuery          []*regexp.Regexp
+	Condition                      string
+	OnlyConditionPodsWithReadiness bool
+	ContainerStates                []ContainerState
+	Exclude                        []*regexp.Regexp
+	Include                        []*regexp.Regexp
+	InitContainers                 bool
+	EphemeralContainers            bool
+	Since                          time.Duration
+	AllNamespaces                  bool
+	LabelSelector                  labels.Selector
+	FieldSelector                  fields.Selector
+	TailLines                      *int64
+	Template                       *template.Template
+	Follow                         bool
+	Resource                       string
+	OnlyLogLines                   bool
+	MaxLogRequests                 int
 
 	Out    io.Writer
 	ErrOut io.Writer

@@ -69,40 +69,41 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
 ### cli flags
 
 <!-- auto generated cli flags begin --->
- flag                        | default                       | purpose
------------------------------|-------------------------------|---------
- `--all-namespaces`, `-A`    | `false`                       | If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.
- `--color`                   | `auto`                        | Force set color output. 'auto':  colorize if tty attached, 'always': always colorize, 'never': never colorize.
- `--completion`              |                               | Output stern command-line completion code for the specified shell. Can be 'bash', 'zsh' or 'fish'.
- `--condition`               |                               | The condition to filter on: [condition-name[=condition-value]. The default condition-value is true. Match is case-insensitive.
- `--config`                  | `~/.config/stern/config.yaml` | Path to the stern config file
- `--container`, `-c`         | `.*`                          | Container name when multiple containers in pod. (regular expression)
- `--container-state`         | `all`                         | Tail containers with state in running, waiting, terminated, or all. 'all' matches all container states. To specify multiple states, repeat this or set comma-separated value.
- `--context`                 |                               | Kubernetes context to use. Default to current context configured in kubeconfig.
- `--ephemeral-containers`    | `true`                        | Include or exclude ephemeral containers.
- `--exclude`, `-e`           | `[]`                          | Log lines to exclude. (regular expression)
- `--exclude-container`, `-E` | `[]`                          | Container name to exclude when multiple containers in pod. (regular expression)
- `--exclude-pod`             | `[]`                          | Pod name to exclude. (regular expression)
- `--field-selector`          |                               | Selector (field query) to filter on. If present, default to ".*" for the pod-query.
- `--include`, `-i`           | `[]`                          | Log lines to include. (regular expression)
- `--init-containers`         | `true`                        | Include or exclude init containers.
- `--kubeconfig`              |                               | Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.
- `--max-log-requests`        | `-1`                          | Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow
- `--namespace`, `-n`         |                               | Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.
- `--no-follow`               | `false`                       | Exit when all logs have been shown.
- `--node`                    |                               | Node name to filter on.
- `--only-log-lines`          | `false`                       | Print only log lines
- `--output`, `-o`            | `default`                     | Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]
- `--prompt`, `-p`            | `false`                       | Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.
- `--selector`, `-l`          |                               | Selector (label query) to filter on. If present, default to ".*" for the pod-query.
- `--since`, `-s`             | `48h0m0s`                     | Return logs newer than a relative duration like 5s, 2m, or 3h.
- `--tail`                    | `-1`                          | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.
- `--template`                |                               | Template to use for log lines, leave empty to use --output flag.
- `--template-file`, `-T`     |                               | Path to template to use for log lines, leave empty to use --output flag. It overrides --template option.
- `--timestamps`, `-t`        |                               | Print timestamps with the specified format. One of 'default' or 'short'. If specified but without value, 'default' is used.
- `--timezone`                | `Local`                       | Set timestamps to specific timezone.
- `--verbosity`               | `0`                           | Number of the log level verbosity
- `--version`, `-v`           | `false`                       | Print the version and exit.
+ flag                                   | default                       | purpose
+----------------------------------------|-------------------------------|---------
+ `--all-namespaces`, `-A`               | `false`                       | If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.
+ `--color`                              | `auto`                        | Force set color output. 'auto':  colorize if tty attached, 'always': always colorize, 'never': never colorize.
+ `--completion`                         |                               | Output stern command-line completion code for the specified shell. Can be 'bash', 'zsh' or 'fish'.
+ `--condition`                          |                               | The condition to filter on: [condition-name[=condition-value]. The default condition-value is true. Match is case-insensitive.
+ `--config`                             | `~/.config/stern/config.yaml` | Path to the stern config file
+ `--container`, `-c`                    | `.*`                          | Container name when multiple containers in pod. (regular expression)
+ `--container-state`                    | `all`                         | Tail containers with state in running, waiting, terminated, or all. 'all' matches all container states. To specify multiple states, repeat this or set comma-separated value.
+ `--context`                            |                               | Kubernetes context to use. Default to current context configured in kubeconfig.
+ `--ephemeral-containers`               | `true`                        | Include or exclude ephemeral containers.
+ `--exclude`, `-e`                      | `[]`                          | Log lines to exclude. (regular expression)
+ `--exclude-container`, `-E`            | `[]`                          | Container name to exclude when multiple containers in pod. (regular expression)
+ `--exclude-pod`                        | `[]`                          | Pod name to exclude. (regular expression)
+ `--field-selector`                     |                               | Selector (field query) to filter on. If present, default to ".*" for the pod-query.
+ `--include`, `-i`                      | `[]`                          | Log lines to include. (regular expression)
+ `--init-containers`                    | `true`                        | Include or exclude init containers.
+ `--kubeconfig`                         |                               | Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.
+ `--max-log-requests`                   | `-1`                          | Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow
+ `--namespace`, `-n`                    |                               | Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.
+ `--no-follow`                          | `false`                       | Exit when all logs have been shown.
+ `--node`                               |                               | Node name to filter on.
+ `--only-condition-pods-with-readiness` | `false`                       | Only apply --condition to pods which has readiness probe or readiness gate.
+ `--only-log-lines`                     | `false`                       | Print only log lines
+ `--output`, `-o`                       | `default`                     | Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]
+ `--prompt`, `-p`                       | `false`                       | Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.
+ `--selector`, `-l`                     |                               | Selector (label query) to filter on. If present, default to ".*" for the pod-query.
+ `--since`, `-s`                        | `48h0m0s`                     | Return logs newer than a relative duration like 5s, 2m, or 3h.
+ `--tail`                               | `-1`                          | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.
+ `--template`                           |                               | Template to use for log lines, leave empty to use --output flag.
+ `--template-file`, `-T`                |                               | Path to template to use for log lines, leave empty to use --output flag. It overrides --template option.
+ `--timestamps`, `-t`                   |                               | Print timestamps with the specified format. One of 'default' or 'short'. If specified but without value, 'default' is used.
+ `--timezone`                           | `Local`                       | Set timestamps to specific timezone.
+ `--verbosity`                          | `0`                           | Number of the log level verbosity
+ `--version`, `-v`                      | `false`                       | Print the version and exit.
 <!-- auto generated cli flags end --->
 
 See `stern --help` for details

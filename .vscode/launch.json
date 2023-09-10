@@ -11,7 +11,7 @@
             "mode": "debug",
             "program": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "args": [".*", "--condition=Ready=False", "--tail=0"]
+            "args": [".", "--condition=ready=false", "--tail=0", "--only-condition-pods-with-readiness"]
         }
     ]
 }

@@ -87,14 +87,15 @@ func Run(ctx context.Context, config *Config) error {
 	}
 
 	filter := newTargetFilter(targetFilterConfig{
-		podFilter:              config.PodQuery,
-		excludePodFilter:       config.ExcludePodQuery,
-		containerFilter:        config.ContainerQuery,
-		containerExcludeFilter: config.ExcludeContainerQuery,
-		condition:              config.Condition,
-		initContainers:         config.InitContainers,
-		ephemeralContainers:    config.EphemeralContainers,
-		containerStates:        config.ContainerStates,
+		podFilter:                      config.PodQuery,
+		excludePodFilter:               config.ExcludePodQuery,
+		containerFilter:                config.ContainerQuery,
+		containerExcludeFilter:         config.ExcludeContainerQuery,
+		condition:                      config.Condition,
+		onlyConditionPodsWithReadiness: config.OnlyConditionPodsWithReadiness,
+		initContainers:                 config.InitContainers,
+		ephemeralContainers:            config.EphemeralContainers,
+		containerStates:                config.ContainerStates,
 	})
 	newTail := func(t *Target) *Tail {
 		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
