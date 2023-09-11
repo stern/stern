@@ -101,8 +101,8 @@ func isConditionFound(pod *corev1.Pod, condition string, onlyConditionPodsWithRe
 	conditionName = strings.ToLower(conditionName)
 
 	for _, condition := range pod.Status.Conditions {
-		if strings.ToLower(string(condition.Type)) == conditionName && strings.ToLower(string(condition.Status)) == conditionValue {
-			return true
+		if strings.ToLower(string(condition.Type)) == conditionName {
+			return strings.ToLower(string(condition.Status)) == conditionValue
 		}
 	}
 
