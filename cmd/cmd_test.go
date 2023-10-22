@@ -376,6 +376,28 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			"pod1 container1 [1970-01-01T00:02:03Z] INFO template message",
 			false,
 		},
+		{
+			"template-to-timestamp-with-timezone",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{ toTimestamp .Message "Jan 02 2006 15:04 MST" "US/Eastern" }}`
+				return o
+			}(),
+			`2024-01-01T05:00:00`,
+			`Jan 01 2024 00:00 EST`,
+			false,
+		},
+		{
+			"template-to-timestamp-without-timezone",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{ toTimestamp .Message "Jan 02 2006 15:04 MST" }}`
+				return o
+			}(),
+			`2024-01-01T05:00:00`,
+			`Jan 01 2024 05:00 UTC`,
+			false,
+		},
 	}
 
 	for _, tt := range tests {

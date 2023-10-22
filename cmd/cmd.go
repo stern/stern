@@ -488,6 +488,24 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		"toUTC": func(ts any) time.Time {
 			return cast.ToTime(ts).UTC()
 		},
+		"toTimestamp": func(ts any, layout string, optionalTZ ...string) (string, error) {
+			t, parseErr := cast.ToTimeE(ts)
+			if parseErr != nil {
+				return "", parseErr
+			}
+
+			var tz string
+			if len(optionalTZ) > 0 {
+				tz = optionalTZ[0]
+			}
+
+			loc, loadErr := time.LoadLocation(tz)
+			if loadErr != nil {
+				return "", loadErr
+			}
+
+			return t.In(loc).Format(layout), nil
+		},
 		"color": func(color color.Color, text string) string {
 			return color.SprintFunc()(text)
 		},

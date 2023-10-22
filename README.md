@@ -160,6 +160,7 @@ functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 | `extjson`       | `string`              | Parse the object as json and output colorized json                                |
 | `ppextjson`     | `string`              | Parse the object as json and output pretty-print colorized json                   |
 | `toRFC3339Nano` | `object`              | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format |
+| `toTimestamp`   | `object, string [, string]` | Parse timestamp (string, int, json.Number) and output it using the given layout in the timezone that is optionally given (defaults to UTC). |
 | `levelColor`    | `string`              | Print log level using appropriate color                                           |
 | `colorBlack`    | `string`              | Print text using black color                                                      |
 | `colorRed`      | `string`              | Print text using red color                                                        |
