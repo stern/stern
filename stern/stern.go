@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"sync/atomic"
@@ -86,13 +87,15 @@ func Run(ctx context.Context, config *Config) error {
 	}
 
 	filter := newTargetFilter(targetFilterConfig{
-		podFilter:              config.PodQuery,
-		excludePodFilter:       config.ExcludePodQuery,
-		containerFilter:        config.ContainerQuery,
-		containerExcludeFilter: config.ExcludeContainerQuery,
-		initContainers:         config.InitContainers,
-		ephemeralContainers:    config.EphemeralContainers,
-		containerStates:        config.ContainerStates,
+		podFilter:                      config.PodQuery,
+		excludePodFilter:               config.ExcludePodQuery,
+		containerFilter:                config.ContainerQuery,
+		containerExcludeFilter:         config.ExcludeContainerQuery,
+		condition:                      config.Condition,
+		onlyConditionPodsWithReadiness: config.OnlyConditionPodsWithReadiness,
+		initContainers:                 config.InitContainers,
+		ephemeralContainers:            config.EphemeralContainers,
+		containerStates:                config.ContainerStates,
 	})
 	newTail := func(t *Target) *Tail {
 		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
@@ -171,6 +174,7 @@ func Run(ctx context.Context, config *Config) error {
 		}
 	}
 
+	m := sync.Map{}
 	eg, nctx := errgroup.WithContext(ctx)
 	var numRequests atomic.Int64
 	for _, n := range namespaces {
@@ -178,7 +182,7 @@ func Run(ctx context.Context, config *Config) error {
 		if err != nil {
 			return err
 		}
-		a, err := WatchTargets(nctx,
+		a, d, err := WatchTargets(nctx,
 			client.CoreV1().Pods(n),
 			selector,
 			config.FieldSelector,
@@ -202,10 +206,24 @@ func Run(ctx context.Context, config *Config) error {
 								" use --max-log-requests to increase the limit",
 							config.MaxLogRequests)
 					}
+					ctx, cancel := context.WithCancel(context.Background())
+					m.Store(target.GetID(), cancel)
 					go func() {
-						tailTarget(nctx, target)
+						go tailTarget(ctx, target)
+						select {
+						case <-ctx.Done():
+						case <-nctx.Done():
+							cancel()
+						}
 						numRequests.Add(-1)
 					}()
+				case target := <-d:
+					_, _ = m.Load(target.GetID())
+					cancel, ok := m.Load(target.GetID())
+					if !ok {
+						continue
+					}
+					cancel.(context.CancelFunc)()
 				case <-nctx.Done():
 					return nil
 				}

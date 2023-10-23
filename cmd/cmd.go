@@ -47,39 +47,41 @@ var defaultConfigFilePath = "~/.config/stern/config.yaml"
 type options struct {
 	genericclioptions.IOStreams
 
-	excludePod          []string
-	container           string
-	excludeContainer    []string
-	containerStates     []string
-	timestamps          string
-	timezone            string
-	since               time.Duration
-	context             string
-	namespaces          []string
-	kubeConfig          string
-	exclude             []string
-	include             []string
-	initContainers      bool
-	ephemeralContainers bool
-	allNamespaces       bool
-	selector            string
-	fieldSelector       string
-	tail                int64
-	color               string
-	version             bool
-	completion          string
-	template            string
-	templateFile        string
-	output              string
-	prompt              bool
-	podQuery            string
-	noFollow            bool
-	resource            string
-	verbosity           int
-	onlyLogLines        bool
-	maxLogRequests      int
-	node                string
-	configFilePath      string
+	excludePod                     []string
+	container                      string
+	excludeContainer               []string
+	containerStates                []string
+	timestamps                     string
+	timezone                       string
+	since                          time.Duration
+	context                        string
+	namespaces                     []string
+	kubeConfig                     string
+	exclude                        []string
+	condition                      string
+	onlyConditionPodsWithReadiness bool
+	include                        []string
+	initContainers                 bool
+	ephemeralContainers            bool
+	allNamespaces                  bool
+	selector                       string
+	fieldSelector                  string
+	tail                           int64
+	color                          string
+	version                        bool
+	completion                     string
+	template                       string
+	templateFile                   string
+	output                         string
+	prompt                         bool
+	podQuery                       string
+	noFollow                       bool
+	resource                       string
+	verbosity                      int
+	onlyLogLines                   bool
+	maxLogRequests                 int
+	node                           string
+	configFilePath                 string
 }
 
 func NewOptions(streams genericclioptions.IOStreams) *options {
@@ -127,7 +129,10 @@ func (o *options) Validate() error {
 		return errors.New("One of pod-query, --selector, --field-selector or --prompt is required")
 	}
 	if o.selector != "" && o.resource != "" {
-		return errors.New("--selector and the <resource>/<name> query can not be set at the same time")
+		return errors.New("--selector and the <resource>/<name> query cannot be set at the same time")
+	}
+	if o.noFollow && o.tail == 0 {
+		return errors.New("--no-follow cannot be used with --tail=0")
 	}
 
 	return nil
@@ -257,31 +262,33 @@ func (o *options) sternConfig() (*stern.Config, error) {
 	}
 
 	return &stern.Config{
-		KubeConfig:            o.kubeConfig,
-		ContextName:           o.context,
-		Namespaces:            namespaces,
-		PodQuery:              pod,
-		ExcludePodQuery:       excludePod,
-		Timestamps:            timestampFormat != "",
-		TimestampFormat:       timestampFormat,
-		Location:              location,
-		ContainerQuery:        container,
-		ExcludeContainerQuery: excludeContainer,
-		ContainerStates:       containerStates,
-		Exclude:               exclude,
-		Include:               include,
-		InitContainers:        o.initContainers,
-		EphemeralContainers:   o.ephemeralContainers,
-		Since:                 o.since,
-		AllNamespaces:         o.allNamespaces,
-		LabelSelector:         labelSelector,
-		FieldSelector:         fieldSelector,
-		TailLines:             tailLines,
-		Template:              template,
-		Follow:                !o.noFollow,
-		Resource:              o.resource,
-		OnlyLogLines:          o.onlyLogLines,
-		MaxLogRequests:        maxLogRequests,
+		KubeConfig:                     o.kubeConfig,
+		ContextName:                    o.context,
+		Namespaces:                     namespaces,
+		PodQuery:                       pod,
+		ExcludePodQuery:                excludePod,
+		Timestamps:                     timestampFormat != "",
+		TimestampFormat:                timestampFormat,
+		Location:                       location,
+		ContainerQuery:                 container,
+		ExcludeContainerQuery:          excludeContainer,
+		Condition:                      o.condition,
+		OnlyConditionPodsWithReadiness: o.onlyConditionPodsWithReadiness,
+		ContainerStates:                containerStates,
+		Exclude:                        exclude,
+		Include:                        include,
+		InitContainers:                 o.initContainers,
+		EphemeralContainers:            o.ephemeralContainers,
+		Since:                          o.since,
+		AllNamespaces:                  o.allNamespaces,
+		LabelSelector:                  labelSelector,
+		FieldSelector:                  fieldSelector,
+		TailLines:                      tailLines,
+		Template:                       template,
+		Follow:                         !o.noFollow,
+		Resource:                       o.resource,
+		OnlyLogLines:                   o.onlyLogLines,
+		MaxLogRequests:                 maxLogRequests,
 
 		Out:    o.Out,
 		ErrOut: o.ErrOut,
@@ -360,6 +367,8 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringArrayVarP(&o.exclude, "exclude", "e", o.exclude, "Log lines to exclude. (regular expression)")
 	fs.StringArrayVarP(&o.excludeContainer, "exclude-container", "E", o.excludeContainer, "Container name to exclude when multiple containers in pod. (regular expression)")
 	fs.StringArrayVar(&o.excludePod, "exclude-pod", o.excludePod, "Pod name to exclude. (regular expression)")
+	fs.StringVar(&o.condition, "condition", o.condition, "The condition to filter on: [condition-name[=condition-value]. The default condition-value is true. Match is case-insensitive.")
+	fs.BoolVar(&o.onlyConditionPodsWithReadiness, "only-condition-pods-with-readiness", o.onlyConditionPodsWithReadiness, "Only apply --condition to pods which has readiness probe or readiness gate.")
 	fs.BoolVar(&o.noFollow, "no-follow", o.noFollow, "Exit when all logs have been shown.")
 	fs.StringArrayVarP(&o.include, "include", "i", o.include, "Log lines to include. (regular expression)")
 	fs.BoolVar(&o.initContainers, "init-containers", o.initContainers, "Include or exclude init containers.")
