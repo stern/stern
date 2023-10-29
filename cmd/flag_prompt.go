@@ -11,11 +11,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stern/stern/stern"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 )
 
 // promptHandler invokes the interactive prompt and updates config.LabelSelector with the selected value.
-func promptHandler(ctx context.Context, config *stern.Config, out io.Writer) error {
-	labelsMap, err := stern.List(ctx, config)
+func promptHandler(ctx context.Context, client kubernetes.Interface, config *stern.Config, out io.Writer) error {
+	labelsMap, err := stern.List(ctx, client, config)
 	if err != nil {
 		return err
 	}

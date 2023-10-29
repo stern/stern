@@ -25,7 +25,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/stern/stern/kubernetes"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 
@@ -33,22 +32,11 @@ import (
 	"k8s.io/utils/ptr"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes"
 )
 
 // Run starts the main run loop
-func Run(ctx context.Context, config *Config) error {
-	clientConfig := kubernetes.NewClientConfig(config.KubeConfig, config.ContextName)
-	cc, err := clientConfig.ClientConfig()
-	if err != nil {
-		return err
-	}
-
-	client, err := clientset.NewForConfig(cc)
-	if err != nil {
-		return err
-	}
-
+func Run(ctx context.Context, client kubernetes.Interface, config *Config) error {
 	var namespaces []string
 	// A specific namespace is ignored if all-namespaces is provided
 	if config.AllNamespaces {
@@ -56,11 +44,7 @@ func Run(ctx context.Context, config *Config) error {
 	} else {
 		namespaces = config.Namespaces
 		if len(namespaces) == 0 {
-			n, _, err := clientConfig.Namespace()
-			if err != nil {
-				return errors.Wrap(err, "unable to get default namespace")
-			}
-			namespaces = []string{n}
+			return errors.New("no namespace specified")
 		}
 	}
 
@@ -215,7 +199,7 @@ func Run(ctx context.Context, config *Config) error {
 	return eg.Wait()
 }
 
-func chooseSelector(ctx context.Context, client clientset.Interface, namespace, kind, name string, selector labels.Selector) (labels.Selector, error) {
+func chooseSelector(ctx context.Context, client kubernetes.Interface, namespace, kind, name string, selector labels.Selector) (labels.Selector, error) {
 	if kind == "" {
 		return selector, nil
 	}
@@ -233,7 +217,7 @@ func chooseSelector(ctx context.Context, client clientset.Interface, namespace, 
 	return labels.SelectorFromSet(labelMap), nil
 }
 
-func retrieveLabelsFromResource(ctx context.Context, client clientset.Interface, namespace, kind, name string) (map[string]string, error) {
+func retrieveLabelsFromResource(ctx context.Context, client kubernetes.Interface, namespace, kind, name string) (map[string]string, error) {
 	opt := metav1.GetOptions{}
 	switch {
 	// core

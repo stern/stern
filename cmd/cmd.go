@@ -38,6 +38,8 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 )
 
@@ -45,6 +47,7 @@ import (
 var defaultConfigFilePath = "~/.config/stern/config.yaml"
 
 type options struct {
+	configFlags *genericclioptions.ConfigFlags
 	genericclioptions.IOStreams
 
 	excludePod          []string
@@ -54,9 +57,7 @@ type options struct {
 	timestamps          string
 	timezone            string
 	since               time.Duration
-	context             string
 	namespaces          []string
-	kubeConfig          string
 	exclude             []string
 	include             []string
 	initContainers      bool
@@ -80,11 +81,20 @@ type options struct {
 	maxLogRequests      int
 	node                string
 	configFilePath      string
+	showHiddenOptions   bool
+
+	client       kubernetes.Interface
+	clientConfig clientcmd.ClientConfig
 }
 
 func NewOptions(streams genericclioptions.IOStreams) *options {
+	configFlags := genericclioptions.NewConfigFlags(true)
+	// stern has its own namespace flag, so disable the one in configFlags
+	configFlags.Namespace = nil
+
 	return &options{
-		IOStreams: streams,
+		configFlags: configFlags,
+		IOStreams:   streams,
 
 		color:               "auto",
 		container:           ".*",
@@ -119,6 +129,23 @@ func (o *options) Complete(args []string) error {
 		o.configFilePath = envVar
 	}
 
+	o.clientConfig = o.configFlags.ToRawKubeConfigLoader()
+
+	restConfig, err := o.configFlags.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+
+	o.client = kubernetes.NewForConfigOrDie(restConfig)
+
+	if len(o.namespaces) == 0 {
+		namespace, _, err := o.clientConfig.Namespace()
+		if err != nil {
+			return err
+		}
+		o.namespaces = []string{namespace}
+	}
+
 	return nil
 }
 
@@ -147,12 +174,12 @@ func (o *options) Run(cmd *cobra.Command) error {
 	defer cancel()
 
 	if o.prompt {
-		if err := promptHandler(ctx, config, o.Out); err != nil {
+		if err := promptHandler(ctx, o.client, config, o.Out); err != nil {
 			return err
 		}
 	}
 
-	return stern.Run(ctx, config)
+	return stern.Run(ctx, o.client, config)
 }
 
 func (o *options) sternConfig() (*stern.Config, error) {
@@ -257,8 +284,6 @@ func (o *options) sternConfig() (*stern.Config, error) {
 	}
 
 	return &stern.Config{
-		KubeConfig:            o.kubeConfig,
-		ContextName:           o.context,
 		Namespaces:            namespaces,
 		PodQuery:              pod,
 		ExcludePodQuery:       excludePod,
@@ -351,12 +376,13 @@ func (o *options) overrideFlagSetDefaultFromConfig(fs *pflag.FlagSet) error {
 
 // AddFlags adds all the flags used by stern.
 func (o *options) AddFlags(fs *pflag.FlagSet) {
+	o.addKubernetesFlags(fs)
+
 	fs.BoolVarP(&o.allNamespaces, "all-namespaces", "A", o.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
 	fs.StringVar(&o.color, "color", o.color, "Force set color output. 'auto':  colorize if tty attached, 'always': always colorize, 'never': never colorize.")
 	fs.StringVar(&o.completion, "completion", o.completion, "Output stern command-line completion code for the specified shell. Can be 'bash', 'zsh' or 'fish'.")
 	fs.StringVarP(&o.container, "container", "c", o.container, "Container name when multiple containers in pod. (regular expression)")
 	fs.StringSliceVar(&o.containerStates, "container-state", o.containerStates, "Tail containers with state in running, waiting, terminated, or all. 'all' matches all container states. To specify multiple states, repeat this or set comma-separated value.")
-	fs.StringVar(&o.context, "context", o.context, "Kubernetes context to use. Default to current context configured in kubeconfig.")
 	fs.StringArrayVarP(&o.exclude, "exclude", "e", o.exclude, "Log lines to exclude. (regular expression)")
 	fs.StringArrayVarP(&o.excludeContainer, "exclude-container", "E", o.excludeContainer, "Container name to exclude when multiple containers in pod. (regular expression)")
 	fs.StringArrayVar(&o.excludePod, "exclude-pod", o.excludePod, "Pod name to exclude. (regular expression)")
@@ -364,9 +390,6 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringArrayVarP(&o.include, "include", "i", o.include, "Log lines to include. (regular expression)")
 	fs.BoolVar(&o.initContainers, "init-containers", o.initContainers, "Include or exclude init containers.")
 	fs.BoolVar(&o.ephemeralContainers, "ephemeral-containers", o.ephemeralContainers, "Include or exclude ephemeral containers.")
-	fs.StringVar(&o.kubeConfig, "kubeconfig", o.kubeConfig, "Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.")
-	fs.StringVar(&o.kubeConfig, "kube-config", o.kubeConfig, "Path to kubeconfig file to use.")
-	_ = fs.MarkDeprecated("kube-config", "Use --kubeconfig instead.")
 	fs.StringSliceVarP(&o.namespaces, "namespace", "n", o.namespaces, "Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
 	fs.StringVar(&o.node, "node", o.node, "Node name to filter on.")
 	fs.IntVar(&o.maxLogRequests, "max-log-requests", o.maxLogRequests, "Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow")
@@ -384,8 +407,37 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.configFilePath, "config", o.configFilePath, "Path to the stern config file")
 	fs.IntVar(&o.verbosity, "verbosity", o.verbosity, "Number of the log level verbosity")
 	fs.BoolVarP(&o.version, "version", "v", o.version, "Print the version and exit.")
+	fs.BoolVar(&o.showHiddenOptions, "show-hidden-options", o.showHiddenOptions, "Print a list of hidden options.")
 
 	fs.Lookup("timestamps").NoOptDefVal = "default"
+}
+
+func (o *options) addKubernetesFlags(fs *pflag.FlagSet) {
+	flagset := pflag.NewFlagSet("", pflag.ExitOnError)
+	o.configFlags.AddFlags(flagset)
+	flagset.VisitAll(func(f *pflag.Flag) {
+		// Hide Kubernetes flags except some
+		if !(f.Name == "kubeconfig" || f.Name == "context") {
+			f.Hidden = true
+		}
+
+		// `server` flag in configFlags has `s` shorthand, which is used by stern
+		// as shorthand for `since` flag, so do not use it.
+		if f.Name == "server" {
+			f.Shorthand = ""
+		}
+	})
+	fs.AddFlagSet(flagset)
+}
+
+func (o *options) outputHiddenOptions() {
+	fs := pflag.NewFlagSet("", pflag.ExitOnError)
+	o.AddFlags(fs)
+	fs.VisitAll(func(f *pflag.Flag) {
+		f.Hidden = !f.Hidden
+	})
+	fmt.Println("The following options can also be used in stern:\n")
+	fs.PrintDefaults()
 }
 
 func (o *options) generateTemplate() (*template.Template, error) {
@@ -588,6 +640,11 @@ func NewSternCmd(stream genericclioptions.IOStreams) (*cobra.Command, error) {
 				return runCompletion(o.completion, cmd, o.Out)
 			}
 
+			if o.showHiddenOptions {
+				o.outputHiddenOptions()
+				return nil
+			}
+
 			if err := o.Complete(args); err != nil {
 				return err
 			}
@@ -606,6 +663,8 @@ func NewSternCmd(stream genericclioptions.IOStreams) (*cobra.Command, error) {
 		},
 		ValidArgsFunction: queryCompletionFunc(o),
 	}
+
+	cmd.SetUsageTemplate(cmd.UsageTemplate() + "\nUse \"stern --show-hidden-options\" for a list of hidden command-line options.\n")
 
 	o.AddFlags(cmd.Flags())
 

@@ -448,8 +448,6 @@ func TestOptionsSternConfig(t *testing.T) {
 
 	defaultConfig := func() *stern.Config {
 		return &stern.Config{
-			KubeConfig:            "",
-			ContextName:           "",
 			Namespaces:            []string{},
 			PodQuery:              re(""),
 			ExcludePodQuery:       nil,
@@ -495,8 +493,6 @@ func TestOptionsSternConfig(t *testing.T) {
 			"change all options",
 			func() *options {
 				o := NewOptions(streams)
-				o.kubeConfig = "kubeconfig1"
-				o.context = "context1"
 				o.namespaces = []string{"ns1", "ns2"}
 				o.podQuery = "query1"
 				o.excludePod = []string{"exp1", "exp2"}
@@ -524,8 +520,6 @@ func TestOptionsSternConfig(t *testing.T) {
 			}(),
 			func() *stern.Config {
 				c := defaultConfig()
-				c.KubeConfig = "kubeconfig1"
-				c.ContextName = "context1"
 				c.Namespaces = []string{"ns1", "ns2"}
 				c.PodQuery = re("query1")
 				c.ExcludePodQuery = []*regexp.Regexp{re("exp1"), re("exp2")}

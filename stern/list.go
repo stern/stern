@@ -18,40 +18,21 @@ import (
 	"context"
 	"sync"
 
-	"github.com/pkg/errors"
-	"github.com/stern/stern/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // List returns a map of all 'app.kubernetes.io/instance' values.
-func List(ctx context.Context, config *Config) (map[string]string, error) {
-	clientConfig := kubernetes.NewClientConfig(config.KubeConfig, config.ContextName)
-	cc, err := clientConfig.ClientConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	clientset, err := corev1client.NewForConfig(cc)
-	if err != nil {
-		return nil, err
-	}
-
+func List(ctx context.Context, client kubernetes.Interface, config *Config) (map[string]string, error) {
 	var namespaces []string
 	// A specific namespace is ignored if all-namespaces is provided.
 	if config.AllNamespaces {
 		namespaces = []string{""}
 	} else {
 		namespaces = config.Namespaces
-		if len(namespaces) == 0 {
-			n, _, err := clientConfig.Namespace()
-			if err != nil {
-				return nil, errors.Wrap(err, "unable to get default namespace")
-			}
-			namespaces = []string{n}
-		}
 	}
 
 	labels := make(map[string]string)
@@ -66,7 +47,7 @@ func List(ctx context.Context, config *Config) (map[string]string, error) {
 		go func(n string) {
 			defer wg.Done()
 
-			pods, err := clientset.Pods(n).List(ctx, options)
+			pods, err := client.CoreV1().Pods(n).List(ctx, options)
 			if err != nil {
 				return
 			}
