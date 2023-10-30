@@ -41,6 +41,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+
+	// load all auth plugins
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 // Use "~" to avoid exposing the user name in the help message
