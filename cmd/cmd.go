@@ -439,7 +439,7 @@ func (o *options) outputHiddenOptions() {
 	fs.VisitAll(func(f *pflag.Flag) {
 		f.Hidden = !f.Hidden
 	})
-	fmt.Println("The following options can also be used in stern:\n")
+	fmt.Println("The following options can also be used in stern:")
 	fs.PrintDefaults()
 }
 
