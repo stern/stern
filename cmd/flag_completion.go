@@ -98,6 +98,10 @@ func registerCompletionFuncForFlags(cmd *cobra.Command, o *options) error {
 // that match the toComplete prefix.
 func namespaceCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if err := o.Complete(nil); err != nil {
+			return compError(err)
+		}
+
 		namespaceList, err := o.client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return compError(err)
@@ -118,6 +122,10 @@ func namespaceCompletionFunc(o *options) func(cmd *cobra.Command, args []string,
 // that match the toComplete prefix.
 func nodeCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if err := o.Complete(nil); err != nil {
+			return compError(err)
+		}
+
 		nodeList, err := o.client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return compError(err)
@@ -138,6 +146,10 @@ func nodeCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toCo
 // that match the toComplete prefix.
 func contextCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if err := o.Complete(nil); err != nil {
+			return compError(err)
+		}
+
 		var comps []string
 		kubeConfig, err := o.clientConfig.RawConfig()
 		if err != nil {
@@ -157,6 +169,10 @@ func contextCompletionFunc(o *options) func(cmd *cobra.Command, args []string, t
 // that match the toComplete prefix.
 func queryCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if err := o.Complete(nil); err != nil {
+			return compError(err)
+		}
+
 		var comps []string
 		parts := strings.Split(toComplete, "/")
 		if len(parts) != 2 {
