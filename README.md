@@ -77,7 +77,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--config`                  | `~/.config/stern/config.yaml` | Path to the stern config file
  `--container`, `-c`         | `.*`                          | Container name when multiple containers in pod. (regular expression)
  `--container-state`         | `all`                         | Tail containers with state in running, waiting, terminated, or all. 'all' matches all container states. To specify multiple states, repeat this or set comma-separated value.
- `--context`                 |                               | Kubernetes context to use. Default to current context configured in kubeconfig.
+ `--context`                 |                               | The name of the kubeconfig context to use
  `--ephemeral-containers`    | `true`                        | Include or exclude ephemeral containers.
  `--exclude`, `-e`           | `[]`                          | Log lines to exclude. (regular expression)
  `--exclude-container`, `-E` | `[]`                          | Container name to exclude when multiple containers in pod. (regular expression)
@@ -85,7 +85,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--field-selector`          |                               | Selector (field query) to filter on. If present, default to ".*" for the pod-query.
  `--include`, `-i`           | `[]`                          | Log lines to include. (regular expression)
  `--init-containers`         | `true`                        | Include or exclude init containers.
- `--kubeconfig`              |                               | Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.
+ `--kubeconfig`              |                               | Path to the kubeconfig file to use for CLI requests.
  `--max-log-requests`        | `-1`                          | Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow
  `--namespace`, `-n`         |                               | Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.
  `--no-follow`               | `false`                       | Exit when all logs have been shown.
@@ -94,6 +94,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--output`, `-o`            | `default`                     | Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]
  `--prompt`, `-p`            | `false`                       | Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.
  `--selector`, `-l`          |                               | Selector (label query) to filter on. If present, default to ".*" for the pod-query.
+ `--show-hidden-options`     | `false`                       | Print a list of hidden options.
  `--since`, `-s`             | `48h0m0s`                     | Return logs newer than a relative duration like 5s, 2m, or 3h.
  `--tail`                    | `-1`                          | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.
  `--template`                |                               | Template to use for log lines, leave empty to use --output flag.

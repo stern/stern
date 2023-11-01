@@ -23,10 +23,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/stern/stern/kubernetes"
 	"github.com/stern/stern/stern"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes"
 )
 
 var flagChoices = map[string][]string{
@@ -99,13 +98,11 @@ func registerCompletionFuncForFlags(cmd *cobra.Command, o *options) error {
 // that match the toComplete prefix.
 func namespaceCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		clientConfig := kubernetes.NewClientConfig(o.kubeConfig, o.context)
-		clientset, err := kubernetes.NewClientSet(clientConfig)
-		if err != nil {
+		if err := o.Complete(nil); err != nil {
 			return compError(err)
 		}
 
-		namespaceList, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+		namespaceList, err := o.client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return compError(err)
 		}
@@ -125,13 +122,11 @@ func namespaceCompletionFunc(o *options) func(cmd *cobra.Command, args []string,
 // that match the toComplete prefix.
 func nodeCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		clientConfig := kubernetes.NewClientConfig(o.kubeConfig, o.context)
-		clientset, err := kubernetes.NewClientSet(clientConfig)
-		if err != nil {
+		if err := o.Complete(nil); err != nil {
 			return compError(err)
 		}
 
-		nodeList, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+		nodeList, err := o.client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return compError(err)
 		}
@@ -151,14 +146,16 @@ func nodeCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toCo
 // that match the toComplete prefix.
 func contextCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		clientConfig := kubernetes.NewClientConfig(o.kubeConfig, o.context)
-		config, err := clientConfig.RawConfig()
-		if err != nil {
+		if err := o.Complete(nil); err != nil {
 			return compError(err)
 		}
 
 		var comps []string
-		for name := range config.Contexts {
+		kubeConfig, err := o.clientConfig.RawConfig()
+		if err != nil {
+			return compError(err)
+		}
+		for name := range kubeConfig.Contexts {
 			if strings.HasPrefix(name, toComplete) {
 				comps = append(comps, name)
 			}
@@ -172,6 +169,10 @@ func contextCompletionFunc(o *options) func(cmd *cobra.Command, args []string, t
 // that match the toComplete prefix.
 func queryCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if err := o.Complete(nil); err != nil {
+			return compError(err)
+		}
+
 		var comps []string
 		parts := strings.Split(toComplete, "/")
 		if len(parts) != 2 {
@@ -191,16 +192,11 @@ func queryCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toC
 			return compError(errors.New("multiple namespaces are not supported"))
 		}
 
-		clientConfig := kubernetes.NewClientConfig(o.kubeConfig, o.context)
-		clientset, err := kubernetes.NewClientSet(clientConfig)
-		if err != nil {
-			return compError(err)
-		}
 		var namespace string
 		if len(uniqueNamespaces) == 1 {
 			namespace = uniqueNamespaces[0]
 		} else {
-			n, _, err := clientConfig.Namespace()
+			n, _, err := o.clientConfig.Namespace()
 			if err != nil {
 				return compError(err)
 			}
@@ -208,7 +204,7 @@ func queryCompletionFunc(o *options) func(cmd *cobra.Command, args []string, toC
 		}
 
 		kind, name := parts[0], parts[1]
-		names, err := retrieveNamesFromResource(context.TODO(), clientset, namespace, kind)
+		names, err := retrieveNamesFromResource(context.TODO(), o.client, namespace, kind)
 		if err != nil {
 			return compError(err)
 		}
@@ -226,7 +222,7 @@ func compError(err error) ([]string, cobra.ShellCompDirective) {
 	return nil, cobra.ShellCompDirectiveError
 }
 
-func retrieveNamesFromResource(ctx context.Context, client clientset.Interface, namespace, kind string) ([]string, error) {
+func retrieveNamesFromResource(ctx context.Context, client kubernetes.Interface, namespace, kind string) ([]string, error) {
 	opt := metav1.ListOptions{}
 	var names []string
 	switch {

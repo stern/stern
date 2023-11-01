@@ -26,8 +26,6 @@ import (
 
 // Config contains the config for stern
 type Config struct {
-	KubeConfig            string
-	ContextName           string
 	Namespaces            []string
 	PodQuery              *regexp.Regexp
 	ExcludePodQuery       []*regexp.Regexp
