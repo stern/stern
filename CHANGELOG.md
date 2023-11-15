@@ -1,3 +1,46 @@
+# v1.27.0
+
+## :zap: Notable Changes
+
+### Add new template function: `toTimestamp`
+
+The `toTimestamp` function takes in an object, a layout, and optionally a timezone. This allows for more custom time parsing, for instance, if a user doesn't care about seeing the date of the log and only the time (in their own timezone) they can use a template such as:
+
+```
+--template '{{ with $msg := .Message | tryParseJSON }}[{{ toTimestamp $msg.time "15:04:05" "Local" }}] {{ $msg.msg }}{{ end }}{{ "\n" }}'
+```
+
+### Add generic kubectl options
+
+stern now has the generic options that kubectl has, and a new `--show-hidden-options` option.
+
+```
+$ stern --show-hidden-options
+The following options can also be used in stern:
+      --as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --as-uid string                  UID to impersonate for the operation.
+      --cache-dir string               Default cache directory (default "/home/ksuda/.kube/cache")
+      --certificate-authority string   Path to a cert file for the certificate authority
+      --client-certificate string      Path to a client certificate file for TLS
+      --client-key string              Path to a client key file for TLS
+      --cluster string                 The name of the kubeconfig cluster to use
+      --disable-compression            If true, opt-out of response compression for all requests to the server
+      --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
+      --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
+      --server string                  The address and port of the Kubernetes API server
+      --tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used
+      --token string                   Bearer token for authentication to the API server
+      --user string                    The name of the kubeconfig user to use
+```
+
+The number of kubectl generic options is so large that it makes it difficult to see stern's own list of options, so we usually hide them. Use `--show-hidden-options` if you want to list.
+
+## Changes
+
+* Add generic cli options (#283) f315819 (Kazuki Suda)
+* 281: Support toTimestamp template function (#282) 5445cd5 (Will Anderson)
+
 # v1.26.0
 
 ## :zap: Notable Changes
