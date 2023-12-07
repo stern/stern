@@ -56,7 +56,7 @@ kubectl krew install stern
 stern pod-query [flags]
 ```
 
-The `pod` query is a regular expression or a Kubernetes resource in the form `<resource>/<name>`.
+The `pod-query` is a regular expression or a Kubernetes resource in the form `<resource>/<name>`.
 
 The query is a regular expression when it is not a Kubernetes resource,
 so you could provide `"web-\w"` to tail `web-backend` and `web-frontend` pods but not `web-123`.
