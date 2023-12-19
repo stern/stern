@@ -195,6 +195,15 @@ The behavior and the default are different depending on the presence of the `--n
 The combination of `--max-log-requests 1` and `--no-follow` will be helpful if you want to show logs in order.
 
 ## Examples:
+Tail all logs from all namespaces
+```
+stern . --all-namespaces
+```
+
+Tail the `kube-system` namespace without printing any prior logs
+```
+stern . -n kube-system --tail 0
+```
 
 Tail the `gateway` container running inside of the `envvars` pod on staging
 ```
