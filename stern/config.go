@@ -37,6 +37,7 @@ type Config struct {
 	ContainerStates       []ContainerState
 	Exclude               []*regexp.Regexp
 	Include               []*regexp.Regexp
+	Highlight             []*regexp.Regexp
 	InitContainers        bool
 	EphemeralContainers   bool
 	Since                 time.Duration

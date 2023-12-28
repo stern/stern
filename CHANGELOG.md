@@ -1,3 +1,18 @@
+# v1.28.0
+
+## :zap: Notable Changes
+
+### Highlight matched strings in the log lines with the highlight option
+
+Some part of a log line can be highlighted while still displaying all other logs lines.
+
+`--highlight` flag now highlight matched strings in the log lines.
+
+```
+stern --highlight "\[error\]" .
+```
+
+
 # v1.27.0
 
 ## :zap: Notable Changes

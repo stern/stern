@@ -86,6 +86,7 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 			SinceSeconds:    ptr.To[int64](int64(config.Since.Seconds())),
 			Exclude:         config.Exclude,
 			Include:         config.Include,
+			Highlight:       config.Highlight,
 			Namespace:       config.AllNamespaces || len(namespaces) > 1,
 			TailLines:       config.TailLines,
 			Follow:          config.Follow,

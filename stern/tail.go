@@ -72,6 +72,7 @@ type TailOptions struct {
 	SinceTime    *metav1.Time
 	Exclude      []*regexp.Regexp
 	Include      []*regexp.Regexp
+	Highlight    []*regexp.Regexp
 	Namespace    bool
 	TailLines    *int64
 	Follow       bool
@@ -113,14 +114,17 @@ func (o TailOptions) IsInclude(msg string) bool {
 var colorHighlight = color.New(color.FgRed, color.Bold).SprintFunc()
 
 func (o TailOptions) HighlightMatchedString(msg string) string {
-	if len(o.Include) == 0 {
+	if len(o.Include) == 0 && len(o.Highlight) == 0 {
 		return msg
 	}
 
 	if o.reHightlight == nil {
-		ss := make([]string, len(o.Include))
+		ss := make([]string, len(o.Include)+len(o.Highlight))
 		for i, rin := range o.Include {
 			ss[i] = rin.String()
+		}
+		for i, rhi := range o.Highlight {
+			ss[i] = rhi.String()
 		}
 
 		// We expect a longer match
