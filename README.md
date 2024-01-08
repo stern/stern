@@ -83,7 +83,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--exclude-container`, `-E` | `[]`                          | Container name to exclude when multiple containers in pod. (regular expression)
  `--exclude-pod`             | `[]`                          | Pod name to exclude. (regular expression)
  `--field-selector`          |                               | Selector (field query) to filter on. If present, default to ".*" for the pod-query.
- `--highlight`, `-I`         | `[]`                          | Log lines to highlight. (regular expression)
+ `--highlight`, `-H`         | `[]`                          | Log lines to highlight. (regular expression)
  `--include`, `-i`           | `[]`                          | Log lines to include. (regular expression)
  `--init-containers`         | `true`                        | Include or exclude init containers.
  `--kubeconfig`              |                               | Path to the kubeconfig file to use for CLI requests.
