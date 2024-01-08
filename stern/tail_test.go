@@ -393,7 +393,7 @@ func TestHighlighIncludedString(t *testing.T) {
 			[]*regexp.Regexp{
 				regexp.MustCompile(`test`),
 			},
-			"\x1b[31;1mtest\x1b[0m matched",
+			"\x1b[31;1mtest\x1b[0;22m matched",
 		},
 		{
 			"test not-matched",
@@ -408,7 +408,7 @@ func TestHighlighIncludedString(t *testing.T) {
 				regexp.MustCompile(`not-matched`),
 				regexp.MustCompile(`matched`),
 			},
-			"test \x1b[31;1mmatched\x1b[0m",
+			"test \x1b[31;1mmatched\x1b[0;22m",
 		},
 		{
 			"test multiple matched",
@@ -416,7 +416,7 @@ func TestHighlighIncludedString(t *testing.T) {
 				regexp.MustCompile(`multiple`),
 				regexp.MustCompile(`matched`),
 			},
-			"test \x1b[31;1mmultiple\x1b[0m \x1b[31;1mmatched\x1b[0m",
+			"test \x1b[31;1mmultiple\x1b[0;22m \x1b[31;1mmatched\x1b[0;22m",
 		},
 		{
 			"test match on the longer one",
@@ -424,7 +424,7 @@ func TestHighlighIncludedString(t *testing.T) {
 				regexp.MustCompile(`match`),
 				regexp.MustCompile(`match on the longer one`),
 			},
-			"test \x1b[31;1mmatch on the longer one\x1b[0m",
+			"test \x1b[31;1mmatch on the longer one\x1b[0;22m",
 		},
 	}
 
@@ -458,7 +458,7 @@ func TestIncludeAndHighlightMatchedString(t *testing.T) {
 			[]*regexp.Regexp{
 				regexp.MustCompile(`highlight`),
 			},
-			"\x1b[31;1mtest\x1b[0m matched with \x1b[31;1mhighlight\x1b[0m",
+			"\x1b[31;1mtest\x1b[0;22m matched with \x1b[31;1mhighlight\x1b[0;22m",
 		},
 		{
 			"test not-matched",
@@ -480,7 +480,7 @@ func TestIncludeAndHighlightMatchedString(t *testing.T) {
 				regexp.MustCompile(`no-with-highlight`),
 				regexp.MustCompile(`with highlight`),
 			},
-			"test \x1b[31;1mmatched\x1b[0m \x1b[31;1mwith highlight\x1b[0m",
+			"test \x1b[31;1mmatched\x1b[0;22m \x1b[31;1mwith highlight\x1b[0;22m",
 		},
 		{
 			"test multiple matched with many highlight",
@@ -492,7 +492,7 @@ func TestIncludeAndHighlightMatchedString(t *testing.T) {
 				regexp.MustCompile(`many`),
 				regexp.MustCompile(`highlight`),
 			},
-			"test \x1b[31;1mmultiple\x1b[0m \x1b[31;1mmatched\x1b[0m with \x1b[31;1mmany\x1b[0m \x1b[31;1mhighlight\x1b[0m",
+			"test \x1b[31;1mmultiple\x1b[0;22m \x1b[31;1mmatched\x1b[0;22m with \x1b[31;1mmany\x1b[0;22m \x1b[31;1mhighlight\x1b[0;22m",
 		},
 		{
 			"test match on the longer one",
@@ -504,7 +504,7 @@ func TestIncludeAndHighlightMatchedString(t *testing.T) {
 				regexp.MustCompile(`match`),
 				regexp.MustCompile(`match on the longer one`),
 			},
-			"test \x1b[31;1mmatch on the longer one\x1b[0m",
+			"test \x1b[31;1mmatch on the longer one\x1b[0;22m",
 		},
 	}
 
@@ -534,7 +534,7 @@ func TestHighlightMatchedString(t *testing.T) {
 			[]*regexp.Regexp{
 				regexp.MustCompile(`test`),
 			},
-			"\x1b[31;1mtest\x1b[0m matched",
+			"\x1b[31;1mtest\x1b[0;22m matched",
 		},
 		{
 			"test not-matched",
@@ -549,7 +549,7 @@ func TestHighlightMatchedString(t *testing.T) {
 				regexp.MustCompile(`not-matched`),
 				regexp.MustCompile(`matched`),
 			},
-			"test \x1b[31;1mmatched\x1b[0m",
+			"test \x1b[31;1mmatched\x1b[0;22m",
 		},
 		{
 			"test multiple matched",
@@ -557,7 +557,7 @@ func TestHighlightMatchedString(t *testing.T) {
 				regexp.MustCompile(`multiple`),
 				regexp.MustCompile(`matched`),
 			},
-			"test \x1b[31;1mmultiple\x1b[0m \x1b[31;1mmatched\x1b[0m",
+			"test \x1b[31;1mmultiple\x1b[0;22m \x1b[31;1mmatched\x1b[0;22m",
 		},
 		{
 			"test match on the longer one",
@@ -565,7 +565,7 @@ func TestHighlightMatchedString(t *testing.T) {
 				regexp.MustCompile(`match`),
 				regexp.MustCompile(`match on the longer one`),
 			},
-			"test \x1b[31;1mmatch on the longer one\x1b[0m",
+			"test \x1b[31;1mmatch on the longer one\x1b[0;22m",
 		},
 	}
 
