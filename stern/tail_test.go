@@ -443,6 +443,86 @@ func TestHighlighIncludedString(t *testing.T) {
 	}
 }
 
+func TestIncludeAndHighlightMatchedString(t *testing.T) {
+	tests := []struct {
+		msg       string
+		include   []*regexp.Regexp
+		highlight []*regexp.Regexp
+		expected  string
+	}{
+		{
+			"test matched with highlight",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`test`),
+			},
+			[]*regexp.Regexp{
+				regexp.MustCompile(`highlight`),
+			},
+			"\x1b[31;1mtest\x1b[0m matched with \x1b[31;1mhighlight\x1b[0m",
+		},
+		{
+			"test not-matched",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`hoge`),
+			},
+			[]*regexp.Regexp{
+				regexp.MustCompile(`highlight`),
+			},
+			"test not-matched",
+		},
+		{
+			"test matched with highlight",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`not-matched`),
+				regexp.MustCompile(`matched`),
+			},
+			[]*regexp.Regexp{
+				regexp.MustCompile(`no-with-highlight`),
+				regexp.MustCompile(`with highlight`),
+			},
+			"test \x1b[31;1mmatched\x1b[0m \x1b[31;1mwith highlight\x1b[0m",
+		},
+		{
+			"test multiple matched with many highlight",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`multiple`),
+				regexp.MustCompile(`matched`),
+			},
+			[]*regexp.Regexp{
+				regexp.MustCompile(`many`),
+				regexp.MustCompile(`highlight`),
+			},
+			"test \x1b[31;1mmultiple\x1b[0m \x1b[31;1mmatched\x1b[0m with \x1b[31;1mmany\x1b[0m \x1b[31;1mhighlight\x1b[0m",
+		},
+		{
+			"test match on the longer one",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`match`),
+				regexp.MustCompile(`match on the longer one`),
+			},
+			[]*regexp.Regexp{
+				regexp.MustCompile(`match`),
+				regexp.MustCompile(`match on the longer one`),
+			},
+			"test \x1b[31;1mmatch on the longer one\x1b[0m",
+		},
+	}
+
+	orig := color.NoColor
+	color.NoColor = false
+	defer func() {
+		color.NoColor = orig
+	}()
+
+	for i, tt := range tests {
+		o := &TailOptions{Include: tt.include, Highlight: tt.highlight}
+		actual := o.HighlightMatchedString(tt.msg)
+		if actual != tt.expected {
+			t.Errorf("%d: expected %q, but actual %q", i, tt.expected, actual)
+		}
+	}
+}
+
 func TestHighlightMatchedString(t *testing.T) {
 	tests := []struct {
 		msg       string

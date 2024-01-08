@@ -114,17 +114,15 @@ func (o TailOptions) IsInclude(msg string) bool {
 var colorHighlight = color.New(color.FgRed, color.Bold).SprintFunc()
 
 func (o TailOptions) HighlightMatchedString(msg string) string {
-	if len(o.Include) == 0 && len(o.Highlight) == 0 {
+	highlight := append(o.Include, o.Highlight...)
+	if len(highlight) == 0 {
 		return msg
 	}
 
 	if o.reHightlight == nil {
-		ss := make([]string, len(o.Include)+len(o.Highlight))
-		for i, rin := range o.Include {
-			ss[i] = rin.String()
-		}
-		for i, rhi := range o.Highlight {
-			ss[i] = rhi.String()
+		ss := make([]string, len(highlight))
+		for i, hl := range highlight {
+			ss[i] = hl.String()
 		}
 
 		// We expect a longer match
