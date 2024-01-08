@@ -459,6 +459,7 @@ func TestOptionsSternConfig(t *testing.T) {
 			ContainerStates:       []stern.ContainerState{stern.ALL_STATES},
 			Exclude:               nil,
 			Include:               nil,
+			Highlight:             nil,
 			InitContainers:        true,
 			EphemeralContainers:   true,
 			Since:                 48 * time.Hour,
@@ -503,6 +504,7 @@ func TestOptionsSternConfig(t *testing.T) {
 				o.containerStates = []string{"running", "terminated"}
 				o.exclude = []string{"ex1", "ex2"}
 				o.include = []string{"in1", "in2"}
+				o.highlight = []string{"hi1", "hi2"}
 				o.initContainers = false
 				o.ephemeralContainers = false
 				o.since = 1 * time.Hour
@@ -531,6 +533,7 @@ func TestOptionsSternConfig(t *testing.T) {
 				c.ContainerStates = []stern.ContainerState{stern.RUNNING, stern.TERMINATED}
 				c.Exclude = []*regexp.Regexp{re("ex1"), re("ex2")}
 				c.Include = []*regexp.Regexp{re("in1"), re("in2")}
+				c.Highlight = []*regexp.Regexp{re("hi1"), re("hi2")}
 				c.InitContainers = false
 				c.EphemeralContainers = false
 				c.Since = 1 * time.Hour
@@ -625,6 +628,7 @@ func TestOptionsSternConfig(t *testing.T) {
 				o.namespaces = nil
 				o.exclude = nil
 				o.include = nil
+				o.highlight = nil
 
 				return o
 			}(),
@@ -696,6 +700,17 @@ func TestOptionsSternConfig(t *testing.T) {
 			func() *options {
 				o := NewOptions(streams)
 				o.include = []string{"in1", "[invalid"}
+
+				return o
+			}(),
+			nil,
+			true,
+		},
+		{
+			"error highlight",
+			func() *options {
+				o := NewOptions(streams)
+				o.highlight = []string{"hi1", "[invalid"}
 
 				return o
 			}(),

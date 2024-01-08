@@ -63,6 +63,7 @@ type options struct {
 	namespaces          []string
 	exclude             []string
 	include             []string
+	highlight           []string
 	initContainers      bool
 	ephemeralContainers bool
 	allNamespaces       bool
@@ -216,6 +217,11 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		return nil, errors.Wrap(err, "failed to compile regular expression for inclusion filter")
 	}
 
+	highlight, err := compileREs(o.highlight)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compile regular expression for highlight filter")
+	}
+
 	containerStates := []stern.ContainerState{}
 	for _, containerStateStr := range makeUnique(o.containerStates) {
 		containerState, err := stern.NewContainerState(containerStateStr)
@@ -298,6 +304,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		ContainerStates:       containerStates,
 		Exclude:               exclude,
 		Include:               include,
+		Highlight:             highlight,
 		InitContainers:        o.initContainers,
 		EphemeralContainers:   o.ephemeralContainers,
 		Since:                 o.since,
@@ -391,6 +398,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringArrayVar(&o.excludePod, "exclude-pod", o.excludePod, "Pod name to exclude. (regular expression)")
 	fs.BoolVar(&o.noFollow, "no-follow", o.noFollow, "Exit when all logs have been shown.")
 	fs.StringArrayVarP(&o.include, "include", "i", o.include, "Log lines to include. (regular expression)")
+	fs.StringArrayVarP(&o.highlight, "highlight", "H", o.highlight, "Log lines to highlight. (regular expression)")
 	fs.BoolVar(&o.initContainers, "init-containers", o.initContainers, "Include or exclude init containers.")
 	fs.BoolVar(&o.ephemeralContainers, "ephemeral-containers", o.ephemeralContainers, "Include or exclude ephemeral containers.")
 	fs.StringSliceVarP(&o.namespaces, "namespace", "n", o.namespaces, "Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
