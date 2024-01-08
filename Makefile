@@ -5,9 +5,9 @@ build:
 	go build -o dist/stern .
 
 TOOLS_BIN_DIR := $(CURDIR)/hack/tools/bin
-GORELEASER_VERSION ?= v1.20.0
+GORELEASER_VERSION ?= v1.23.0
 GORELEASER := $(TOOLS_BIN_DIR)/goreleaser
-GOLANGCI_LINT_VERSION ?= v1.54.1
+GOLANGCI_LINT_VERSION ?= v1.55.2
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 VALIDATE_KREW_MAIFEST_VERSION ?= v0.4.4
 VALIDATE_KREW_MAIFEST := $(TOOLS_BIN_DIR)/validate-krew-manifest
@@ -58,15 +58,15 @@ validate-krew-manifest: $(VALIDATE_KREW_MAIFEST)
 
 .PHONY: dist
 dist: $(GORELEASER) $(GORELEASER_FILTER)
-	cat .goreleaser.yaml | $(GORELEASER_FILTER) -goos $(shell go env GOOS) -goarch $(shell go env GOARCH) | $(GORELEASER) release -f- --clean --skip-publish --snapshot
+	cat .goreleaser.yaml | $(GORELEASER_FILTER) -goos $(shell go env GOOS) -goarch $(shell go env GOARCH) | $(GORELEASER) release -f- --clean --skip=publish --snapshot
 
 .PHONY: dist-all
 dist-all: $(GORELEASER)
-	$(GORELEASER) release --clean --skip-publish --snapshot
+	$(GORELEASER) release --clean --skip=publish --snapshot
 
 .PHONY: release
 release: $(GORELEASER)
-	$(GORELEASER) release --clean --skip-validate
+	$(GORELEASER) release --clean --skip=validate
 
 .PHONY: clean
 clean: clean-tools clean-dist
