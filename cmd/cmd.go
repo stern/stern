@@ -86,6 +86,7 @@ type options struct {
 	node                string
 	configFilePath      string
 	showHiddenOptions   bool
+	stdin               bool
 
 	client       kubernetes.Interface
 	clientConfig clientcmd.ClientConfig
@@ -154,8 +155,8 @@ func (o *options) Complete(args []string) error {
 }
 
 func (o *options) Validate() error {
-	if !o.prompt && o.podQuery == "" && o.resource == "" && o.selector == "" && o.fieldSelector == "" {
-		return errors.New("One of pod-query, --selector, --field-selector or --prompt is required")
+	if !o.prompt && o.podQuery == "" && o.resource == "" && o.selector == "" && o.fieldSelector == "" && !o.stdin {
+		return errors.New("One of pod-query, --selector, --field-selector, --prompt or --stdin is required")
 	}
 	if o.selector != "" && o.resource != "" {
 		return errors.New("--selector and the <resource>/<name> query can not be set at the same time")
@@ -317,6 +318,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		Resource:              o.resource,
 		OnlyLogLines:          o.onlyLogLines,
 		MaxLogRequests:        maxLogRequests,
+		Stdin:                 o.stdin,
 
 		Out:    o.Out,
 		ErrOut: o.ErrOut,
@@ -419,6 +421,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&o.verbosity, "verbosity", o.verbosity, "Number of the log level verbosity")
 	fs.BoolVarP(&o.version, "version", "v", o.version, "Print the version and exit.")
 	fs.BoolVar(&o.showHiddenOptions, "show-hidden-options", o.showHiddenOptions, "Print a list of hidden options.")
+	fs.BoolVar(&o.stdin, "stdin", o.stdin, "Parse logs from stdin. All Kubernetes related flags are ignored when it is set.")
 
 	fs.Lookup("timestamps").NoOptDefVal = "default"
 }
