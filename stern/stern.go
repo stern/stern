@@ -17,6 +17,7 @@ package stern
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -46,6 +47,36 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		if len(namespaces) == 0 {
 			return errors.New("no namespace specified")
 		}
+	}
+
+	newTailOptions := func() *TailOptions {
+		return &TailOptions{
+			Timestamps:      config.Timestamps,
+			TimestampFormat: config.TimestampFormat,
+			Location:        config.Location,
+			SinceSeconds:    ptr.To[int64](int64(config.Since.Seconds())),
+			Exclude:         config.Exclude,
+			Include:         config.Include,
+			Highlight:       config.Highlight,
+			Namespace:       config.AllNamespaces || len(namespaces) > 1,
+			TailLines:       config.TailLines,
+			Follow:          config.Follow,
+			OnlyLogLines:    config.OnlyLogLines,
+		}
+	}
+	newTail := func(t *Target) *Tail {
+		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, newTailOptions())
+	}
+
+	if config.Stdin {
+		tail := NewFileTail(config.Template, "stdin", os.Stdin, config.Out, config.ErrOut, newTailOptions())
+		var eg errgroup.Group
+		eg.SetLimit(config.MaxLogRequests)
+		eg.Go(func() error {
+			defer tail.Close()
+			return tail.Start()
+		})
+		return eg.Wait()
 	}
 
 	var resource struct {
@@ -78,21 +109,6 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		ephemeralContainers:    config.EphemeralContainers,
 		containerStates:        config.ContainerStates,
 	})
-	newTail := func(t *Target) *Tail {
-		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
-			Timestamps:      config.Timestamps,
-			TimestampFormat: config.TimestampFormat,
-			Location:        config.Location,
-			SinceSeconds:    ptr.To[int64](int64(config.Since.Seconds())),
-			Exclude:         config.Exclude,
-			Include:         config.Include,
-			Highlight:       config.Highlight,
-			Namespace:       config.AllNamespaces || len(namespaces) > 1,
-			TailLines:       config.TailLines,
-			Follow:          config.Follow,
-			OnlyLogLines:    config.OnlyLogLines,
-		})
-	}
 
 	if !config.Follow {
 		var eg errgroup.Group
