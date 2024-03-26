@@ -14,54 +14,28 @@ import (
 type FileTail struct {
 	Options *TailOptions
 	tmpl    *template.Template
-	inName  string
 	in      io.Reader
 	out     io.Writer
 	errOut  io.Writer
 }
 
-func NewFileTail(tmpl *template.Template, inName string, in io.Reader, out, errOut io.Writer, options *TailOptions) *FileTail {
+// NewFileTail returns a new tail of the input reader
+func NewFileTail(tmpl *template.Template, in io.Reader, out, errOut io.Writer, options *TailOptions) *FileTail {
 	return &FileTail{
 		Options: options,
 		tmpl:    tmpl,
-		inName:  inName,
 		in:      in,
 		out:     out,
 		errOut:  errOut,
 	}
 }
 
-var fileColor *color.Color = color.New(color.FgYellow)
-
 // Start starts tailing
 func (t *FileTail) Start() error {
-	t.printStarting()
-
 	reader := bufio.NewReader(t.in)
 	err := t.ConsumeReader(reader)
 
 	return err
-}
-
-// Close stops tailing
-func (t *FileTail) Close() {
-	t.printStopping()
-}
-
-func (t *FileTail) printStarting() {
-	if !t.Options.OnlyLogLines {
-		g := color.New(color.FgHiGreen, color.Bold).SprintFunc()
-		y := fileColor.SprintFunc()
-		fmt.Fprintf(t.errOut, "%s › %s\n", g("+"), y(t.inName))
-	}
-}
-
-func (t *FileTail) printStopping() {
-	if !t.Options.OnlyLogLines {
-		r := color.New(color.FgHiRed, color.Bold).SprintFunc()
-		y := fileColor.SprintFunc()
-		fmt.Fprintf(t.errOut, "%s › %s\n", r("-"), y(t.inName))
-	}
 }
 
 // ConsumeReader reads the data from the reader and writes into the out

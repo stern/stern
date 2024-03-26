@@ -69,14 +69,8 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 	}
 
 	if config.Stdin {
-		tail := NewFileTail(config.Template, "stdin", os.Stdin, config.Out, config.ErrOut, newTailOptions())
-		var eg errgroup.Group
-		eg.SetLimit(config.MaxLogRequests)
-		eg.Go(func() error {
-			defer tail.Close()
-			return tail.Start()
-		})
-		return eg.Wait()
+		tail := NewFileTail(config.Template, os.Stdin, config.Out, config.ErrOut, newTailOptions())
+		return tail.Start()
 	}
 
 	var resource struct {
