@@ -50,6 +50,7 @@ type Config struct {
 	Resource              string
 	OnlyLogLines          bool
 	MaxLogRequests        int
+	Stdin                 bool
 
 	Out    io.Writer
 	ErrOut io.Writer
