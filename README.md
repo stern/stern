@@ -101,7 +101,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--tail`                    | `-1`                          | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.
  `--template`                |                               | Template to use for log lines, leave empty to use --output flag.
  `--template-file`, `-T`     |                               | Path to template to use for log lines, leave empty to use --output flag. It overrides --template option.
- `--timestamps`, `-t`        |                               | Print timestamps with the specified format. One of 'default' or 'short'. If specified but without value, 'default' is used.
+ `--timestamps`, `-t`        |                               | Print timestamps with the specified format. One of 'default' or 'short' in the form '--timestamps=format' ('=' cannot be omitted). If specified but without value, 'default' is used.
  `--timezone`                | `Local`                       | Set timestamps to specific timezone.
  `--verbosity`               | `0`                           | Number of the log level verbosity
  `--version`, `-v`           | `false`                       | Print the version and exit.
