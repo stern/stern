@@ -227,6 +227,11 @@ Show auth activity from 15min ago with timestamps
 stern auth -t --since 15m
 ```
 
+Show all logs of the last 5min by time, sorted by time
+```
+stern --since=5m --no-follow --only-log-lines -A -t . | sort -k4
+```
+
 Show auth activity with timestamps in specific timezone (default is your local timezone)
 ```
 stern auth -t --timezone Asia/Tokyo
