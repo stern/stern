@@ -1,3 +1,43 @@
+# v1.29.0
+
+## :zap: Notable Changes
+
+### A new `--stdin` flag for parsing logs from stdin
+
+A new `--stdin` flag has been added, allowing parsing logs from stdin. This flag is helpful when applying the same template to local logs.
+
+```
+stern --stdin --template \
+  '{{with $msg := .Message | tryParseJSON}}{{toTimestamp $msg.ts "01-02 15:04:05" "Asia/Tokyo"}} {{$msg.msg}}{{"\n"}}{{end}}' \
+  <etcd.log
+```
+
+Additionally, this feature helps test your template with arbitrary logs.
+
+```
+stern --stdin --template \
+  '{{with $msg := .Message | tryParseJSON}}{{levelColor $msg.level}} {{$msg.msg}}{{"\n"}}{{end}}' <<EOF
+{"level":"info","msg":"info message"}
+{"level":"error","msg":"error message"}
+EOF
+```
+
+### Add support for UNIX time with nanoseconds to template functions
+
+The following template functions now support UNIX time seconds with nanoseconds (e.g., `1136171056.02`).
+
+- `toRFC3339Nano`
+- `toTUC`
+- `toTimestamp`
+
+## Changes
+
+* Add support for UNIX time with nanoseconds to template functions ([#300](https://github.com/stern/stern/pull/300)) 0d580ff (Takashi Kusumi)
+* Clarify that '=' cannot be omitted in --timestamps ([#296](https://github.com/stern/stern/pull/296)) ac36420 (Takashi Kusumi)
+* Added example to README ([#295](https://github.com/stern/stern/pull/295)) c1649ca (Thomas Güttler)
+* Update dependencies for Kubernetes 1.30 ([#293](https://github.com/stern/stern/pull/293)) d82cc9f (Kazuki Suda)
+* Add `--stdin` for `stdin` log parsing ([#292](https://github.com/stern/stern/pull/292)) 53fc746 (Jimmie Högklint)
+
 # v1.28.0
 
 ## :zap: Notable Changes
