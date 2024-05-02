@@ -30,7 +30,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stern/stern/stern"
@@ -549,13 +548,13 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			return strings.TrimSuffix(string(b), "\n"), nil
 		},
 		"toRFC3339Nano": func(ts any) string {
-			return cast.ToTime(ts).Format(time.RFC3339Nano)
+			return toTime(ts).Format(time.RFC3339Nano)
 		},
 		"toUTC": func(ts any) time.Time {
-			return cast.ToTime(ts).UTC()
+			return toTime(ts).UTC()
 		},
 		"toTimestamp": func(ts any, layout string, optionalTZ ...string) (string, error) {
-			t, parseErr := cast.ToTimeE(ts)
+			t, parseErr := toTimeE(ts)
 			if parseErr != nil {
 				return "", parseErr
 			}
