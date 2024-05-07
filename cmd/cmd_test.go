@@ -920,3 +920,46 @@ func TestOptionsOverrideFlagSetDefaultFromConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestOptionsOverrideFlagSetDefaultFromConfigArray(t *testing.T) {
+	tests := []struct {
+		config string
+		want   []string
+	}{
+		{
+			config: "testdata/config-string.yaml",
+			want:   []string{"hello-world"},
+		},
+		{
+			config: "testdata/config-array0.yaml",
+			want:   []string{},
+		},
+		{
+			config: "testdata/config-array1.yaml",
+			want:   []string{"abcd"},
+		},
+		{
+			config: "testdata/config-array2.yaml",
+			want:   []string{"abcd", "efgh"},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.config, func(t *testing.T) {
+			o := NewOptions(genericclioptions.NewTestIOStreamsDiscard())
+			fs := pflag.NewFlagSet("", pflag.ExitOnError)
+			o.AddFlags(fs)
+			if err := fs.Parse([]string{"--config=" + tt.config}); err != nil {
+				t.Fatal(err)
+			}
+			if err := o.overrideFlagSetDefaultFromConfig(fs); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(tt.want, o.exclude) {
+				t.Errorf("expected %v, but got %v", tt.want, o.exclude)
+			}
+		})
+	}
+
+}

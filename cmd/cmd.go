@@ -377,6 +377,20 @@ func (o *options) overrideFlagSetDefaultFromConfig(fs *pflag.FlagSet) error {
 			continue
 		}
 
+		if valueSlice, ok := value.([]any); ok {
+			// the value is an array
+			if flagSlice, ok := flag.Value.(pflag.SliceValue); ok {
+				values := make([]string, len(valueSlice))
+				for i, v := range valueSlice {
+					values[i] = fmt.Sprint(v)
+				}
+				if err := flagSlice.Replace(values); err != nil {
+					return fmt.Errorf("invalid value %q for %q in the config file: %v", value, name, err)
+				}
+				continue
+			}
+		}
+
 		if err := flag.Value.Set(fmt.Sprint(value)); err != nil {
 			return fmt.Errorf("invalid value %q for %q in the config file: %v", value, name, err)
 		}
