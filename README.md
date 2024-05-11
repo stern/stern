@@ -78,6 +78,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--container`, `-c`         | `.*`                          | Container name when multiple containers in pod. (regular expression)
  `--container-state`         | `all`                         | Tail containers with state in running, waiting, terminated, or all. 'all' matches all container states. To specify multiple states, repeat this or set comma-separated value.
  `--context`                 |                               | The name of the kubeconfig context to use
+ `--diff-container`, `-d`    | `false`                       | Display different colors for different containers
  `--ephemeral-containers`    | `true`                        | Include or exclude ephemeral containers.
  `--exclude`, `-e`           | `[]`                          | Log lines to exclude. (regular expression)
  `--exclude-container`, `-E` | `[]`                          | Container name to exclude when multiple containers in pod. (regular expression)

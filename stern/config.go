@@ -51,6 +51,7 @@ type Config struct {
 	OnlyLogLines          bool
 	MaxLogRequests        int
 	Stdin                 bool
+	DiffContainer         bool
 
 	Out    io.Writer
 	ErrOut io.Writer

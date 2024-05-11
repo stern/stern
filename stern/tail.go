@@ -67,8 +67,8 @@ type ResumeRequest struct {
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
-func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podName, containerName string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions) *Tail {
-	podColor, containerColor := determineColor(podName)
+func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podName, containerName string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions, diffContainer bool) *Tail {
+	podColor, containerColor := determineColor(podName, containerName, diffContainer)
 
 	return &Tail{
 		clientset:      clientset,
@@ -96,13 +96,22 @@ var colorList = [][2]*color.Color{
 	{color.New(color.FgHiRed), color.New(color.FgRed)},
 }
 
-func determineColor(podName string) (podColor, containerColor *color.Color) {
-	hash := fnv.New32()
-	_, _ = hash.Write([]byte(podName))
-	idx := hash.Sum32() % uint32(len(colorList))
+func determineColor(podName, containerName string, diffContainer bool) (podColor, containerColor *color.Color) {
+	podHash := fnv.New32()
+	_, _ = podHash.Write([]byte(podName))
+	podIdx := podHash.Sum32() % uint32(len(colorList))
+	colors := colorList[podIdx]
 
-	colors := colorList[idx]
-	return colors[0], colors[1]
+	if diffContainer {
+		containerHash := fnv.New32()
+		_, _ = containerHash.Write([]byte(containerName))
+		containerIdx := containerHash.Sum32() % uint32(len(colorList))
+		containerColor = colorList[containerIdx][1]
+	} else {
+		containerColor = colors[1]
+	}
+
+	return colors[0], containerColor
 }
 
 // Start starts tailing

@@ -86,6 +86,7 @@ type options struct {
 	configFilePath      string
 	showHiddenOptions   bool
 	stdin               bool
+	diffContainer       bool
 
 	client       kubernetes.Interface
 	clientConfig clientcmd.ClientConfig
@@ -318,6 +319,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		OnlyLogLines:          o.onlyLogLines,
 		MaxLogRequests:        maxLogRequests,
 		Stdin:                 o.stdin,
+		DiffContainer:         o.diffContainer,
 
 		Out:    o.Out,
 		ErrOut: o.ErrOut,
@@ -435,6 +437,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&o.version, "version", "v", o.version, "Print the version and exit.")
 	fs.BoolVar(&o.showHiddenOptions, "show-hidden-options", o.showHiddenOptions, "Print a list of hidden options.")
 	fs.BoolVar(&o.stdin, "stdin", o.stdin, "Parse logs from stdin. All Kubernetes related flags are ignored when it is set.")
+	fs.BoolVarP(&o.diffContainer, "diff-container", "d", o.diffContainer, "Display different colors for different containers.")
 
 	fs.Lookup("timestamps").NoOptDefVal = "default"
 }
