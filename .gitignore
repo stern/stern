@@ -1,3 +1,5 @@
 /dist
 /hack/tools/bin
 vendor
+.idea
+.vscode

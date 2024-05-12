@@ -13,8 +13,10 @@ import (
 
 func TestDetermineColor(t *testing.T) {
 	podName := "stern"
-	podColor1, containerColor1 := determineColor(podName)
-	podColor2, containerColor2 := determineColor(podName)
+	containerName := "foo"
+	diffContainer := false
+	podColor1, containerColor1 := determineColor(podName, containerName, diffContainer)
+	podColor2, containerColor2 := determineColor(podName, containerName, diffContainer)
 
 	if podColor1 != podColor2 {
 		t.Errorf("expected color for pod to be the same between invocations but was %v and %v",
@@ -23,6 +25,24 @@ func TestDetermineColor(t *testing.T) {
 	if containerColor1 != containerColor2 {
 		t.Errorf("expected color for container to be the same between invocations but was %v and %v",
 			containerColor1, containerColor2)
+	}
+}
+
+func TestDetermineColorDiffContainer(t *testing.T) {
+	podName := "stern"
+	containerName1 := "foo"
+	containerName2 := "bar"
+	diffContainer := true
+	podColor1, containerColor1 := determineColor(podName, containerName1, diffContainer)
+	podColor2, containerColor2 := determineColor(podName, containerName2, diffContainer)
+
+	if podColor1 != podColor2 {
+		t.Errorf("expected color for pod to be the same between invocations but was %v and %v",
+			podColor1, podColor2)
+	}
+	if containerColor1 == containerColor2 {
+		t.Errorf("expected color for container to be different between invocations but was the same: %v",
+			containerColor1)
 	}
 }
 
@@ -83,7 +103,7 @@ line 4 (my-node/my-namespace/my-pod/my-container)
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			out := new(bytes.Buffer)
-			tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", tmpl, out, io.Discard, &TailOptions{})
+			tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", tmpl, out, io.Discard, &TailOptions{}, false)
 			tail.resumeRequest = tt.resumeReq
 			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(logLines)}); err != nil {
 				t.Fatalf("%d: unexpected err %v", i, err)
@@ -142,7 +162,7 @@ func TestPrintStarting(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	for i, tt := range tests {
 		errOut := new(bytes.Buffer)
-		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", nil, io.Discard, errOut, tt.options)
+		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", nil, io.Discard, errOut, tt.options, false)
 		tail.printStarting()
 
 		if !bytes.Equal(tt.expected, errOut.Bytes()) {
@@ -184,7 +204,7 @@ func TestPrintStopping(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	for i, tt := range tests {
 		errOut := new(bytes.Buffer)
-		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", nil, io.Discard, errOut, tt.options)
+		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", nil, io.Discard, errOut, tt.options, false)
 		tail.printStopping()
 
 		if !bytes.Equal(tt.expected, errOut.Bytes()) {
