@@ -97,21 +97,17 @@ var colorList = [][2]*color.Color{
 }
 
 func determineColor(podName, containerName string, diffContainer bool) (podColor, containerColor *color.Color) {
-	podHash := fnv.New32()
-	_, _ = podHash.Write([]byte(podName))
-	podIdx := podHash.Sum32() % uint32(len(colorList))
-	colors := colorList[podIdx]
-
+	colors := colorList[colorIndex(podName)]
 	if diffContainer {
-		containerHash := fnv.New32()
-		_, _ = containerHash.Write([]byte(containerName))
-		containerIdx := containerHash.Sum32() % uint32(len(colorList))
-		containerColor = colorList[containerIdx][1]
-	} else {
-		containerColor = colors[1]
+		return colors[0], colorList[colorIndex(containerName)][1]
 	}
+	return colors[0], colors[1]
+}
 
-	return colors[0], containerColor
+func colorIndex(name string) uint32 {
+	hash := fnv.New32()
+	_, _ = hash.Write([]byte(name))
+	return hash.Sum32() % uint32(len(colorList))
 }
 
 // Start starts tailing
