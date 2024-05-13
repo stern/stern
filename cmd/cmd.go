@@ -32,7 +32,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/stern/stern/stern"
+	"github.com/henriknelson/stern/stern"
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"

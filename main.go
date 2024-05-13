@@ -18,7 +18,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/stern/stern/cmd"
+	"github.com/henriknelson/stern/cmd"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 

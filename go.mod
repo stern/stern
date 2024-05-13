@@ -1,4 +1,4 @@
-module github.com/stern/stern
+module github.com/henriknelson/stern
 
 go 1.22.0
 

@@ -4,9 +4,9 @@ builds:
   ldflags:
   - -s
   - -w
-  - -X github.com/stern/stern/cmd.version={{.Version}}
-  - -X github.com/stern/stern/cmd.commit={{.Commit}}
-  - -X github.com/stern/stern/cmd.date={{.Date}}
+  - -X github.com/henriknelson/stern/cmd.version={{.Version}}
+  - -X github.com/henriknelson/stern/cmd.commit={{.Commit}}
+  - -X github.com/henriknelson/stern/cmd.date={{.Date}}
   goos:
   - linux
   - windows
@@ -29,13 +29,13 @@ changelog:
   sort: asc
 dockers:
 - image_templates:
-  - "ghcr.io/stern/stern:latest"
-  - "ghcr.io/stern/stern:{{ .Major }}"
-  - "ghcr.io/stern/stern:{{ .Major }}.{{ .Minor }}"
-  - "ghcr.io/stern/stern:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+  - "ghcr.io/henriknelson/stern:latest"
+  - "ghcr.io/henriknelson/stern:{{ .Major }}"
+  - "ghcr.io/henriknelson/stern:{{ .Major }}.{{ .Minor }}"
+  - "ghcr.io/henriknelson/stern:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
 krews:
 - skip_upload: true
-  homepage: https://github.com/stern/stern
+  homepage: https://github.com/henriknelson/stern
   description: |
     Stern allows you to `tail` multiple pods on Kubernetes and multiple containers
     within the pod. Each result is color coded for quicker debugging.

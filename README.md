@@ -1,4 +1,4 @@
-[![Build](https://github.com/stern/stern/workflows/CI/badge.svg)](https://github.com/stern/stern/actions?query=workflow%3ACI+branch%3Amaster)
+[![Build](https://github.com/henriknelson/stern/workflows/CI/badge.svg)](https://github.com/henriknelson/stern/actions?query=workflow%3ACI+branch%3Amaster)
 # stern
 
 *Fork of discontinued [wercker/stern](https://github.com/wercker/stern)*
@@ -20,12 +20,12 @@ limit what containers to show. By default all containers are listened to.
 
 ### Download binary
 
-Download a [binary release](https://github.com/stern/stern/releases)
+Download a [binary release](https://github.com/henriknelson/stern/releases)
 
 ### Build from source
 
 ```
-go install github.com/stern/stern@latest
+go install github.com/henriknelson/stern@latest
 ```
 
 ### asdf (Linux/macOS)
@@ -381,13 +381,13 @@ stern --completion=fish >~/.config/fish/completions/stern.fish
 You can also use stern using a container:
 
 ```
-docker run ghcr.io/stern/stern --version
+docker run ghcr.io/henriknelson/stern --version
 ```
 
 If you are using a minikube cluster, you need to run a container as follows:
 
 ```
-docker run --rm -v "$HOME/.minikube:$HOME/.minikube" -v "$HOME/.kube:/$HOME/.kube" -e KUBECONFIG="$HOME/.kube/config" ghcr.io/stern/stern .
+docker run --rm -v "$HOME/.minikube:$HOME/.minikube" -v "$HOME/.kube:/$HOME/.kube" -e KUBECONFIG="$HOME/.kube/config" ghcr.io/henriknelson/stern .
 ```
 
 You can find image tags in https://github.com/orgs/stern/packages/container/package/stern.
