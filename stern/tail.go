@@ -87,15 +87,6 @@ func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podNam
 	}
 }
 
-var colorList = [][2]*color.Color{
-	{color.New(color.FgHiCyan), color.New(color.FgCyan)},
-	{color.New(color.FgHiGreen), color.New(color.FgGreen)},
-	{color.New(color.FgHiMagenta), color.New(color.FgMagenta)},
-	{color.New(color.FgHiYellow), color.New(color.FgYellow)},
-	{color.New(color.FgHiBlue), color.New(color.FgBlue)},
-	{color.New(color.FgHiRed), color.New(color.FgRed)},
-}
-
 func determineColor(podName, containerName string, diffContainer bool) (podColor, containerColor *color.Color) {
 	colors := colorList[colorIndex(podName)]
 	if diffContainer {
