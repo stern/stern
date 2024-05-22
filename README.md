@@ -76,6 +76,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--completion`              |                               | Output stern command-line completion code for the specified shell. Can be 'bash', 'zsh' or 'fish'.
  `--config`                  | `~/.config/stern/config.yaml` | Path to the stern config file
  `--container`, `-c`         | `.*`                          | Container name when multiple containers in pod. (regular expression)
+ `--container-colors`        |                               | Specifies the colors used to highlight container names. Use the same format as --pod-colors. Defaults to the values of --pod-colors if omitted, and must match its length.
  `--container-state`         | `all`                         | Tail containers with state in running, waiting, terminated, or all. 'all' matches all container states. To specify multiple states, repeat this or set comma-separated value.
  `--context`                 |                               | The name of the kubeconfig context to use
  `--diff-container`, `-d`    | `false`                       | Display different colors for different containers.
@@ -94,6 +95,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--node`                    |                               | Node name to filter on.
  `--only-log-lines`          | `false`                       | Print only log lines
  `--output`, `-o`            | `default`                     | Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]
+ `--pod-colors`              |                               | Specifies the colors used to highlight pod names. Provide colors as a comma-separated list using SGR (Select Graphic Rendition) sequences, e.g., "91,92,93,94,95,96".
  `--prompt`, `-p`            | `false`                       | Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.
  `--selector`, `-l`          |                               | Selector (label query) to filter on. If present, default to ".*" for the pod-query.
  `--show-hidden-options`     | `false`                       | Print a list of hidden options.
@@ -196,6 +198,28 @@ The behavior and the default are different depending on the presence of the `--n
 | not specified | 50      | exits with an error when if it reaches the concurrent limit |
 
 The combination of `--max-log-requests 1` and `--no-follow` will be helpful if you want to show logs in order.
+
+### Customize highlight colors
+You can configure highlight colors for pods and containers in [the config file](#config-file) using a comma-separated list of [SGR (Select Graphic Rendition) sequences](https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters), as shown below. If you omit `container-colors`, the pod colors will be used as container colors as well.
+
+```yaml
+# Green, Yellow, Blue, Magenta, Cyan, White
+pod-colors: "32,33,34,35,36,37"
+
+# Colors with underline (4)
+# If empty, the pod colors will be used as container colors
+container-colors: "32;4,33;4,34;4,35;4,36;4,37;4"
+```
+
+This format enables the use of various attributes, such as underline, background colors, 8-bit colors, and 24-bit colors, if your terminal supports them.
+
+The equivalent flags `--pod-colors` and `--container-colors` are also available. The following command applies [24-bit colors](https://en.wikipedia.org/wiki/ANSI_escape_code#24-bit) using the `--pod-colors` flag.
+
+```bash
+# Monokai theme
+podColors="38;2;255;97;136,38;2;169;220;118,38;2;255;216;102,38;2;120;220;232,38;2;171;157;242"
+stern --pod-colors "$podColors" deploy/app
+```
 
 ## Examples:
 Tail all logs from all namespaces

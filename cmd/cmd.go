@@ -87,6 +87,8 @@ type options struct {
 	showHiddenOptions   bool
 	stdin               bool
 	diffContainer       bool
+	podColors           []string
+	containerColors     []string
 
 	client       kubernetes.Interface
 	clientConfig clientcmd.ClientConfig
@@ -167,6 +169,9 @@ func (o *options) Validate() error {
 
 func (o *options) Run(cmd *cobra.Command) error {
 	if err := o.setVerbosity(); err != nil {
+		return err
+	}
+	if err := o.setColorList(); err != nil {
 		return err
 	}
 
@@ -339,6 +344,13 @@ func (o *options) setVerbosity() error {
 	return nil
 }
 
+func (o *options) setColorList() error {
+	if len(o.podColors) > 0 || len(o.containerColors) > 0 {
+		return stern.SetColorList(o.podColors, o.containerColors)
+	}
+	return nil
+}
+
 // overrideFlagSetDefaultFromConfig overrides the default value of the flagSets
 // from the config file
 func (o *options) overrideFlagSetDefaultFromConfig(fs *pflag.FlagSet) error {
@@ -438,6 +450,8 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&o.showHiddenOptions, "show-hidden-options", o.showHiddenOptions, "Print a list of hidden options.")
 	fs.BoolVar(&o.stdin, "stdin", o.stdin, "Parse logs from stdin. All Kubernetes related flags are ignored when it is set.")
 	fs.BoolVarP(&o.diffContainer, "diff-container", "d", o.diffContainer, "Display different colors for different containers.")
+	fs.StringSliceVar(&o.podColors, "pod-colors", o.podColors, "Specifies the colors used to highlight pod names. Provide colors as a comma-separated list using SGR (Select Graphic Rendition) sequences, e.g., \"91,92,93,94,95,96\".")
+	fs.StringSliceVar(&o.containerColors, "container-colors", o.containerColors, "Specifies the colors used to highlight container names. Use the same format as --pod-colors. Defaults to the values of --pod-colors if omitted, and must match its length.")
 
 	fs.Lookup("timestamps").NoOptDefVal = "default"
 }
