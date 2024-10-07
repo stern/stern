@@ -168,9 +168,6 @@ func (o *options) Validate() error {
 }
 
 func (o *options) Run(cmd *cobra.Command) error {
-	if err := o.setVerbosity(); err != nil {
-		return err
-	}
 	if err := o.setColorList(); err != nil {
 		return err
 	}
@@ -673,6 +670,11 @@ func NewSternCmd(stream genericclioptions.IOStreams) (*cobra.Command, error) {
 		Use:   "stern pod-query",
 		Short: "Tail multiple pods and containers from Kubernetes",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// klog's v flag should be initialized before creating a k8s client
+			if err := o.setVerbosity(); err != nil {
+				return err
+			}
+
 			// Output version information and exit
 			if o.version {
 				outputVersionInfo(o.Out)
