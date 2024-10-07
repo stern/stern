@@ -1,3 +1,9 @@
+# v1.31.0
+
+## Changes
+* Fix --verbosity flag to show missing logs ([#317](https://github.com/stern/stern/pull/317)) c2b4410 (Takashi Kusumi)
+* Update dependencies for Kubernetes 1.31 ([#315](https://github.com/stern/stern/pull/315)) a4fdcc9 (Takashi Kusumi)
+
 # v1.30.0
 
 ## :zap: Notable Changes
@@ -25,7 +31,7 @@ You can also enable this feature in [the config file](https://github.com/stern/s
 diff-container: true
 ```
 
-### Changes
+## Changes
 * Add support to configure colors for pods and containers ([#306](https://github.com/stern/stern/pull/306)) [f4b2edc](https://github.com/stern/stern/commit/f4b2edc) (Takashi Kusumi)
 * Display different colors for different containers ([#305](https://github.com/stern/stern/pull/305)) [d1b5d74](https://github.com/stern/stern/commit/d1b5d74) (Se7en)
 * Support an array value in the config file ([#303](https://github.com/stern/stern/pull/303)) [6afabde](https://github.com/stern/stern/commit/6afabde) (Takashi Kusumi)
