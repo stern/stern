@@ -20,6 +20,7 @@ import (
 	"text/template"
 	"time"
 
+	//  "github.com/henriknelson/verisure"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -52,6 +53,9 @@ type Config struct {
 	MaxLogRequests        int
 	Stdin                 bool
 	DiffContainer         bool
+	Level                 string
+	Output                string
+	Filter                []*regexp.Regexp
 
 	Out    io.Writer
 	ErrOut io.Writer

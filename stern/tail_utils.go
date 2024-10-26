@@ -9,6 +9,7 @@ import (
 
 	"github.com/fatih/color"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//  "github.com/henriknelson/verisure"
 )
 
 // Log is the object which will be used together with the template to generate
@@ -47,9 +48,15 @@ type TailOptions struct {
 	TailLines    *int64
 	Follow       bool
 	OnlyLogLines bool
+	Filter       []*regexp.Regexp
 
+	Output string
+	Level  string
 	// regexp for highlighting the matched string
 	reHightlight *regexp.Regexp
+
+	// regexp for highlighting the filtered string
+	reFilter *regexp.Regexp
 }
 
 func (o TailOptions) IsExclude(msg string) bool {
@@ -74,6 +81,37 @@ func (o TailOptions) IsInclude(msg string) bool {
 	}
 
 	return false
+}
+
+func (o TailOptions) ContainsFilter(logItemProperty string) (bool, string) {
+	filter := append(o.Include, o.Filter...)
+	if len(filter) == 0 {
+		return true, logItemProperty
+	}
+
+	if o.reFilter == nil {
+		ss := make([]string, len(filter))
+		for i, fil := range filter {
+			ss[i] = fil.String()
+		}
+
+		// We expect a longer match
+		sort.Slice(ss, func(i, j int) bool {
+			return len(ss[i]) > len(ss[j])
+		})
+
+		o.reFilter = regexp.MustCompile("(?i)(" + strings.Join(ss, "|") + ")")
+	}
+
+	var msg string
+	if o.reFilter.MatchString(logItemProperty) {
+		msg = o.reFilter.ReplaceAllStringFunc(logItemProperty, func(part string) string {
+			return colorHighlight(part)
+		})
+		return true, msg
+	} else {
+		return false, logItemProperty
+	}
 }
 
 var colorHighlight = color.New(color.FgRed, color.Bold).SprintFunc()
@@ -116,3 +154,34 @@ func (o TailOptions) UpdateTimezoneAndFormat(timestamp string) (string, error) {
 	}
 	return t.In(o.Location).Format(format), nil
 }
+
+var (
+	Severity_name = map[uint8]string{
+		1: "informational",
+		2: "warning",
+		3: "debug",
+		4: "error",
+	}
+
+	Severity_value = map[string]uint8{
+		"informational": 1,
+		"warning":       2,
+		"debug":         3,
+		"error":         4,
+	}
+)
+
+/*
+func (s verisure.Severity) String() string {
+	return Severity_name[uint8(strings.ToLower(s))]
+}
+
+func ParseSeverity(s string) (verisure.Severity, error) {
+	s = strings.TrimSpace(strings.ToLower(s))
+	value, ok := Severity_value[s]
+	if !ok {
+		return Severity(0), fmt.Errorf("%q is not a valid severity", s)
+	}
+	return Severity(value), nil
+}
+*/

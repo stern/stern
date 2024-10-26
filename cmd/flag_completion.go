@@ -21,9 +21,9 @@ import (
 	"io"
 	"strings"
 
+	"github.com/henriknelson/stern/stern"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/henriknelson/stern/stern"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -32,7 +32,7 @@ var flagChoices = map[string][]string{
 	"color":           {"always", "never", "auto"},
 	"completion":      {"bash", "zsh", "fish"},
 	"container-state": {stern.RUNNING, stern.WAITING, stern.TERMINATED, stern.ALL_STATES},
-	"output":          {"default", "raw", "json", "extjson", "ppextjson"},
+	"output":          {"default", "raw", "json", "extjson", "ppextjson", "verisure"},
 	"timestamps":      {"default", "short"},
 }
 

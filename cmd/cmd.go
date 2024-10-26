@@ -28,11 +28,13 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/henriknelson/stern/stern"
+	"github.com/henriknelson/verisure"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/henriknelson/stern/stern"
+
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -62,6 +64,7 @@ type options struct {
 	namespaces          []string
 	exclude             []string
 	include             []string
+	level               string
 	highlight           []string
 	initContainers      bool
 	ephemeralContainers bool
@@ -89,6 +92,7 @@ type options struct {
 	diffContainer       bool
 	podColors           []string
 	containerColors     []string
+	filter              []string
 
 	client       kubernetes.Interface
 	clientConfig clientcmd.ClientConfig
@@ -103,12 +107,13 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 		configFlags: configFlags,
 		IOStreams:   streams,
 
-		color:               "auto",
+		color:               "always",
 		container:           ".*",
 		containerStates:     []string{stern.ALL_STATES},
 		initContainers:      true,
 		ephemeralContainers: true,
-		output:              "default",
+		output:              "verisure",
+		level:               verisure.ALL_LEVELS,
 		since:               48 * time.Hour,
 		tail:                -1,
 		template:            "",
@@ -225,6 +230,11 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		return nil, errors.Wrap(err, "failed to compile regular expression for highlight filter")
 	}
 
+	filter, err := compileREs(o.filter)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compile regular expression for filter")
+	}
+
 	containerStates := []stern.ContainerState{}
 	for _, containerStateStr := range makeUnique(o.containerStates) {
 		containerState, err := stern.NewContainerState(containerStateStr)
@@ -269,6 +279,10 @@ func (o *options) sternConfig() (*stern.Config, error) {
 
 	namespaces := makeUnique(o.namespaces)
 
+	level := o.level
+
+	output := o.output
+
 	var timestampFormat string
 	switch o.timestamps {
 	case "default":
@@ -307,6 +321,8 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		ContainerStates:       containerStates,
 		Exclude:               exclude,
 		Include:               include,
+		Level:                 level,
+		Output:                output,
 		Highlight:             highlight,
 		InitContainers:        o.initContainers,
 		EphemeralContainers:   o.ephemeralContainers,
@@ -322,6 +338,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		MaxLogRequests:        maxLogRequests,
 		Stdin:                 o.stdin,
 		DiffContainer:         o.diffContainer,
+		Filter:                filter,
 
 		Out:    o.Out,
 		ErrOut: o.ErrOut,
@@ -424,13 +441,14 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringArrayVar(&o.excludePod, "exclude-pod", o.excludePod, "Pod name to exclude. (regular expression)")
 	fs.BoolVar(&o.noFollow, "no-follow", o.noFollow, "Exit when all logs have been shown.")
 	fs.StringArrayVarP(&o.include, "include", "i", o.include, "Log lines to include. (regular expression)")
+	fs.StringVarP(&o.level, "level", "L", o.level, "Specify severity level to show. Currently support: [all, info, warn, debug, error]")
 	fs.StringArrayVarP(&o.highlight, "highlight", "H", o.highlight, "Log lines to highlight. (regular expression)")
 	fs.BoolVar(&o.initContainers, "init-containers", o.initContainers, "Include or exclude init containers.")
 	fs.BoolVar(&o.ephemeralContainers, "ephemeral-containers", o.ephemeralContainers, "Include or exclude ephemeral containers.")
 	fs.StringSliceVarP(&o.namespaces, "namespace", "n", o.namespaces, "Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
 	fs.StringVar(&o.node, "node", o.node, "Node name to filter on.")
 	fs.IntVar(&o.maxLogRequests, "max-log-requests", o.maxLogRequests, "Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow")
-	fs.StringVarP(&o.output, "output", "o", o.output, "Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]")
+	fs.StringVarP(&o.output, "output", "o", o.output, "Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson, verisure]")
 	fs.BoolVarP(&o.prompt, "prompt", "p", o.prompt, "Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.")
 	fs.StringVarP(&o.selector, "selector", "l", o.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
 	fs.StringVar(&o.fieldSelector, "field-selector", o.fieldSelector, "Selector (field query) to filter on. If present, default to \".*\" for the pod-query.")
@@ -449,6 +467,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&o.diffContainer, "diff-container", "d", o.diffContainer, "Display different colors for different containers.")
 	fs.StringSliceVar(&o.podColors, "pod-colors", o.podColors, "Specifies the colors used to highlight pod names. Provide colors as a comma-separated list using SGR (Select Graphic Rendition) sequences, e.g., \"91,92,93,94,95,96\".")
 	fs.StringSliceVar(&o.containerColors, "container-colors", o.containerColors, "Specifies the colors used to highlight container names. Use the same format as --pod-colors. Defaults to the values of --pod-colors if omitted, and must match its length.")
+	fs.StringArrayVarP(&o.filter, "filter", "F", o.filter, "Includes (and highlights) log items containing the provided regular expression")
 
 	fs.Lookup("timestamps").NoOptDefVal = "default"
 }
@@ -513,8 +532,10 @@ func (o *options) generateTemplate() (*template.Template, error) {
 				t = fmt.Sprintf("  \"namespace\": \"{{color .PodColor .Namespace}}\",\n%s", t)
 			}
 			t = fmt.Sprintf("{\n%s\n}", t)
+		case "verisure":
+			t = "{{ color .ContainerColor .ContainerName }}/{{ color .PodColor .PodName }}:"
 		default:
-			return nil, errors.New("output should be one of 'default', 'raw', 'json', 'extjson', and 'ppextjson'")
+			return nil, errors.New("output should be one of 'default', 'raw', 'json', 'extjson', 'ppextjson' and 'verisure'")
 		}
 		t += "\n"
 	}
@@ -581,6 +602,17 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		"toUTC": func(ts any) time.Time {
 			return toTime(ts).UTC()
 		},
+		"toISO": func(ts string, tz string) string {
+			loc, loadErr := time.LoadLocation(tz)
+			if loadErr != nil {
+				return ts
+			}
+			t, parseErr := parseISOString(ts, time.UTC)
+			if parseErr != nil {
+				return ts
+			}
+			return t.In(loc).Format("2006-01-02T15:04:05.000 -07:00")
+		},
 		"toTimestamp": func(ts any, layout string, optionalTZ ...string) (string, error) {
 			t, parseErr := toTimeE(ts)
 			if parseErr != nil {
@@ -616,6 +648,8 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			case "debug":
 				levelColor = color.New(color.FgMagenta)
 			case "info":
+				levelColor = color.New(color.FgBlue)
+			case "informational":
 				levelColor = color.New(color.FgBlue)
 			case "warn":
 				levelColor = color.New(color.FgYellow)

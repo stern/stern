@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"github.com/nav-inc/datetime"
 	"github.com/spf13/cast"
 )
 
@@ -26,6 +26,14 @@ func toTimeE(a any) (time.Time, error) {
 		}
 	}
 	return cast.ToTimeE(a)
+}
+
+func parseISOString(isoStr string, loc *time.Location) (time.Time, error) {
+	t, err :=  datetime.Parse(isoStr, loc);
+	if err != nil {
+		return time.Time{}, err
+	}
+  	return t, nil
 }
 
 func parseUnixTimeNanoString(num string) (time.Time, bool) {

@@ -29,6 +29,8 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 
+	//"github.com/henriknelson/verisure"
+
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/ptr"
 
@@ -49,6 +51,14 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		}
 	}
 
+	//fmt.Printf("%+v\n", config)
+
+	/*var level verisure.Severity
+	  level, err := verisure.NewSeverity(config.Level)
+	  if err != nil {
+	    level := verisure.ALL_LEVELS
+	  }*/
+
 	newTailOptions := func() *TailOptions {
 		return &TailOptions{
 			Timestamps:      config.Timestamps,
@@ -59,9 +69,12 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 			Include:         config.Include,
 			Highlight:       config.Highlight,
 			Namespace:       config.AllNamespaces || len(namespaces) > 1,
+			Level:           config.Level,
+			Output:          config.Output,
 			TailLines:       config.TailLines,
 			Follow:          config.Follow,
 			OnlyLogLines:    config.OnlyLogLines,
+			Filter:          config.Filter,
 		}
 	}
 	newTail := func(t *Target) *Tail {

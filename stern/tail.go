@@ -18,16 +18,20 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+  //"runtime/debug"
+	"github.com/fatih/color"
+	"github.com/henriknelson/verisure"
 	"hash/fnv"
 	"io"
 	"strings"
 	"text/template"
 	"time"
 	"unicode"
+	//  "github.com/gookit/goutil/dump"
 
-	"github.com/fatih/color"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -144,7 +148,7 @@ func (t *Tail) Resume(ctx context.Context, resumeRequest *ResumeRequest) error {
 
 // Close stops tailing
 func (t *Tail) Close() {
-	t.printStopping()
+  t.printStopping()
 
 	close(t.closed)
 }
@@ -163,6 +167,7 @@ func (t *Tail) printStarting() {
 }
 
 func (t *Tail) printStopping() {
+  //debug.PrintStack()
 	if !t.Options.OnlyLogLines {
 		r := color.New(color.FgHiRed, color.Bold).SprintFunc()
 		p := t.podColor.SprintFunc()
@@ -188,7 +193,11 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper)
 	for {
 		line, err := r.ReadBytes('\n')
 		if len(line) != 0 {
-			t.consumeLine(strings.TrimSuffix(string(line), "\n"))
+			if t.Options.Output == "verisure" {
+				t.consumeVerisureLine(strings.TrimSuffix(string(line), "\n"))
+			} else {
+				t.consumeLine(strings.TrimSuffix(string(line), "\n"))
+			}
 		}
 
 		if err != nil {
@@ -202,6 +211,7 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper)
 
 // Print prints a color coded log message with the pod and container names
 func (t *Tail) Print(msg string) {
+
 	vm := Log{
 		Message:        msg,
 		NodeName:       t.NodeName,
@@ -219,6 +229,7 @@ func (t *Tail) Print(msg string) {
 	}
 
 	fmt.Fprint(t.out, buf.String())
+
 }
 
 func (t *Tail) GetResumeRequest() *ResumeRequest {
@@ -229,6 +240,7 @@ func (t *Tail) GetResumeRequest() *ResumeRequest {
 }
 
 func (t *Tail) consumeLine(line string) {
+
 	rfc3339Nano, content, err := splitLogLine(line)
 	if err != nil {
 		t.Print(fmt.Sprintf("[%v] %s", err, line))
@@ -259,6 +271,95 @@ func (t *Tail) consumeLine(line string) {
 	}
 
 	t.Print(msg)
+}
+
+func (t *Tail) consumeVerisureLine(line string) {
+
+	rfc3339Nano, content, err := splitLogLine(line)
+	if err != nil {
+		t.Print(fmt.Sprintf("[%v] %s", err, line))
+		return
+	}
+
+	// PodLogOptions.SinceTime is RFC3339, not RFC3339Nano.
+	// We convert it to RFC3339 to skip the lines seen during this timestamp when resuming.
+	rfc3339 := removeSubsecond(rfc3339Nano)
+	t.rememberLastTimestamp(rfc3339)
+	if t.resumeRequest.shouldSkip(rfc3339) {
+		return
+	}
+
+  if ! json.Valid([]byte(content)) {
+    t.Print("")
+    fmt.Println(content)
+    return
+  }
+
+    var logItem verisure.LogItem
+  	err = json.Unmarshal([]byte(content), &logItem)
+    if err != nil {
+  		t.Print(fmt.Sprintf("[%v] %s", err, line))
+  		return
+  	}
+
+
+  	if t.Options.IsExclude(logItem.Message) || !t.Options.IsInclude(logItem.Message) {
+  		return
+  	}
+
+  	msg := t.Options.HighlightMatchedString(logItem.Message)
+
+  	var filtered bool
+  	filtered = false
+
+  	if match, newMessage := t.Options.ContainsFilter(logItem.Message); match {
+      logItem.Message = newMessage
+  		filtered = true
+  	}
+
+  	if logItem.Source != nil {
+  		for key, value := range logItem.Source {
+  			if match, newValue := t.Options.ContainsFilter(fmt.Sprintf("%v", value)); match {
+  				logItem.Source[key] = newValue
+  				filtered = true
+  			}
+  		}
+  	}
+
+  	if logItem.Extended != nil {
+  		for key, value := range logItem.Extended {
+  			if match, newValue := t.Options.ContainsFilter(fmt.Sprintf("%v", value)); match {
+  				logItem.Extended[key] = newValue
+  				filtered = true
+  			}
+  		}
+  	}
+
+  	if ! filtered {
+  		return
+  	}
+
+  	if t.Options.Timestamps {
+  		updatedTs, err := t.Options.UpdateTimezoneAndFormat(rfc3339Nano)
+  		if err != nil {
+  			t.Print(fmt.Sprintf("[%v] %s", err, line))
+  			return
+  		}
+  		msg = updatedTs + " " + msg
+  	}
+
+  	wantedLevel, err := verisure.NewSeverity(t.Options.Level)
+  	if err != nil {
+  		return
+  	}
+
+  	if ! wantedLevel.Match(logItem.Level) {
+  		return
+  	}
+
+    //fmt.Printf("%s", line)
+  	t.Print(msg)
+  	logItem.Print(t.out)
 }
 
 func (t *Tail) rememberLastTimestamp(timestamp string) {

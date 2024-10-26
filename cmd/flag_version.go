@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	version = "dev"
+	version = "verisure-dev"
 	commit  = ""
 	date    = ""
 )
