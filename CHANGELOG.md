@@ -1,3 +1,41 @@
+# v1.31.0
+
+## Changes
+* Fix --verbosity flag to show missing logs ([#317](https://github.com/stern/stern/pull/317)) c2b4410 (Takashi Kusumi)
+* Update dependencies for Kubernetes 1.31 ([#315](https://github.com/stern/stern/pull/315)) a4fdcc9 (Takashi Kusumi)
+
+# v1.30.0
+
+## :zap: Notable Changes
+
+### Add support for configuring colors for pods and containers
+You can now configure highlight colors for pods and containers in [the config file](https://github.com/stern/stern/blob/master/README.md#config-file) using a comma-separated list of [SGR (Select Graphic Rendition) sequences](https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters). See the ["Customize highlight colors" section](https://github.com/stern/stern/blob/master/README.md#customize-highlight-colors) for details.
+
+Example configuration:
+
+```yaml
+# Green, Yellow, Blue, Magenta, Cyan, White
+pod-colors: "32,33,34,35,36,37"
+
+# Colors with underline (4)
+# If empty, the pod colors will be used as container colors
+container-colors: "32;4,33;4,34;4,35;4,36;4,37;4"
+```
+
+### Display different colors for different containers
+A new `--diff-container` flag allows displaying different colors for different containers. This is useful when you want to debug logs for multiple containers in the same pod.
+
+You can also enable this feature in [the config file](https://github.com/stern/stern/blob/master/README.md#config-file).
+
+```yaml
+diff-container: true
+```
+
+## Changes
+* Add support to configure colors for pods and containers ([#306](https://github.com/stern/stern/pull/306)) [f4b2edc](https://github.com/stern/stern/commit/f4b2edc) (Takashi Kusumi)
+* Display different colors for different containers ([#305](https://github.com/stern/stern/pull/305)) [d1b5d74](https://github.com/stern/stern/commit/d1b5d74) (Se7en)
+* Support an array value in the config file ([#303](https://github.com/stern/stern/pull/303)) [6afabde](https://github.com/stern/stern/commit/6afabde) (Takashi Kusumi)
+
 # v1.29.0
 
 ## :zap: Notable Changes
