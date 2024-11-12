@@ -52,6 +52,7 @@ type Config struct {
 	MaxLogRequests        int
 	Stdin                 bool
 	DiffContainer         bool
+	SamePrefixColor       bool
 
 	Out    io.Writer
 	ErrOut io.Writer
