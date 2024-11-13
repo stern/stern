@@ -610,31 +610,36 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		"colorMagenta": color.MagentaString,
 		"colorCyan":    color.CyanString,
 		"colorWhite":   color.WhiteString,
-		"levelColor": func(level string) string {
-			var levelColor *color.Color
-			switch strings.ToLower(level) {
-			case "debug":
-				levelColor = color.New(color.FgMagenta)
-			case "info":
-				levelColor = color.New(color.FgBlue)
-			case "warn":
-				levelColor = color.New(color.FgYellow)
-			case "warning":
-				levelColor = color.New(color.FgYellow)
-			case "error":
-				levelColor = color.New(color.FgRed)
-			case "dpanic":
-				levelColor = color.New(color.FgRed)
-			case "panic":
-				levelColor = color.New(color.FgRed)
-			case "fatal":
-				levelColor = color.New(color.FgCyan)
-			case "critical":
-				levelColor = color.New(color.FgCyan)
+		"levelColor": func(value any) string {
+			switch level := value.(type) {
+			case string:
+				var levelColor *color.Color
+				switch strings.ToLower(level) {
+				case "debug":
+					levelColor = color.New(color.FgMagenta)
+				case "info":
+					levelColor = color.New(color.FgBlue)
+				case "warn":
+					levelColor = color.New(color.FgYellow)
+				case "warning":
+					levelColor = color.New(color.FgYellow)
+				case "error":
+					levelColor = color.New(color.FgRed)
+				case "dpanic":
+					levelColor = color.New(color.FgRed)
+				case "panic":
+					levelColor = color.New(color.FgRed)
+				case "fatal":
+					levelColor = color.New(color.FgCyan)
+				case "critical":
+					levelColor = color.New(color.FgCyan)
+				default:
+					return level
+				}
+				return levelColor.SprintFunc()(level)
 			default:
-				return level
+				return ""
 			}
-			return levelColor.SprintFunc()(level)
 		},
 		"bunyanLevelColor": func(value any) string {
 			var lv int64
