@@ -168,6 +168,7 @@ functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 | `toRFC3339Nano` | `object`              | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format |
 | `toTimestamp`   | `object, string [, string]` | Parse timestamp (string, int, json.Number) and output it using the given layout in the timezone that is optionally given (defaults to UTC). |
 | `levelColor`    | `string`              | Print log level using appropriate color                                           |
+| `bunyanLevelColor`    | `string`        | Print [bunyan](https://github.com/trentm/node-bunyan) numeric log level using appropriate color |
 | `colorBlack`    | `string`              | Print text using black color                                                      |
 | `colorRed`      | `string`              | Print text using red color                                                        |
 | `colorGreen`    | `string`              | Print text using green color                                                      |

@@ -610,31 +610,71 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		"colorMagenta": color.MagentaString,
 		"colorCyan":    color.CyanString,
 		"colorWhite":   color.WhiteString,
-		"levelColor": func(level string) string {
+		"levelColor": func(value any) string {
+			switch level := value.(type) {
+			case string:
+				var levelColor *color.Color
+				switch strings.ToLower(level) {
+				case "debug":
+					levelColor = color.New(color.FgMagenta)
+				case "info":
+					levelColor = color.New(color.FgBlue)
+				case "warn":
+					levelColor = color.New(color.FgYellow)
+				case "warning":
+					levelColor = color.New(color.FgYellow)
+				case "error":
+					levelColor = color.New(color.FgRed)
+				case "dpanic":
+					levelColor = color.New(color.FgRed)
+				case "panic":
+					levelColor = color.New(color.FgRed)
+				case "fatal":
+					levelColor = color.New(color.FgCyan)
+				case "critical":
+					levelColor = color.New(color.FgCyan)
+				default:
+					return level
+				}
+				return levelColor.SprintFunc()(level)
+			default:
+				return ""
+			}
+		},
+		"bunyanLevelColor": func(value any) string {
+			var lv int64
+			var err error
+
+			switch level := value.(type) {
+			// tryParseJSON yields json.Number
+			case json.Number:
+				lv, err = level.Int64()
+				if err != nil {
+					return ""
+				}
+			// parseJSON yields float64
+			case float64:
+				lv = int64(level)
+			default:
+				return ""
+			}
+
 			var levelColor *color.Color
-			switch strings.ToLower(level) {
-			case "debug":
+			switch {
+			case lv < 30:
 				levelColor = color.New(color.FgMagenta)
-			case "info":
+			case lv < 40:
 				levelColor = color.New(color.FgBlue)
-			case "warn":
+			case lv < 50:
 				levelColor = color.New(color.FgYellow)
-			case "warning":
-				levelColor = color.New(color.FgYellow)
-			case "error":
+			case lv < 60:
 				levelColor = color.New(color.FgRed)
-			case "dpanic":
-				levelColor = color.New(color.FgRed)
-			case "panic":
-				levelColor = color.New(color.FgRed)
-			case "fatal":
-				levelColor = color.New(color.FgCyan)
-			case "critical":
+			case lv < 100:
 				levelColor = color.New(color.FgCyan)
 			default:
-				return level
+				return strconv.FormatInt(lv, 10)
 			}
-			return levelColor.SprintFunc()(level)
+			return levelColor.SprintFunc()(lv)
 		},
 	}
 	template, err := template.New("log").Funcs(funs).Parse(t)
