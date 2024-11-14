@@ -89,6 +89,7 @@ type options struct {
 	diffContainer       bool
 	podColors           []string
 	containerColors     []string
+	samePrefixColor     bool
 
 	client       kubernetes.Interface
 	clientConfig clientcmd.ClientConfig
@@ -322,6 +323,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		MaxLogRequests:        maxLogRequests,
 		Stdin:                 o.stdin,
 		DiffContainer:         o.diffContainer,
+		SamePrefixColor:       o.samePrefixColor,
 
 		Out:    o.Out,
 		ErrOut: o.ErrOut,
@@ -449,6 +451,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&o.diffContainer, "diff-container", "d", o.diffContainer, "Display different colors for different containers.")
 	fs.StringSliceVar(&o.podColors, "pod-colors", o.podColors, "Specifies the colors used to highlight pod names. Provide colors as a comma-separated list using SGR (Select Graphic Rendition) sequences, e.g., \"91,92,93,94,95,96\".")
 	fs.StringSliceVar(&o.containerColors, "container-colors", o.containerColors, "Specifies the colors used to highlight container names. Use the same format as --pod-colors. Defaults to the values of --pod-colors if omitted, and must match its length.")
+	fs.BoolVar(&o.samePrefixColor, "same-prefix-color", o.samePrefixColor, "Color containers with the same prefix the same")
 
 	fs.Lookup("timestamps").NoOptDefVal = "default"
 }
