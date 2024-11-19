@@ -520,12 +520,24 @@ func (o *options) generateTemplate() (*template.Template, error) {
 	}
 
 	funs := map[string]interface{}{
-		"json": func(in interface{}) (string, error) {
-			b, err := json.Marshal(in)
-			if err != nil {
-				return "", err
+		"json": func(in interface{}, pretty ...bool) (string, error) {
+			prettyPrint := false
+			if len(pretty) > 0 {
+				prettyPrint = pretty[0]
 			}
-			return string(b), nil
+			if prettyPrint {
+				b, err := json.MarshalIndent(in, "", "  ")
+				if err != nil {
+					return "", err
+				}
+				return string(b), nil
+			} else {
+				b, err := json.Marshal(in)
+				if err != nil {
+					return "", err
+				}
+				return string(b), nil
+			}
 		},
 		"tryParseJSON": func(text string) map[string]interface{} {
 			decoder := json.NewDecoder(strings.NewReader(text))
