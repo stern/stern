@@ -134,11 +134,13 @@ You can change the config file path with `--config` flag or `STERNCONFIG` enviro
 stern supports outputting custom log messages.  There are a few predefined
 templates which you can use by specifying the `--output` flag:
 
-| output    | description                                                                                           |
-|-----------|-------------------------------------------------------------------------------------------------------|
-| `default` | Displays the namespace, pod and container, and decorates it with color depending on --color           |
-| `raw`     | Only outputs the log message itself, useful when your logs are json and you want to pipe them to `jq` |
-| `json`    | Marshals the log struct to json. Useful for programmatic purposes                                     |
+| output      | description                                                                                           |
+|-------------|-------------------------------------------------------------------------------------------------------|
+| `default`   | Displays the namespace, pod and container, and decorates it with color depending on --color           |
+| `raw`       | Only outputs the log message itself, useful when your logs are json and you want to pipe them to `jq` |
+| `json`      | Marshals the log struct to json. Useful for programmatic purposes                                     |
+| `extjson`   | Outputs extended JSON with colorized pod/container names                                              |
+| `ppextjson` | Pretty-prints extended JSON with colorized pod/container names                                        |
 
 It accepts a custom template through the `--template` flag, which will be
 compiled to a Go template and then used for every log message. This Go template
@@ -163,8 +165,6 @@ functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 | `tryParseJSON`  | `string`              | Attempt to parse string as JSON, return nil on failure                             |
 | `extractJSONParts`    | `string, ...string` | Parse string as JSON and concatenate the given keys.                          |
 | `tryExtractJSONParts` | `string, ...string` | Attempt to parse string as JSON and concatenate the given keys. , return text on failure |
-| `extjson`       | `string`              | Parse the object as json and output colorized json                                |
-| `ppextjson`     | `string`              | Parse the object as json and output pretty-print colorized json                   |
 | `toRFC3339Nano` | `object`              | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format |
 | `toTimestamp`   | `object, string [, string]` | Parse timestamp (string, int, json.Number) and output it using the given layout in the timezone that is optionally given (defaults to UTC). |
 | `levelColor`    | `string`              | Print log level using appropriate color                                           |
