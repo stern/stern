@@ -165,7 +165,7 @@ functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 | `tryParseJSON`        | `string`                    | Attempt to parse string as JSON, return nil on failure                                                                                      |
 | `extractJSONParts`    | `string, ...string`         | Parse string as JSON and concatenate the given keys.                                                                                        |
 | `tryExtractJSONParts` | `string, ...string`         | Attempt to parse string as JSON and concatenate the given keys. , return text on failure                                                    |
-| `prettyJSON`          | `string`                    | Parse input and emit it as pretty printed JSON, if parse fails output string as is.                                                         |
+| `prettyJSON`          | `any`                       | Parse input and emit it as pretty printed JSON, if parse fails output string as is.                                                         |
 | `toRFC3339Nano`       | `object`                    | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format                                                           |
 | `toTimestamp`         | `object, string [, string]` | Parse timestamp (string, int, json.Number) and output it using the given layout in the timezone that is optionally given (defaults to UTC). |
 | `levelColor`          | `string`                    | Print log level using appropriate color                                                                                                     |
