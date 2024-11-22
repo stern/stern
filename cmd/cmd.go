@@ -520,24 +520,12 @@ func (o *options) generateTemplate() (*template.Template, error) {
 	}
 
 	funs := map[string]interface{}{
-		"json": func(in interface{}, pretty ...bool) (string, error) {
-			prettyPrint := false
-			if len(pretty) > 0 {
-				prettyPrint = pretty[0]
+		"json": func(in interface{}) (string, error) {
+			b, err := json.Marshal(in)
+			if err != nil {
+				return "", err
 			}
-			if prettyPrint {
-				b, err := json.MarshalIndent(in, "", "  ")
-				if err != nil {
-					return "", err
-				}
-				return string(b), nil
-			} else {
-				b, err := json.Marshal(in)
-				if err != nil {
-					return "", err
-				}
-				return string(b), nil
-			}
+			return string(b), nil
 		},
 		"tryParseJSON": func(text string) map[string]interface{} {
 			decoder := json.NewDecoder(strings.NewReader(text))
@@ -587,17 +575,26 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			}
 			return strings.TrimSuffix(string(b), "\n"), nil
 		},
-		"prettyJSON": func(text string) (string, error) {
-			// Parse JSON string and pretty print it
-			obj := make(map[string]interface{})
-			if err := json.Unmarshal([]byte(text), &obj); err != nil {
-				return "", err
+		"prettyJSON": func(value any) string {
+			var data map[string]any
+
+			switch v := value.(type) {
+			case string:
+				if err := json.Unmarshal([]byte(v), &data); err != nil {
+					return v
+				}
+			case map[string]any:
+				data = v
+			default:
+				return fmt.Sprintf("%v", value)
 			}
-			if prettyBytes, err := json.MarshalIndent(obj, "", "  "); err != nil {
-				return "", err
-			} else {
-				return string(prettyBytes), nil
+
+			b, err := json.MarshalIndent(data, "", "  ")
+			if err != nil {
+				return fmt.Sprintf("%v", value)
 			}
+
+			return string(b)
 		},
 		"toRFC3339Nano": func(ts any) string {
 			return toTime(ts).Format(time.RFC3339Nano)
