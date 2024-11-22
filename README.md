@@ -327,6 +327,15 @@ Output using a custom template that tries to parse JSON or fallbacks to raw form
 stern --template='{{.PodName}}/{{.ContainerName}} {{ with $msg := .Message | tryParseJSON }}[{{ colorGreen (toRFC3339Nano $msg.ts) }}] {{ levelColor $msg.level }} ({{ colorCyan $msg.caller }}) {{ $msg.msg }}{{ else }} {{ .Message }} {{ end }}{{"\n"}}' backend
 ```
 
+Pretty print JSON (if it is JSON) and output it:
+
+```
+# Will try to parse .Message as JSON and pretty print it, if not json will output as is
+stern --template='{{ .Message | prettyJSON }}{{"\n"}}' backend
+# Or with parsed json, will drop non-json logs because of `with`
+stern --template='{{ with $msg := .Message | tryParseJSON }}{{ prettyJSON $msg }}{{"\n"}}{{end}}' backend
+```
+
 Load custom template from file:
 
 ```
