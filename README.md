@@ -157,27 +157,27 @@ will receive the following struct:
 The following functions are available within the template (besides the [builtin
 functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 
-| func            | arguments             | description                                                                       |
-|-----------------|-----------------------|-----------------------------------------------------------------------------------|
-| `json`          | `object`              | Marshal the object and output it as a json text                                   |
-| `color`         | `color.Color, string` | Wrap the text in color (.ContainerColor and .PodColor provided)                   |
-| `parseJSON`     | `string`              | Parse string as JSON                                                              |
-| `tryParseJSON`  | `string`              | Attempt to parse string as JSON, return nil on failure                             |
-| `extractJSONParts`    | `string, ...string` | Parse string as JSON and concatenate the given keys.                          |
-| `tryExtractJSONParts` | `string, ...string` | Attempt to parse string as JSON and concatenate the given keys. , return text on failure |
-| `toRFC3339Nano` | `object`              | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format |
-| `toTimestamp`   | `object, string [, string]` | Parse timestamp (string, int, json.Number) and output it using the given layout in the timezone that is optionally given (defaults to UTC). |
-| `levelColor`    | `string`              | Print log level using appropriate color                                           |
-| `bunyanLevelColor`    | `string`        | Print [bunyan](https://github.com/trentm/node-bunyan) numeric log level using appropriate color |
-| `colorBlack`    | `string`              | Print text using black color                                                      |
-| `colorRed`      | `string`              | Print text using red color                                                        |
-| `colorGreen`    | `string`              | Print text using green color                                                      |
-| `colorYellow`   | `string`              | Print text using yellow color                                                     |
-| `colorBlue`     | `string`              | Print text using blue color                                                       |
-| `colorMagenta`  | `string`              | Print text using magenta color                                                    |
-| `colorCyan`     | `string`              | Print text using cyan color                                                       |
-| `colorWhite`    | `string`              | Print text using white color                                                      |
-
+| func                  | arguments                   | description                                                                                                                                 |
+|-----------------------|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| `json`                | `object`                    | Marshal the object and output it as a json text                                                                                             |
+| `color`               | `color.Color, string`       | Wrap the text in color (.ContainerColor and .PodColor provided)                                                                             |
+| `parseJSON`           | `string`                    | Parse string as JSON                                                                                                                        |
+| `tryParseJSON`        | `string`                    | Attempt to parse string as JSON, return nil on failure                                                                                      |
+| `extractJSONParts`    | `string, ...string`         | Parse string as JSON and concatenate the given keys.                                                                                        |
+| `tryExtractJSONParts` | `string, ...string`         | Attempt to parse string as JSON and concatenate the given keys. , return text on failure                                                    |
+| `prettyJSON`          | `string`                    | Parse input and emit it as pretty printed JSON, if parse fails output string as is.                                                         |
+| `toRFC3339Nano`       | `object`                    | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format                                                           |
+| `toTimestamp`         | `object, string [, string]` | Parse timestamp (string, int, json.Number) and output it using the given layout in the timezone that is optionally given (defaults to UTC). |
+| `levelColor`          | `string`                    | Print log level using appropriate color                                                                                                     |
+| `bunyanLevelColor`    | `string`                    | Print [bunyan](https://github.com/trentm/node-bunyan) numeric log level using appropriate color                                             |
+| `colorBlack`          | `string`                    | Print text using black color                                                                                                                |
+| `colorRed`            | `string`                    | Print text using red color                                                                                                                  |
+| `colorGreen`          | `string`                    | Print text using green color                                                                                                                |
+| `colorYellow`         | `string`                    | Print text using yellow color                                                                                                               |
+| `colorBlue`           | `string`                    | Print text using blue color                                                                                                                 |
+| `colorMagenta`        | `string`                    | Print text using magenta color                                                                                                              |
+| `colorCyan`           | `string`                    | Print text using cyan color                                                                                                                 |
+| `colorWhite`          | `string`                    | Print text using white color                                                                                                                |
 
 ### Log level verbosity
 
