@@ -575,6 +575,27 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			}
 			return strings.TrimSuffix(string(b), "\n"), nil
 		},
+		"prettyJSON": func(value any) string {
+			var data map[string]any
+
+			switch v := value.(type) {
+			case string:
+				if err := json.Unmarshal([]byte(v), &data); err != nil {
+					return v
+				}
+			case map[string]any:
+				data = v
+			default:
+				return fmt.Sprintf("%v", value)
+			}
+
+			b, err := json.MarshalIndent(data, "", "  ")
+			if err != nil {
+				return fmt.Sprintf("%v", value)
+			}
+
+			return string(b)
+		},
 		"toRFC3339Nano": func(ts any) string {
 			return toTime(ts).Format(time.RFC3339Nano)
 		},
