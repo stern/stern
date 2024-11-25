@@ -68,7 +68,7 @@ type ResumeRequest struct {
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
 func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podName, containerName string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions, diffContainer bool) *Tail {
-	podColor, containerColor := determineColor(podName, containerName, diffContainer)
+	podColor, containerColor := determineColor(podName, containerName, diffContainer, options.SamePrefixColor)
 
 	return &Tail{
 		clientset:      clientset,
@@ -87,18 +87,67 @@ func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podNam
 	}
 }
 
-func determineColor(podName, containerName string, diffContainer bool) (podColor, containerColor *color.Color) {
-	colors := colorList[colorIndex(podName)]
+/*
+func determineColor(podName, containerName string, diffContainer bool, samePrefixColor bool) (podColor, containerColor *color.Color) {
+	var podLookup string
+	if samePrefixColor {
+		podLookup = getPrefix(podName)
+	} else {
+		podLookup = podName
+	}
+	colors := colorList[colorIndex(podLookup)]
+	if diffContainer {
+		return colors[0], colorList[colorIndex(containerName)][1]
+	}
+	return colors[0], colors[1]
+}*/
+
+func determineColor(podName, containerName string, diffContainer bool, samePrefixColor bool) (podColor, containerColor *color.Color) {
+	var podLookup string
+	if samePrefixColor {
+		podLookup = getPrefix(podName)
+	} else {
+		podLookup = podName
+	}
+
+	usedColors := getUsedColors()
+	var podColorIndex uint32
+	if index, exists := usedColors[podLookup]; exists {
+		podColorIndex = index
+	} else {
+		if len(usedColors) < len(colorList) {
+			podColorIndex = uint32(len(usedColors))
+		} else {
+			podColorIndex = colorIndex(podLookup)
+		}
+		usedColors[podLookup] = podColorIndex
+	}
+
+	colors := colorList[podColorIndex]
 	if diffContainer {
 		return colors[0], colorList[colorIndex(containerName)][1]
 	}
 	return colors[0], colors[1]
 }
 
+func getPrefix(name string) string {
+	parts := strings.SplitN(name, "-", 2)
+	return parts[0]
+}
+
 func colorIndex(name string) uint32 {
 	hash := fnv.New32()
 	_, _ = hash.Write([]byte(name))
 	return hash.Sum32() % uint32(len(colorList))
+}
+
+var usedColors map[string]uint32
+
+func getUsedColors() map[string]uint32 {
+	if usedColors == nil {
+		usedColors = make(map[string]uint32)
+	}
+	return usedColors
 }
 
 // Start starts tailing
