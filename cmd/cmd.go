@@ -164,9 +164,6 @@ func (o *options) Validate() error {
 	if o.selector != "" && o.resource != "" {
 		return errors.New("--selector and the <resource>/<name> query cannot be set at the same time")
 	}
-	if o.noFollow && o.tail == 0 {
-		return errors.New("--no-follow cannot be used with --tail=0")
-	}
 
 	return nil
 }
