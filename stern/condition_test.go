@@ -71,40 +71,32 @@ func TestNewCondition(t *testing.T) {
 
 func TestConditionMatch(t *testing.T) {
 	tests := []struct {
-		condition Condition
-		v1Pod     v1.Pod
-		expected  bool
+		condition       Condition
+		v1PodConditions []v1.PodCondition
+		expected        bool
 	}{
 		{
 			Condition{
-				Name:  v1.PodInitialized,
+				Name:  v1.PodReady,
 				Value: v1.ConditionTrue,
 			},
-			v1.Pod{
-				Status: v1.PodStatus{
-					Conditions: []v1.PodCondition{
-						{
-							Type:   v1.PodInitialized,
-							Status: v1.ConditionTrue,
-						},
-					},
+			[]v1.PodCondition{
+				{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
 				},
 			},
 			true,
 		},
 		{
 			Condition{
-				Name:  v1.PodInitialized,
+				Name:  v1.PodReady,
 				Value: v1.ConditionTrue,
 			},
-			v1.Pod{
-				Status: v1.PodStatus{
-					Conditions: []v1.PodCondition{
-						{
-							Type:   v1.PodInitialized,
-							Status: v1.ConditionFalse,
-						},
-					},
+			[]v1.PodCondition{
+				{
+					Type:   v1.PodReady,
+					Status: v1.ConditionFalse,
 				},
 			},
 			false,
@@ -114,46 +106,18 @@ func TestConditionMatch(t *testing.T) {
 				Name:  v1.PodReady,
 				Value: v1.ConditionTrue,
 			},
-			v1.Pod{
-				Status: v1.PodStatus{
-					Conditions: []v1.PodCondition{
-						{
-							Type:   v1.PodReady,
-							Status: v1.ConditionTrue,
-						},
-					},
-				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							ReadinessProbe: &v1.Probe{},
-						},
-					},
+			[]v1.PodCondition{
+				{
+					Type:   v1.PodInitialized,
+					Status: v1.ConditionFalse,
 				},
 			},
-			true,
-		},
-		{
-			Condition{
-				Name:  v1.PodReady,
-				Value: v1.ConditionTrue,
-			},
-			v1.Pod{
-				Status: v1.PodStatus{
-					Conditions: []v1.PodCondition{
-						{
-							Type:   v1.PodReady,
-							Status: v1.ConditionFalse,
-						},
-					},
-				},
-			},
-			true,
+			false,
 		},
 	}
 
 	for i, tt := range tests {
-		actual := tt.condition.Match(tt.v1Pod)
+		actual := tt.condition.Match(tt.v1PodConditions)
 
 		if tt.expected != actual {
 			t.Errorf("%d: expected %v, but actual %v", i, tt.expected, actual)

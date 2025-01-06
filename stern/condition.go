@@ -78,25 +78,8 @@ func NewCondition(conditionString string) (Condition, error) {
 }
 
 // Match returns if pod matches the condition
-func (conditionConfig Condition) Match(pod v1.Pod) bool {
-	// Only apply "Ready" condition if the pod has a readiness probe or readiness gate
-	if conditionConfig.Name == v1.PodReady {
-		// Try to find a readiness probe
-		hasReadinessProbe := false
-		for _, container := range pod.Spec.Containers {
-			if container.ReadinessProbe != nil {
-				hasReadinessProbe = true
-				break
-			}
-		}
-
-		// Or try to find a readiness gate
-		if !hasReadinessProbe && len(pod.Spec.ReadinessGates) == 0 {
-			return true
-		}
-	}
-
-	for _, condition := range pod.Status.Conditions {
+func (conditionConfig Condition) Match(podConditions []v1.PodCondition) bool {
+	for _, condition := range podConditions {
 		if condition.Type == conditionConfig.Name {
 			return condition.Status == conditionConfig.Value
 		}
