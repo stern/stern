@@ -52,7 +52,7 @@ func TestNewContainerState(t *testing.T) {
 	}
 }
 
-func TestMatch(t *testing.T) {
+func TestContainerStateMatch(t *testing.T) {
 	tests := []struct {
 		containerState   ContainerState
 		v1ContainerState v1.ContainerState

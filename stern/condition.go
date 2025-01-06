@@ -24,7 +24,14 @@ func NewCondition(conditionString string) (Condition, error) {
 
 	var conditionName v1.PodConditionType
 
-	validConditions := []v1.PodConditionType{v1.ContainersReady, v1.PodInitialized, v1.PodReady, v1.PodScheduled, v1.DisruptionTarget, v1.PodReadyToStartContainers}
+	validConditions := []v1.PodConditionType{
+		v1.ContainersReady,
+		v1.PodInitialized,
+		v1.PodReady,
+		v1.PodScheduled,
+		v1.DisruptionTarget,
+		v1.PodReadyToStartContainers,
+	}
 
 	for _, validCondition := range validConditions {
 		if strings.ToLower(string(validCondition)) == conditionNameString {
@@ -43,7 +50,11 @@ func NewCondition(conditionString string) (Condition, error) {
 
 	var conditionValue v1.ConditionStatus
 
-	validValues := []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
+	validValues := []v1.ConditionStatus{
+		v1.ConditionTrue,
+		v1.ConditionFalse,
+		v1.ConditionUnknown,
+	}
 
 	for _, validValue := range validValues {
 		if strings.ToLower(string(validValue)) == conditionValueString {
