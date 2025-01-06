@@ -17,7 +17,6 @@ package stern
 import (
 	"fmt"
 	"regexp"
-	"strings"
 	"sync"
 
 	corev1 "k8s.io/api/core/v1"
@@ -55,7 +54,7 @@ type targetFilterConfig struct {
 	excludePodFilter       []*regexp.Regexp
 	containerFilter        *regexp.Regexp
 	containerExcludeFilter []*regexp.Regexp
-	condition              string
+	condition              Condition
 	initContainers         bool
 	ephemeralContainers    bool
 	containerStates        []ContainerState
@@ -66,48 +65,6 @@ func newTargetFilter(c targetFilterConfig) *targetFilter {
 		c:            c,
 		targetStates: make(map[string]*targetState),
 	}
-}
-
-func isConditionFound(pod *corev1.Pod, condition string) bool {
-	if condition == "" {
-		return true
-	}
-
-	// condition can be: condition-name or condition-name=condition-value
-	conditionName := condition
-	conditionValue := "true"
-	if equalsIndex := strings.Index(conditionName, "="); equalsIndex != -1 {
-		conditionValue = conditionName[equalsIndex+1:]
-		conditionName = conditionName[0:equalsIndex]
-	}
-
-	conditionValue = strings.ToLower(conditionValue)
-	conditionName = strings.ToLower(conditionName)
-
-	// Only apply "ready" condition if the pod has a readiness probe or readiness gate
-	if conditionName == "ready" {
-		// Try to find a readiness probe
-		hasReadinessProbe := false
-		for _, container := range pod.Spec.Containers {
-			if container.ReadinessProbe != nil {
-				hasReadinessProbe = true
-				break
-			}
-		}
-
-		// Or try to find a readiness gate
-		if !hasReadinessProbe && len(pod.Spec.ReadinessGates) == 0 {
-			return true
-		}
-	}
-
-	for _, condition := range pod.Status.Conditions {
-		if strings.ToLower(string(condition.Type)) == conditionName {
-			return strings.ToLower(string(condition.Status)) == conditionValue
-		}
-	}
-
-	return false
 }
 
 // visit passes filtered Targets to the visitor function
@@ -124,7 +81,10 @@ func (f *targetFilter) visit(pod *corev1.Pod, visitor func(t *Target, conditionF
 	}
 
 	// filter by condition
-	conditionFound := isConditionFound(pod, f.c.condition)
+	conditionFound := true
+	if f.c.condition != (Condition{}) {
+		conditionFound = f.c.condition.Match(*pod)
+	}
 
 	// filter by container statuses
 	var statuses []corev1.ContainerStatus

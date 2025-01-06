@@ -226,6 +226,14 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		return nil, errors.Wrap(err, "failed to compile regular expression for highlight filter")
 	}
 
+	condition := stern.Condition{}
+	if o.condition != "" {
+		condition, err = stern.NewCondition(o.condition)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	containerStates := []stern.ContainerState{}
 	for _, containerStateStr := range makeUnique(o.containerStates) {
 		containerState, err := stern.NewContainerState(containerStateStr)
@@ -305,7 +313,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		Location:              location,
 		ContainerQuery:        container,
 		ExcludeContainerQuery: excludeContainer,
-		Condition:             o.condition,
+		Condition:             condition,
 		ContainerStates:       containerStates,
 		Exclude:               exclude,
 		Include:               include,
