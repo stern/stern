@@ -56,7 +56,7 @@ kubectl krew install stern
 stern pod-query [flags]
 ```
 
-The `pod` query is a regular expression or a Kubernetes resource in the form `<resource>/<name>`.
+The `pod-query` is a regular expression or a Kubernetes resource in the form `<resource>/<name>`.
 
 The query is a regular expression when it is not a Kubernetes resource,
 so you could provide `"web-\w"` to tail `web-backend` and `web-frontend` pods but not `web-123`.
@@ -77,16 +77,19 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--condition`                          |                               | The condition to filter on: [condition-name[=condition-value]. The default condition-value is true. Match is case-insensitive.
  `--config`                             | `~/.config/stern/config.yaml` | Path to the stern config file
  `--container`, `-c`                    | `.*`                          | Container name when multiple containers in pod. (regular expression)
+ `--container-colors`                   |                               | Specifies the colors used to highlight container names. Use the same format as --pod-colors. Defaults to the values of --pod-colors if omitted, and must match its length.
  `--container-state`                    | `all`                         | Tail containers with state in running, waiting, terminated, or all. 'all' matches all container states. To specify multiple states, repeat this or set comma-separated value.
- `--context`                            |                               | Kubernetes context to use. Default to current context configured in kubeconfig.
+ `--context`                            |                               | The name of the kubeconfig context to use
+ `--diff-container`, `-d`               | `false`                       | Display different colors for different containers.
  `--ephemeral-containers`               | `true`                        | Include or exclude ephemeral containers.
  `--exclude`, `-e`                      | `[]`                          | Log lines to exclude. (regular expression)
  `--exclude-container`, `-E`            | `[]`                          | Container name to exclude when multiple containers in pod. (regular expression)
  `--exclude-pod`                        | `[]`                          | Pod name to exclude. (regular expression)
  `--field-selector`                     |                               | Selector (field query) to filter on. If present, default to ".*" for the pod-query.
+ `--highlight`, `-H`                    | `[]`                          | Log lines to highlight. (regular expression)
  `--include`, `-i`                      | `[]`                          | Log lines to include. (regular expression)
  `--init-containers`                    | `true`                        | Include or exclude init containers.
- `--kubeconfig`                         |                               | Path to kubeconfig file to use. Default to KUBECONFIG variable then ~/.kube/config path.
+ `--kubeconfig`                         |                               | Path to the kubeconfig file to use for CLI requests.
  `--max-log-requests`                   | `-1`                          | Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow
  `--namespace`, `-n`                    |                               | Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.
  `--no-follow`                          | `false`                       | Exit when all logs have been shown.
@@ -94,13 +97,16 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--only-condition-pods-with-readiness` | `false`                       | Only apply --condition to pods which has readiness probe or readiness gate.
  `--only-log-lines`                     | `false`                       | Print only log lines
  `--output`, `-o`                       | `default`                     | Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]
+ `--pod-colors`                         |                               | Specifies the colors used to highlight pod names. Provide colors as a comma-separated list using SGR (Select Graphic Rendition) sequences, e.g., "91,92,93,94,95,96".
  `--prompt`, `-p`                       | `false`                       | Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.
  `--selector`, `-l`                     |                               | Selector (label query) to filter on. If present, default to ".*" for the pod-query.
+ `--show-hidden-options`                | `false`                       | Print a list of hidden options.
  `--since`, `-s`                        | `48h0m0s`                     | Return logs newer than a relative duration like 5s, 2m, or 3h.
+ `--stdin`                              | `false`                       | Parse logs from stdin. All Kubernetes related flags are ignored when it is set.
  `--tail`                               | `-1`                          | The number of lines from the end of the logs to show. Defaults to -1, showing all logs.
  `--template`                           |                               | Template to use for log lines, leave empty to use --output flag.
  `--template-file`, `-T`                |                               | Path to template to use for log lines, leave empty to use --output flag. It overrides --template option.
- `--timestamps`, `-t`                   |                               | Print timestamps with the specified format. One of 'default' or 'short'. If specified but without value, 'default' is used.
+ `--timestamps`, `-t`                   |                               | Print timestamps with the specified format. One of 'default' or 'short' in the form '--timestamps=format' ('=' cannot be omitted). If specified but without value, 'default' is used.
  `--timezone`                           | `Local`                       | Set timestamps to specific timezone.
  `--verbosity`                          | `0`                           | Number of the log level verbosity
  `--version`, `-v`                      | `false`                       | Print the version and exit.
@@ -130,11 +136,13 @@ You can change the config file path with `--config` flag or `STERNCONFIG` enviro
 stern supports outputting custom log messages.  There are a few predefined
 templates which you can use by specifying the `--output` flag:
 
-| output    | description                                                                                           |
-|-----------|-------------------------------------------------------------------------------------------------------|
-| `default` | Displays the namespace, pod and container, and decorates it with color depending on --color           |
-| `raw`     | Only outputs the log message itself, useful when your logs are json and you want to pipe them to `jq` |
-| `json`    | Marshals the log struct to json. Useful for programmatic purposes                                     |
+| output      | description                                                                                           |
+|-------------|-------------------------------------------------------------------------------------------------------|
+| `default`   | Displays the namespace, pod and container, and decorates it with color depending on --color           |
+| `raw`       | Only outputs the log message itself, useful when your logs are json and you want to pipe them to `jq` |
+| `json`      | Marshals the log struct to json. Useful for programmatic purposes                                     |
+| `extjson`   | Outputs extended JSON with colorized pod/container names                                              |
+| `ppextjson` | Pretty-prints extended JSON with colorized pod/container names                                        |
 
 It accepts a custom template through the `--template` flag, which will be
 compiled to a Go template and then used for every log message. This Go template
@@ -151,27 +159,27 @@ will receive the following struct:
 The following functions are available within the template (besides the [builtin
 functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 
-| func            | arguments             | description                                                                       |
-|-----------------|-----------------------|-----------------------------------------------------------------------------------|
-| `json`          | `object`              | Marshal the object and output it as a json text                                   |
-| `color`         | `color.Color, string` | Wrap the text in color (.ContainerColor and .PodColor provided)                   |
-| `parseJSON`     | `string`              | Parse string as JSON                                                              |
-| `tryParseJSON`  | `string`              | Attempt to parse string as JSON, return nil on failure                             |
-| `extractJSONParts`    | `string, ...string` | Parse string as JSON and concatenate the given keys.                          |
-| `tryExtractJSONParts` | `string, ...string` | Attempt to parse string as JSON and concatenate the given keys. , return text on failure |
-| `extjson`       | `string`              | Parse the object as json and output colorized json                                |
-| `ppextjson`     | `string`              | Parse the object as json and output pretty-print colorized json                   |
-| `toRFC3339Nano` | `object`              | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format |
-| `levelColor`    | `string`              | Print log level using appropriate color                                           |
-| `colorBlack`    | `string`              | Print text using black color                                                      |
-| `colorRed`      | `string`              | Print text using red color                                                        |
-| `colorGreen`    | `string`              | Print text using green color                                                      |
-| `colorYellow`   | `string`              | Print text using yellow color                                                     |
-| `colorBlue`     | `string`              | Print text using blue color                                                       |
-| `colorMagenta`  | `string`              | Print text using magenta color                                                    |
-| `colorCyan`     | `string`              | Print text using cyan color                                                       |
-| `colorWhite`    | `string`              | Print text using white color                                                      |
-
+| func                  | arguments                   | description                                                                                                                                 |
+|-----------------------|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| `json`                | `object`                    | Marshal the object and output it as a json text                                                                                             |
+| `color`               | `color.Color, string`       | Wrap the text in color (.ContainerColor and .PodColor provided)                                                                             |
+| `parseJSON`           | `string`                    | Parse string as JSON                                                                                                                        |
+| `tryParseJSON`        | `string`                    | Attempt to parse string as JSON, return nil on failure                                                                                      |
+| `extractJSONParts`    | `string, ...string`         | Parse string as JSON and concatenate the given keys.                                                                                        |
+| `tryExtractJSONParts` | `string, ...string`         | Attempt to parse string as JSON and concatenate the given keys. , return text on failure                                                    |
+| `prettyJSON`          | `any`                       | Parse input and emit it as pretty printed JSON, if parse fails output string as is.                                                         |
+| `toRFC3339Nano`       | `object`                    | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format                                                           |
+| `toTimestamp`         | `object, string [, string]` | Parse timestamp (string, int, json.Number) and output it using the given layout in the timezone that is optionally given (defaults to UTC). |
+| `levelColor`          | `string`                    | Print log level using appropriate color                                                                                                     |
+| `bunyanLevelColor`    | `string`                    | Print [bunyan](https://github.com/trentm/node-bunyan) numeric log level using appropriate color                                             |
+| `colorBlack`          | `string`                    | Print text using black color                                                                                                                |
+| `colorRed`            | `string`                    | Print text using red color                                                                                                                  |
+| `colorGreen`          | `string`                    | Print text using green color                                                                                                                |
+| `colorYellow`         | `string`                    | Print text using yellow color                                                                                                               |
+| `colorBlue`           | `string`                    | Print text using blue color                                                                                                                 |
+| `colorMagenta`        | `string`                    | Print text using magenta color                                                                                                              |
+| `colorCyan`           | `string`                    | Print text using cyan color                                                                                                                 |
+| `colorWhite`          | `string`                    | Print text using white color                                                                                                                |
 
 ### Log level verbosity
 
@@ -194,7 +202,38 @@ The behavior and the default are different depending on the presence of the `--n
 
 The combination of `--max-log-requests 1` and `--no-follow` will be helpful if you want to show logs in order.
 
+### Customize highlight colors
+You can configure highlight colors for pods and containers in [the config file](#config-file) using a comma-separated list of [SGR (Select Graphic Rendition) sequences](https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters), as shown below. If you omit `container-colors`, the pod colors will be used as container colors as well.
+
+```yaml
+# Green, Yellow, Blue, Magenta, Cyan, White
+pod-colors: "32,33,34,35,36,37"
+
+# Colors with underline (4)
+# If empty, the pod colors will be used as container colors
+container-colors: "32;4,33;4,34;4,35;4,36;4,37;4"
+```
+
+This format enables the use of various attributes, such as underline, background colors, 8-bit colors, and 24-bit colors, if your terminal supports them.
+
+The equivalent flags `--pod-colors` and `--container-colors` are also available. The following command applies [24-bit colors](https://en.wikipedia.org/wiki/ANSI_escape_code#24-bit) using the `--pod-colors` flag.
+
+```bash
+# Monokai theme
+podColors="38;2;255;97;136,38;2;169;220;118,38;2;255;216;102,38;2;120;220;232,38;2;171;157;242"
+stern --pod-colors "$podColors" deploy/app
+```
+
 ## Examples:
+Tail all logs from all namespaces
+```
+stern . --all-namespaces
+```
+
+Tail the `kube-system` namespace without printing any prior logs
+```
+stern . -n kube-system --tail 0
+```
 
 Tail the `gateway` container running inside of the `envvars` pod on staging
 ```
@@ -214,6 +253,11 @@ stern -n kube-system --exclude-pod kube-apiserver .
 Show auth activity from 15min ago with timestamps
 ```
 stern auth -t --since 15m
+```
+
+Show all logs of the last 5min by time, sorted by time
+```
+stern --since=5m --no-follow --only-log-lines -A -t . | sort -k4
 ```
 
 Show auth activity with timestamps in specific timezone (default is your local timezone)
@@ -285,6 +329,15 @@ Output using a custom template that tries to parse JSON or fallbacks to raw form
 stern --template='{{.PodName}}/{{.ContainerName}} {{ with $msg := .Message | tryParseJSON }}[{{ colorGreen (toRFC3339Nano $msg.ts) }}] {{ levelColor $msg.level }} ({{ colorCyan $msg.caller }}) {{ $msg.msg }}{{ else }} {{ .Message }} {{ end }}{{"\n"}}' backend
 ```
 
+Pretty print JSON (if it is JSON) and output it:
+
+```
+# Will try to parse .Message as JSON and pretty print it, if not json will output as is
+stern --template='{{ .Message | prettyJSON }}{{"\n"}}' backend
+# Or with parsed json, will drop non-json logs because of `with`
+stern --template='{{ with $msg := .Message | tryParseJSON }}{{ prettyJSON $msg }}{{"\n"}}{{end}}' backend
+```
+
 Load custom template from file:
 
 ```
@@ -303,10 +356,17 @@ Output log lines only:
 stern . --only-log-lines
 ```
 
+<<<<<<< HEAD
 Display logs for unhealthy pods only:
 
 ```
 stern . --condition=ready=false --tail=0 --only-condition-pods-with-readiness
+=======
+Read from stdin:
+
+```
+stern --stdin < service.log
+>>>>>>> ccd8add39164ce1d2d6a50c73c97d971d6f35f89
 ```
 
 ## Completion

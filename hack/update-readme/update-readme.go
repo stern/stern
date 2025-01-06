@@ -59,6 +59,10 @@ func GenerateFlagsMarkdownTable() string {
 			return
 		}
 
+		if flag.Hidden {
+			return
+		}
+
 		flagText := ""
 		if flag.Shorthand != "" {
 			flagText = fmt.Sprintf(" `--%s`, `-%s` ", flag.Name, flag.Shorthand)

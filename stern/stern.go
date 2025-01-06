@@ -17,6 +17,7 @@ package stern
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -26,7 +27,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/stern/stern/kubernetes"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 
@@ -34,22 +34,11 @@ import (
 	"k8s.io/utils/ptr"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes"
 )
 
 // Run starts the main run loop
-func Run(ctx context.Context, config *Config) error {
-	clientConfig := kubernetes.NewClientConfig(config.KubeConfig, config.ContextName)
-	cc, err := clientConfig.ClientConfig()
-	if err != nil {
-		return err
-	}
-
-	client, err := clientset.NewForConfig(cc)
-	if err != nil {
-		return err
-	}
-
+func Run(ctx context.Context, client kubernetes.Interface, config *Config) error {
 	var namespaces []string
 	// A specific namespace is ignored if all-namespaces is provided
 	if config.AllNamespaces {
@@ -57,12 +46,32 @@ func Run(ctx context.Context, config *Config) error {
 	} else {
 		namespaces = config.Namespaces
 		if len(namespaces) == 0 {
-			n, _, err := clientConfig.Namespace()
-			if err != nil {
-				return errors.Wrap(err, "unable to get default namespace")
-			}
-			namespaces = []string{n}
+			return errors.New("no namespace specified")
 		}
+	}
+
+	newTailOptions := func() *TailOptions {
+		return &TailOptions{
+			Timestamps:      config.Timestamps,
+			TimestampFormat: config.TimestampFormat,
+			Location:        config.Location,
+			SinceSeconds:    ptr.To[int64](int64(config.Since.Seconds())),
+			Exclude:         config.Exclude,
+			Include:         config.Include,
+			Highlight:       config.Highlight,
+			Namespace:       config.AllNamespaces || len(namespaces) > 1,
+			TailLines:       config.TailLines,
+			Follow:          config.Follow,
+			OnlyLogLines:    config.OnlyLogLines,
+		}
+	}
+	newTail := func(t *Target) *Tail {
+		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, newTailOptions(), config.DiffContainer)
+	}
+
+	if config.Stdin {
+		tail := NewFileTail(config.Template, os.Stdin, config.Out, config.ErrOut, newTailOptions())
+		return tail.Start()
 	}
 
 	var resource struct {
@@ -97,20 +106,6 @@ func Run(ctx context.Context, config *Config) error {
 		ephemeralContainers:            config.EphemeralContainers,
 		containerStates:                config.ContainerStates,
 	})
-	newTail := func(t *Target) *Tail {
-		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, &TailOptions{
-			Timestamps:      config.Timestamps,
-			TimestampFormat: config.TimestampFormat,
-			Location:        config.Location,
-			SinceSeconds:    ptr.To[int64](int64(config.Since.Seconds())),
-			Exclude:         config.Exclude,
-			Include:         config.Include,
-			Namespace:       config.AllNamespaces || len(namespaces) > 1,
-			TailLines:       config.TailLines,
-			Follow:          config.Follow,
-			OnlyLogLines:    config.OnlyLogLines,
-		})
-	}
 
 	if !config.Follow {
 		var eg errgroup.Group
@@ -233,7 +228,7 @@ func Run(ctx context.Context, config *Config) error {
 	return eg.Wait()
 }
 
-func chooseSelector(ctx context.Context, client clientset.Interface, namespace, kind, name string, selector labels.Selector) (labels.Selector, error) {
+func chooseSelector(ctx context.Context, client kubernetes.Interface, namespace, kind, name string, selector labels.Selector) (labels.Selector, error) {
 	if kind == "" {
 		return selector, nil
 	}
@@ -251,7 +246,7 @@ func chooseSelector(ctx context.Context, client clientset.Interface, namespace, 
 	return labels.SelectorFromSet(labelMap), nil
 }
 
-func retrieveLabelsFromResource(ctx context.Context, client clientset.Interface, namespace, kind, name string) (map[string]string, error) {
+func retrieveLabelsFromResource(ctx context.Context, client kubernetes.Interface, namespace, kind, name string) (map[string]string, error) {
 	opt := metav1.GetOptions{}
 	switch {
 	// core

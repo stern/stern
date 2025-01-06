@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
-	"regexp"
-	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -63,96 +61,14 @@ type Tail struct {
 	errOut        io.Writer
 }
 
-type TailOptions struct {
-	Timestamps      bool
-	TimestampFormat string
-	Location        *time.Location
-
-	SinceSeconds *int64
-	SinceTime    *metav1.Time
-	Exclude      []*regexp.Regexp
-	Include      []*regexp.Regexp
-	Namespace    bool
-	TailLines    *int64
-	Follow       bool
-	OnlyLogLines bool
-
-	// regexp for highlighting the matched string
-	reHightlight *regexp.Regexp
-}
-
 type ResumeRequest struct {
 	Timestamp   string // RFC3339 timestamp (not RFC3339Nano)
 	LinesToSkip int    // the number of lines to skip during this timestamp
 }
 
-func (o TailOptions) IsExclude(msg string) bool {
-	for _, rex := range o.Exclude {
-		if rex.MatchString(msg) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (o TailOptions) IsInclude(msg string) bool {
-	if len(o.Include) == 0 {
-		return true
-	}
-
-	for _, rin := range o.Include {
-		if rin.MatchString(msg) {
-			return true
-		}
-	}
-
-	return false
-}
-
-var colorHighlight = color.New(color.FgRed, color.Bold).SprintFunc()
-
-func (o TailOptions) HighlightMatchedString(msg string) string {
-	if len(o.Include) == 0 {
-		return msg
-	}
-
-	if o.reHightlight == nil {
-		ss := make([]string, len(o.Include))
-		for i, rin := range o.Include {
-			ss[i] = rin.String()
-		}
-
-		// We expect a longer match
-		sort.Slice(ss, func(i, j int) bool {
-			return len(ss[i]) > len(ss[j])
-		})
-
-		o.reHightlight = regexp.MustCompile("(" + strings.Join(ss, "|") + ")")
-	}
-
-	msg = o.reHightlight.ReplaceAllStringFunc(msg, func(part string) string {
-		return colorHighlight(part)
-	})
-
-	return msg
-}
-
-func (o TailOptions) UpdateTimezoneAndFormat(timestamp string) (string, error) {
-	t, err := time.ParseInLocation(time.RFC3339Nano, timestamp, time.UTC)
-	if err != nil {
-		return "", errors.New("missing timestamp")
-	}
-	format := TimestampFormatDefault
-	if o.TimestampFormat != "" {
-		format = o.TimestampFormat
-	}
-	return t.In(o.Location).Format(format), nil
-}
-
 // NewTail returns a new tail for a Kubernetes container inside a pod
-func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podName, containerName string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions) *Tail {
-	podColor, containerColor := determineColor(podName)
+func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podName, containerName string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions, diffContainer bool) *Tail {
+	podColor, containerColor := determineColor(podName, containerName, diffContainer)
 
 	return &Tail{
 		clientset:      clientset,
@@ -171,22 +87,18 @@ func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podNam
 	}
 }
 
-var colorList = [][2]*color.Color{
-	{color.New(color.FgHiCyan), color.New(color.FgCyan)},
-	{color.New(color.FgHiGreen), color.New(color.FgGreen)},
-	{color.New(color.FgHiMagenta), color.New(color.FgMagenta)},
-	{color.New(color.FgHiYellow), color.New(color.FgYellow)},
-	{color.New(color.FgHiBlue), color.New(color.FgBlue)},
-	{color.New(color.FgHiRed), color.New(color.FgRed)},
+func determineColor(podName, containerName string, diffContainer bool) (podColor, containerColor *color.Color) {
+	colors := colorList[colorIndex(podName)]
+	if diffContainer {
+		return colors[0], colorList[colorIndex(containerName)][1]
+	}
+	return colors[0], colors[1]
 }
 
-func determineColor(podName string) (podColor, containerColor *color.Color) {
+func colorIndex(name string) uint32 {
 	hash := fnv.New32()
-	_, _ = hash.Write([]byte(podName))
-	idx := hash.Sum32() % uint32(len(colorList))
-
-	colors := colorList[idx]
-	return colors[0], colors[1]
+	_, _ = hash.Write([]byte(name))
+	return hash.Sum32() % uint32(len(colorList))
 }
 
 // Start starts tailing
@@ -356,28 +268,6 @@ func (t *Tail) rememberLastTimestamp(timestamp string) {
 	}
 	t.last.timestamp = timestamp
 	t.last.lines = 1
-}
-
-// Log is the object which will be used together with the template to generate
-// the output.
-type Log struct {
-	// Message is the log message itself
-	Message string `json:"message"`
-
-	// Node name of the pod
-	NodeName string `json:"nodeName"`
-
-	// Namespace of the pod
-	Namespace string `json:"namespace"`
-
-	// PodName of the pod
-	PodName string `json:"podName"`
-
-	// ContainerName of the container
-	ContainerName string `json:"containerName"`
-
-	PodColor       *color.Color `json:"-"`
-	ContainerColor *color.Color `json:"-"`
 }
 
 func (r *ResumeRequest) sinceTime() (*metav1.Time, error) {

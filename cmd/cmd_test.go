@@ -109,7 +109,7 @@ func TestOptionsValidate(t *testing.T) {
 		{
 			"No required options",
 			NewOptions(streams),
-			"One of pod-query, --selector, --field-selector or --prompt is required",
+			"One of pod-query, --selector, --field-selector, --prompt or --stdin is required",
 		},
 		{
 			"Specify both selector and resource",
@@ -376,6 +376,28 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			"pod1 container1 [1970-01-01T00:02:03Z] INFO template message",
 			false,
 		},
+		{
+			"template-to-timestamp-with-timezone",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{ toTimestamp .Message "Jan 02 2006 15:04 MST" "US/Eastern" }}`
+				return o
+			}(),
+			`2024-01-01T05:00:00`,
+			`Jan 01 2024 00:00 EST`,
+			false,
+		},
+		{
+			"template-to-timestamp-without-timezone",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{ toTimestamp .Message "Jan 02 2006 15:04 MST" }}`
+				return o
+			}(),
+			`2024-01-01T05:00:00`,
+			`Jan 01 2024 05:00 UTC`,
+			false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -426,8 +448,6 @@ func TestOptionsSternConfig(t *testing.T) {
 
 	defaultConfig := func() *stern.Config {
 		return &stern.Config{
-			KubeConfig:            "",
-			ContextName:           "",
 			Namespaces:            []string{},
 			PodQuery:              re(""),
 			ExcludePodQuery:       nil,
@@ -439,6 +459,7 @@ func TestOptionsSternConfig(t *testing.T) {
 			ContainerStates:       []stern.ContainerState{stern.ALL_STATES},
 			Exclude:               nil,
 			Include:               nil,
+			Highlight:             nil,
 			InitContainers:        true,
 			EphemeralContainers:   true,
 			Since:                 48 * time.Hour,
@@ -473,8 +494,6 @@ func TestOptionsSternConfig(t *testing.T) {
 			"change all options",
 			func() *options {
 				o := NewOptions(streams)
-				o.kubeConfig = "kubeconfig1"
-				o.context = "context1"
 				o.namespaces = []string{"ns1", "ns2"}
 				o.podQuery = "query1"
 				o.excludePod = []string{"exp1", "exp2"}
@@ -485,6 +504,7 @@ func TestOptionsSternConfig(t *testing.T) {
 				o.containerStates = []string{"running", "terminated"}
 				o.exclude = []string{"ex1", "ex2"}
 				o.include = []string{"in1", "in2"}
+				o.highlight = []string{"hi1", "hi2"}
 				o.initContainers = false
 				o.ephemeralContainers = false
 				o.since = 1 * time.Hour
@@ -502,8 +522,6 @@ func TestOptionsSternConfig(t *testing.T) {
 			}(),
 			func() *stern.Config {
 				c := defaultConfig()
-				c.KubeConfig = "kubeconfig1"
-				c.ContextName = "context1"
 				c.Namespaces = []string{"ns1", "ns2"}
 				c.PodQuery = re("query1")
 				c.ExcludePodQuery = []*regexp.Regexp{re("exp1"), re("exp2")}
@@ -515,6 +533,7 @@ func TestOptionsSternConfig(t *testing.T) {
 				c.ContainerStates = []stern.ContainerState{stern.RUNNING, stern.TERMINATED}
 				c.Exclude = []*regexp.Regexp{re("ex1"), re("ex2")}
 				c.Include = []*regexp.Regexp{re("in1"), re("in2")}
+				c.Highlight = []*regexp.Regexp{re("hi1"), re("hi2")}
 				c.InitContainers = false
 				c.EphemeralContainers = false
 				c.Since = 1 * time.Hour
@@ -609,6 +628,7 @@ func TestOptionsSternConfig(t *testing.T) {
 				o.namespaces = nil
 				o.exclude = nil
 				o.include = nil
+				o.highlight = nil
 
 				return o
 			}(),
@@ -680,6 +700,17 @@ func TestOptionsSternConfig(t *testing.T) {
 			func() *options {
 				o := NewOptions(streams)
 				o.include = []string{"in1", "[invalid"}
+
+				return o
+			}(),
+			nil,
+			true,
+		},
+		{
+			"error highlight",
+			func() *options {
+				o := NewOptions(streams)
+				o.highlight = []string{"hi1", "[invalid"}
 
 				return o
 			}(),
@@ -888,4 +919,47 @@ func TestOptionsOverrideFlagSetDefaultFromConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOptionsOverrideFlagSetDefaultFromConfigArray(t *testing.T) {
+	tests := []struct {
+		config string
+		want   []string
+	}{
+		{
+			config: "testdata/config-string.yaml",
+			want:   []string{"hello-world"},
+		},
+		{
+			config: "testdata/config-array0.yaml",
+			want:   []string{},
+		},
+		{
+			config: "testdata/config-array1.yaml",
+			want:   []string{"abcd"},
+		},
+		{
+			config: "testdata/config-array2.yaml",
+			want:   []string{"abcd", "efgh"},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.config, func(t *testing.T) {
+			o := NewOptions(genericclioptions.NewTestIOStreamsDiscard())
+			fs := pflag.NewFlagSet("", pflag.ExitOnError)
+			o.AddFlags(fs)
+			if err := fs.Parse([]string{"--config=" + tt.config}); err != nil {
+				t.Fatal(err)
+			}
+			if err := o.overrideFlagSetDefaultFromConfig(fs); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(tt.want, o.exclude) {
+				t.Errorf("expected %v, but got %v", tt.want, o.exclude)
+			}
+		})
+	}
+
 }

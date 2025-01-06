@@ -3,22 +3,20 @@ package stern
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"reflect"
-	"regexp"
 	"testing"
 	"text/template"
-	"time"
 
-	"github.com/fatih/color"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestDetermineColor(t *testing.T) {
 	podName := "stern"
-	podColor1, containerColor1 := determineColor(podName)
-	podColor2, containerColor2 := determineColor(podName)
+	containerName := "foo"
+	diffContainer := false
+	podColor1, containerColor1 := determineColor(podName, containerName, diffContainer)
+	podColor2, containerColor2 := determineColor(podName, containerName, diffContainer)
 
 	if podColor1 != podColor2 {
 		t.Errorf("expected color for pod to be the same between invocations but was %v and %v",
@@ -30,109 +28,21 @@ func TestDetermineColor(t *testing.T) {
 	}
 }
 
-func TestIsIncludeTestOptions(t *testing.T) {
-	msg := "this is a log message"
+func TestDetermineColorDiffContainer(t *testing.T) {
+	podName := "stern"
+	containerName1 := "foo"
+	containerName2 := "bar"
+	diffContainer := true
+	podColor1, containerColor1 := determineColor(podName, containerName1, diffContainer)
+	podColor2, containerColor2 := determineColor(podName, containerName2, diffContainer)
 
-	tests := []struct {
-		include  []*regexp.Regexp
-		expected bool
-	}{
-		{
-			include:  []*regexp.Regexp{},
-			expected: true,
-		},
-		{
-			include: []*regexp.Regexp{
-				regexp.MustCompile(`this is not`),
-			},
-			expected: false,
-		},
-		{
-			include: []*regexp.Regexp{
-				regexp.MustCompile(`this is`),
-			},
-			expected: true,
-		},
+	if podColor1 != podColor2 {
+		t.Errorf("expected color for pod to be the same between invocations but was %v and %v",
+			podColor1, podColor2)
 	}
-
-	for i, tt := range tests {
-		o := &TailOptions{Include: tt.include}
-		if o.IsInclude(msg) != tt.expected {
-			t.Errorf("%d: expected %s, but actual %s", i, fmt.Sprint(tt.expected), fmt.Sprint(!tt.expected))
-		}
-	}
-}
-
-func TestUpdateTimezoneAndFormat(t *testing.T) {
-	location, _ := time.LoadLocation("Asia/Tokyo")
-
-	tests := []struct {
-		name     string
-		format   string
-		message  string
-		expected string
-		err      string
-	}{
-		{
-			"normal case",
-			"", // default format is used if empty
-			"2021-04-18T03:54:44.764981564Z",
-			"2021-04-18T12:54:44.764981564+09:00",
-			"",
-		},
-		{
-			"padding",
-			"",
-			"2021-04-18T03:54:44.764981500Z",
-			"2021-04-18T12:54:44.764981500+09:00",
-			"",
-		},
-		{
-			"timestamp required on non timestamp message",
-			"",
-			"",
-			"",
-			"missing timestamp",
-		},
-		{
-			"not UTC",
-			"",
-			"2021-08-03T01:26:29.953994922+02:00",
-			"2021-08-03T08:26:29.953994922+09:00",
-			"",
-		},
-		{
-			"RFC3339Nano format removed trailing zeros",
-			"",
-			"2021-06-20T08:20:30.331385Z",
-			"2021-06-20T17:20:30.331385000+09:00",
-			"",
-		},
-		{
-			"Specified the short format",
-			TimestampFormatShort,
-			"2021-06-20T08:20:30.331385Z",
-			"06-20 17:20:30",
-			"",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tailOptions := &TailOptions{
-				Location:        location,
-				TimestampFormat: tt.format,
-			}
-
-			message, err := tailOptions.UpdateTimezoneAndFormat(tt.message)
-			if tt.expected != message {
-				t.Errorf("expected %q, but actual %q", tt.expected, message)
-			}
-
-			if err != nil && tt.err != err.Error() {
-				t.Errorf("expected %q, but actual %q", tt.err, err)
-			}
-		})
+	if containerColor1 == containerColor2 {
+		t.Errorf("expected color for container to be different between invocations but was the same: %v",
+			containerColor1)
 	}
 }
 
@@ -193,7 +103,7 @@ line 4 (my-node/my-namespace/my-pod/my-container)
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			out := new(bytes.Buffer)
-			tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", tmpl, out, io.Discard, &TailOptions{})
+			tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", tmpl, out, io.Discard, &TailOptions{}, false)
 			tail.resumeRequest = tt.resumeReq
 			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(logLines)}); err != nil {
 				t.Fatalf("%d: unexpected err %v", i, err)
@@ -252,7 +162,7 @@ func TestPrintStarting(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	for i, tt := range tests {
 		errOut := new(bytes.Buffer)
-		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", nil, io.Discard, errOut, tt.options)
+		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", nil, io.Discard, errOut, tt.options, false)
 		tail.printStarting()
 
 		if !bytes.Equal(tt.expected, errOut.Bytes()) {
@@ -294,7 +204,7 @@ func TestPrintStopping(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	for i, tt := range tests {
 		errOut := new(bytes.Buffer)
-		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", nil, io.Discard, errOut, tt.options)
+		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", nil, io.Discard, errOut, tt.options, false)
 		tail.printStopping()
 
 		if !bytes.Equal(tt.expected, errOut.Bytes()) {
@@ -378,67 +288,6 @@ func TestRemoveSubsecond(t *testing.T) {
 		actual := removeSubsecond(tt.ts)
 		if tt.expected != actual {
 			t.Errorf("expected %v, but actual %v", tt.expected, actual)
-		}
-	}
-}
-
-func TestHighlightMatchedString(t *testing.T) {
-	tests := []struct {
-		msg      string
-		include  []*regexp.Regexp
-		expected string
-	}{
-		{
-			"test matched",
-			[]*regexp.Regexp{
-				regexp.MustCompile(`test`),
-			},
-			"\x1b[31;1mtest\x1b[0m matched",
-		},
-		{
-			"test not-matched",
-			[]*regexp.Regexp{
-				regexp.MustCompile(`hoge`),
-			},
-			"test not-matched",
-		},
-		{
-			"test matched",
-			[]*regexp.Regexp{
-				regexp.MustCompile(`not-matched`),
-				regexp.MustCompile(`matched`),
-			},
-			"test \x1b[31;1mmatched\x1b[0m",
-		},
-		{
-			"test multiple matched",
-			[]*regexp.Regexp{
-				regexp.MustCompile(`multiple`),
-				regexp.MustCompile(`matched`),
-			},
-			"test \x1b[31;1mmultiple\x1b[0m \x1b[31;1mmatched\x1b[0m",
-		},
-		{
-			"test match on the longer one",
-			[]*regexp.Regexp{
-				regexp.MustCompile(`match`),
-				regexp.MustCompile(`match on the longer one`),
-			},
-			"test \x1b[31;1mmatch on the longer one\x1b[0m",
-		},
-	}
-
-	orig := color.NoColor
-	color.NoColor = false
-	defer func() {
-		color.NoColor = orig
-	}()
-
-	for i, tt := range tests {
-		o := &TailOptions{Include: tt.include}
-		actual := o.HighlightMatchedString(tt.msg)
-		if actual != tt.expected {
-			t.Errorf("%d: expected %q, but actual %q", i, tt.expected, actual)
 		}
 	}
 }

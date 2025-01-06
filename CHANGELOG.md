@@ -1,3 +1,139 @@
+# v1.31.0
+
+## Changes
+* Fix --verbosity flag to show missing logs ([#317](https://github.com/stern/stern/pull/317)) c2b4410 (Takashi Kusumi)
+* Update dependencies for Kubernetes 1.31 ([#315](https://github.com/stern/stern/pull/315)) a4fdcc9 (Takashi Kusumi)
+
+# v1.30.0
+
+## :zap: Notable Changes
+
+### Add support for configuring colors for pods and containers
+You can now configure highlight colors for pods and containers in [the config file](https://github.com/stern/stern/blob/master/README.md#config-file) using a comma-separated list of [SGR (Select Graphic Rendition) sequences](https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters). See the ["Customize highlight colors" section](https://github.com/stern/stern/blob/master/README.md#customize-highlight-colors) for details.
+
+Example configuration:
+
+```yaml
+# Green, Yellow, Blue, Magenta, Cyan, White
+pod-colors: "32,33,34,35,36,37"
+
+# Colors with underline (4)
+# If empty, the pod colors will be used as container colors
+container-colors: "32;4,33;4,34;4,35;4,36;4,37;4"
+```
+
+### Display different colors for different containers
+A new `--diff-container` flag allows displaying different colors for different containers. This is useful when you want to debug logs for multiple containers in the same pod.
+
+You can also enable this feature in [the config file](https://github.com/stern/stern/blob/master/README.md#config-file).
+
+```yaml
+diff-container: true
+```
+
+## Changes
+* Add support to configure colors for pods and containers ([#306](https://github.com/stern/stern/pull/306)) [f4b2edc](https://github.com/stern/stern/commit/f4b2edc) (Takashi Kusumi)
+* Display different colors for different containers ([#305](https://github.com/stern/stern/pull/305)) [d1b5d74](https://github.com/stern/stern/commit/d1b5d74) (Se7en)
+* Support an array value in the config file ([#303](https://github.com/stern/stern/pull/303)) [6afabde](https://github.com/stern/stern/commit/6afabde) (Takashi Kusumi)
+
+# v1.29.0
+
+## :zap: Notable Changes
+
+### A new `--stdin` flag for parsing logs from stdin
+
+A new `--stdin` flag has been added, allowing parsing logs from stdin. This flag is helpful when applying the same template to local logs.
+
+```
+stern --stdin --template \
+  '{{with $msg := .Message | tryParseJSON}}{{toTimestamp $msg.ts "01-02 15:04:05" "Asia/Tokyo"}} {{$msg.msg}}{{"\n"}}{{end}}' \
+  <etcd.log
+```
+
+Additionally, this feature helps test your template with arbitrary logs.
+
+```
+stern --stdin --template \
+  '{{with $msg := .Message | tryParseJSON}}{{levelColor $msg.level}} {{$msg.msg}}{{"\n"}}{{end}}' <<EOF
+{"level":"info","msg":"info message"}
+{"level":"error","msg":"error message"}
+EOF
+```
+
+### Add support for UNIX time with nanoseconds to template functions
+
+The following template functions now support UNIX time seconds with nanoseconds (e.g., `1136171056.02`).
+
+- `toRFC3339Nano`
+- `toTUC`
+- `toTimestamp`
+
+## Changes
+
+* Add support for UNIX time with nanoseconds to template functions ([#300](https://github.com/stern/stern/pull/300)) 0d580ff (Takashi Kusumi)
+* Clarify that '=' cannot be omitted in --timestamps ([#296](https://github.com/stern/stern/pull/296)) ac36420 (Takashi Kusumi)
+* Added example to README ([#295](https://github.com/stern/stern/pull/295)) c1649ca (Thomas Güttler)
+* Update dependencies for Kubernetes 1.30 ([#293](https://github.com/stern/stern/pull/293)) d82cc9f (Kazuki Suda)
+* Add `--stdin` for `stdin` log parsing ([#292](https://github.com/stern/stern/pull/292)) 53fc746 (Jimmie Högklint)
+
+# v1.28.0
+
+## :zap: Notable Changes
+
+### Highlight matched strings in the log lines with the highlight option
+
+Some part of a log line can be highlighted while still displaying all other logs lines.
+
+`--highlight` flag now highlight matched strings in the log lines.
+
+```
+stern --highlight "\[error\]" .
+```
+
+
+# v1.27.0
+
+## :zap: Notable Changes
+
+### Add new template function: `toTimestamp`
+
+The `toTimestamp` function takes in an object, a layout, and optionally a timezone. This allows for more custom time parsing, for instance, if a user doesn't care about seeing the date of the log and only the time (in their own timezone) they can use a template such as:
+
+```
+--template '{{ with $msg := .Message | tryParseJSON }}[{{ toTimestamp $msg.time "15:04:05" "Local" }}] {{ $msg.msg }}{{ end }}{{ "\n" }}'
+```
+
+### Add generic kubectl options
+
+stern now has the generic options that kubectl has, and a new `--show-hidden-options` option.
+
+```
+$ stern --show-hidden-options
+The following options can also be used in stern:
+      --as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --as-uid string                  UID to impersonate for the operation.
+      --cache-dir string               Default cache directory (default "/home/ksuda/.kube/cache")
+      --certificate-authority string   Path to a cert file for the certificate authority
+      --client-certificate string      Path to a client certificate file for TLS
+      --client-key string              Path to a client key file for TLS
+      --cluster string                 The name of the kubeconfig cluster to use
+      --disable-compression            If true, opt-out of response compression for all requests to the server
+      --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
+      --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
+      --server string                  The address and port of the Kubernetes API server
+      --tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used
+      --token string                   Bearer token for authentication to the API server
+      --user string                    The name of the kubeconfig user to use
+```
+
+The number of kubectl generic options is so large that it makes it difficult to see stern's own list of options, so we usually hide them. Use `--show-hidden-options` if you want to list.
+
+## Changes
+
+* Add generic cli options (#283) f315819 (Kazuki Suda)
+* 281: Support toTimestamp template function (#282) 5445cd5 (Will Anderson)
+
 # v1.26.0
 
 ## :zap: Notable Changes
