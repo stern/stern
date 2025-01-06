@@ -120,7 +120,7 @@ func TestOptionsValidate(t *testing.T) {
 
 				return o
 			}(),
-			"--selector and the <resource>/<name> query can not be set at the same time",
+			"--selector and the <resource>/<name> query cannot be set at the same time",
 		},
 		{
 			"Use prompt",

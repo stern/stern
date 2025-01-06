@@ -308,7 +308,7 @@ func TestTargetFilter(t *testing.T) {
 			actual := []Target{}
 			for _, pod := range pods {
 				filter := newTargetFilter(tt.config)
-				filter.visit(pod, func(target *Target) {
+				filter.visit(pod, func(target *Target, condition bool) {
 					actual = append(actual, *target)
 				})
 			}
@@ -417,7 +417,7 @@ func TestTargetFilterShouldAdd(t *testing.T) {
 				filter.forget("uid1")
 			}
 			actual := []Target{}
-			filter.visit(createPod(tt.cs), func(target *Target) {
+			filter.visit(createPod(tt.cs), func(target *Target, condition bool) {
 				actual = append(actual, *target)
 			})
 			if !reflect.DeepEqual(tt.expected, actual) {
