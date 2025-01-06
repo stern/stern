@@ -51,15 +51,14 @@ type targetFilter struct {
 }
 
 type targetFilterConfig struct {
-	podFilter                      *regexp.Regexp
-	excludePodFilter               []*regexp.Regexp
-	containerFilter                *regexp.Regexp
-	containerExcludeFilter         []*regexp.Regexp
-	condition                      string
-	onlyConditionPodsWithReadiness bool
-	initContainers                 bool
-	ephemeralContainers            bool
-	containerStates                []ContainerState
+	podFilter              *regexp.Regexp
+	excludePodFilter       []*regexp.Regexp
+	containerFilter        *regexp.Regexp
+	containerExcludeFilter []*regexp.Regexp
+	condition              string
+	initContainers         bool
+	ephemeralContainers    bool
+	containerStates        []ContainerState
 }
 
 func newTargetFilter(c targetFilterConfig) *targetFilter {
@@ -69,24 +68,9 @@ func newTargetFilter(c targetFilterConfig) *targetFilter {
 	}
 }
 
-func isConditionFound(pod *corev1.Pod, condition string, onlyConditionPodsWithReadiness bool) bool {
+func isConditionFound(pod *corev1.Pod, condition string) bool {
 	if condition == "" {
 		return true
-	}
-	if onlyConditionPodsWithReadiness {
-		// Try to find a readiness probe
-		hasReadinessProbe := false
-		for _, container := range pod.Spec.Containers {
-			if container.ReadinessProbe != nil {
-				hasReadinessProbe = true
-				break
-			}
-		}
-
-		// Or try to find a readiness gate
-		if !hasReadinessProbe && (pod.Spec.ReadinessGates == nil || len(pod.Spec.ReadinessGates) == 0) {
-			return true
-		}
 	}
 
 	// condition can be: condition-name or condition-name=condition-value
@@ -99,6 +83,23 @@ func isConditionFound(pod *corev1.Pod, condition string, onlyConditionPodsWithRe
 
 	conditionValue = strings.ToLower(conditionValue)
 	conditionName = strings.ToLower(conditionName)
+
+	// Only apply "ready" condition if the pod has a readiness probe or readiness gate
+	if conditionName == "ready" {
+		// Try to find a readiness probe
+		hasReadinessProbe := false
+		for _, container := range pod.Spec.Containers {
+			if container.ReadinessProbe != nil {
+				hasReadinessProbe = true
+				break
+			}
+		}
+
+		// Or try to find a readiness gate
+		if !hasReadinessProbe && len(pod.Spec.ReadinessGates) == 0 {
+			return true
+		}
+	}
 
 	for _, condition := range pod.Status.Conditions {
 		if strings.ToLower(string(condition.Type)) == conditionName {
@@ -123,7 +124,7 @@ func (f *targetFilter) visit(pod *corev1.Pod, visitor func(t *Target, conditionF
 	}
 
 	// filter by condition
-	conditionFound := isConditionFound(pod, f.c.condition, f.c.onlyConditionPodsWithReadiness)
+	conditionFound := isConditionFound(pod, f.c.condition)
 
 	// filter by container statuses
 	var statuses []corev1.ContainerStatus
