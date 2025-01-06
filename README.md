@@ -355,17 +355,16 @@ Output log lines only:
 stern . --only-log-lines
 ```
 
-<<<<<<< HEAD
-Display logs for unhealthy pods only:
-
-```
-stern . --condition=ready=false --tail=0 --only-condition-pods-with-readiness
-=======
 Read from stdin:
 
 ```
 stern --stdin < service.log
->>>>>>> ccd8add39164ce1d2d6a50c73c97d971d6f35f89
+```
+
+Only display logs for pods that are not ready:
+
+```
+stern . --condition=ready=false --tail=0
 ```
 
 ## Completion
