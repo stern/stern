@@ -123,6 +123,18 @@ func TestOptionsValidate(t *testing.T) {
 			"--selector and the <resource>/<name> query can not be set at the same time",
 		},
 		{
+			"Specify both --no-follow and --tail=0",
+			func() *options {
+				o := NewOptions(streams)
+				o.podQuery = "."
+				o.noFollow = true
+				o.tail = 0
+
+				return o
+			}(),
+			"--no-follow cannot be used with --tail=0",
+		},
+		{
 			"Use prompt",
 			func() *options {
 				o := NewOptions(streams)
