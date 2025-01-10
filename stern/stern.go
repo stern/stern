@@ -168,7 +168,7 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		}
 	}
 
-	m := sync.Map{}
+	cancelMap := sync.Map{}
 	eg, nctx := errgroup.WithContext(ctx)
 	var numRequests atomic.Int64
 	for _, n := range namespaces {
@@ -200,24 +200,18 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 								" use --max-log-requests to increase the limit",
 							config.MaxLogRequests)
 					}
-					ctx, cancel := context.WithCancel(context.Background())
-					m.Store(target.GetID(), cancel)
+					ctx, cancel := context.WithCancel(nctx)
+					cancelMap.Store(target.GetID(), cancel)
 					go func() {
-						go tailTarget(ctx, target)
-						select {
-						case <-ctx.Done():
-						case <-nctx.Done():
-							cancel()
-						}
+						tailTarget(ctx, target)
 						numRequests.Add(-1)
+						cancel()
+						cancelMap.Delete(target.GetID())
 					}()
 				case target := <-d:
-					_, _ = m.Load(target.GetID())
-					cancel, ok := m.Load(target.GetID())
-					if !ok {
-						continue
+					if cancel, ok := cancelMap.LoadAndDelete(target.GetID()); ok {
+						cancel.(context.CancelFunc)()
 					}
-					cancel.(context.CancelFunc)()
 				case <-nctx.Done():
 					return nil
 				}
