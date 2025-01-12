@@ -107,6 +107,7 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 		color:               "auto",
 		container:           ".*",
 		containerStates:     []string{stern.ALL_STATES},
+		condition:           "",
 		initContainers:      true,
 		ephemeralContainers: true,
 		output:              "default",
@@ -166,6 +167,9 @@ func (o *options) Validate() error {
 	}
 	if o.noFollow && o.tail == 0 {
 		return errors.New("--no-follow cannot be used with --tail=0")
+	}
+	if o.condition != "" && o.tail != 0 {
+		return errors.New("--condition is currently only supported with --tail=0")
 	}
 
 	return nil
@@ -435,7 +439,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringArrayVarP(&o.exclude, "exclude", "e", o.exclude, "Log lines to exclude. (regular expression)")
 	fs.StringArrayVarP(&o.excludeContainer, "exclude-container", "E", o.excludeContainer, "Container name to exclude when multiple containers in pod. (regular expression)")
 	fs.StringArrayVar(&o.excludePod, "exclude-pod", o.excludePod, "Pod name to exclude. (regular expression)")
-	fs.StringVar(&o.condition, "condition", o.condition, "The condition to filter on: [condition-name[=condition-value]. The default condition-value is true. Match is case-insensitive.")
+	fs.StringVar(&o.condition, "condition", o.condition, "The condition to filter on: [condition-name[=condition-value]. The default condition-value is true. Match is case-insensitive. Currently only supported with --tail=0.")
 	fs.BoolVar(&o.noFollow, "no-follow", o.noFollow, "Exit when all logs have been shown.")
 	fs.StringArrayVarP(&o.include, "include", "i", o.include, "Log lines to include. (regular expression)")
 	fs.StringArrayVarP(&o.highlight, "highlight", "H", o.highlight, "Log lines to highlight. (regular expression)")
