@@ -20,6 +20,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"sync/atomic"
@@ -99,6 +100,7 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		excludePodFilter:       config.ExcludePodQuery,
 		containerFilter:        config.ContainerQuery,
 		containerExcludeFilter: config.ExcludeContainerQuery,
+		condition:              config.Condition,
 		initContainers:         config.InitContainers,
 		ephemeralContainers:    config.EphemeralContainers,
 		containerStates:        config.ContainerStates,
@@ -166,6 +168,7 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		}
 	}
 
+	cancelMap := sync.Map{}
 	eg, nctx := errgroup.WithContext(ctx)
 	var numRequests atomic.Int64
 	for _, n := range namespaces {
@@ -173,7 +176,7 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		if err != nil {
 			return err
 		}
-		a, err := WatchTargets(nctx,
+		a, d, err := WatchTargets(nctx,
 			client.CoreV1().Pods(n),
 			selector,
 			config.FieldSelector,
@@ -197,10 +200,18 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 								" use --max-log-requests to increase the limit",
 							config.MaxLogRequests)
 					}
+					ctx, cancel := context.WithCancel(nctx)
+					cancelMap.Store(target.GetID(), cancel)
 					go func() {
-						tailTarget(nctx, target)
+						tailTarget(ctx, target)
 						numRequests.Add(-1)
+						cancel()
+						cancelMap.Delete(target.GetID())
 					}()
+				case target := <-d:
+					if cancel, ok := cancelMap.LoadAndDelete(target.GetID()); ok {
+						cancel.(context.CancelFunc)()
+					}
 				case <-nctx.Done():
 					return nil
 				}

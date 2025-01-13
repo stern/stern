@@ -120,7 +120,7 @@ func TestOptionsValidate(t *testing.T) {
 
 				return o
 			}(),
-			"--selector and the <resource>/<name> query can not be set at the same time",
+			"--selector and the <resource>/<name> query cannot be set at the same time",
 		},
 		{
 			"Specify both --no-follow and --tail=0",
@@ -133,6 +133,28 @@ func TestOptionsValidate(t *testing.T) {
 				return o
 			}(),
 			"--no-follow cannot be used with --tail=0",
+		},
+		{
+			"Specify --condition without --tail=0 and no --no-follow",
+			func() *options {
+				o := NewOptions(streams)
+				o.podQuery = "."
+				o.condition = "ready=false"
+
+				return o
+			}(),
+			"--condition is currently only supported with --tail=0 or --no-follow",
+		},
+		{
+			"Specify --condition without --no-follow and no --tail=0",
+			func() *options {
+				o := NewOptions(streams)
+				o.podQuery = "."
+				o.condition = "ready=false"
+
+				return o
+			}(),
+			"--condition is currently only supported with --tail=0 or --no-follow",
 		},
 		{
 			"Use prompt",

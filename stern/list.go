@@ -79,8 +79,10 @@ func ListTargets(ctx context.Context, i corev1client.PodInterface, labelSelector
 	}
 	var targets []*Target
 	for i := range list.Items {
-		filter.visit(&list.Items[i], func(t *Target) {
-			targets = append(targets, t)
+		filter.visit(&list.Items[i], func(t *Target, conditionFound bool) {
+			if conditionFound {
+				targets = append(targets, t)
+			}
 		})
 	}
 	return targets, nil

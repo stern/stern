@@ -74,6 +74,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--all-namespaces`, `-A`    | `false`                       | If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.
  `--color`                   | `auto`                        | Force set color output. 'auto':  colorize if tty attached, 'always': always colorize, 'never': never colorize.
  `--completion`              |                               | Output stern command-line completion code for the specified shell. Can be 'bash', 'zsh' or 'fish'.
+ `--condition`               |                               | The condition to filter on: [condition-name[=condition-value]. The default condition-value is true. Match is case-insensitive. Currently only supported with --tail=0 or --no-follow.
  `--config`                  | `~/.config/stern/config.yaml` | Path to the stern config file
  `--container`, `-c`         | `.*`                          | Container name when multiple containers in pod. (regular expression)
  `--container-colors`        |                               | Specifies the colors used to highlight container names. Use the same format as --pod-colors. Defaults to the values of --pod-colors if omitted, and must match its length.
@@ -118,7 +119,7 @@ used.
 
 ### config file
 
-You can use the config file to change the default values of stern options. The default config file path is `~/.config/stern/config.yaml`. 
+You can use the config file to change the default values of stern options. The default config file path is `~/.config/stern/config.yaml`.
 
 ```yaml
 # <flag name>: <value>
@@ -358,6 +359,12 @@ Read from stdin:
 
 ```
 stern --stdin < service.log
+```
+
+Only display logs for pods that are not ready:
+
+```
+stern . --condition=ready=false --tail=0
 ```
 
 ## Completion

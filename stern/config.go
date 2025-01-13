@@ -34,6 +34,7 @@ type Config struct {
 	Location              *time.Location
 	ContainerQuery        *regexp.Regexp
 	ExcludeContainerQuery []*regexp.Regexp
+	Condition             Condition
 	ContainerStates       []ContainerState
 	Exclude               []*regexp.Regexp
 	Include               []*regexp.Regexp
