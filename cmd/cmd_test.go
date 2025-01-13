@@ -135,7 +135,7 @@ func TestOptionsValidate(t *testing.T) {
 			"--no-follow cannot be used with --tail=0",
 		},
 		{
-			"Specify --condition without --tail=0",
+			"Specify --condition without --tail=0 and no --no-follow",
 			func() *options {
 				o := NewOptions(streams)
 				o.podQuery = "."
@@ -144,7 +144,19 @@ func TestOptionsValidate(t *testing.T) {
 
 				return o
 			}(),
-			"--condition is currently only supported with --tail=0",
+			"--condition is currently only supported with --tail=0 or --no-follow",
+		},
+		{
+			"Specify --condition without --no-follow and no --tail=0",
+			func() *options {
+				o := NewOptions(streams)
+				o.podQuery = "."
+				o.condition = "ready=false"
+				o.noFollow = true
+
+				return o
+			}(),
+			"--condition is currently only supported with --tail=0 or --no-follow",
 		},
 		{
 			"Use prompt",
