@@ -140,7 +140,6 @@ func TestOptionsValidate(t *testing.T) {
 				o := NewOptions(streams)
 				o.podQuery = "."
 				o.condition = "ready=false"
-				o.tail = -1
 
 				return o
 			}(),
@@ -152,7 +151,6 @@ func TestOptionsValidate(t *testing.T) {
 				o := NewOptions(streams)
 				o.podQuery = "."
 				o.condition = "ready=false"
-				o.noFollow = true
 
 				return o
 			}(),
