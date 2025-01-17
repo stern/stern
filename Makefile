@@ -5,9 +5,9 @@ build:
 	go build -o dist/stern .
 
 TOOLS_BIN_DIR := $(CURDIR)/hack/tools/bin
-GORELEASER_VERSION ?= v2.3.2
+GORELEASER_VERSION ?= v2.5.1
 GORELEASER := $(TOOLS_BIN_DIR)/goreleaser
-GOLANGCI_LINT_VERSION ?= v1.61.0
+GOLANGCI_LINT_VERSION ?= v1.63.4
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 VALIDATE_KREW_MAIFEST_VERSION ?= v0.4.4
 VALIDATE_KREW_MAIFEST := $(TOOLS_BIN_DIR)/validate-krew-manifest
