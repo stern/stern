@@ -65,7 +65,7 @@ EOF
 The following template functions now support UNIX time seconds with nanoseconds (e.g., `1136171056.02`).
 
 - `toRFC3339Nano`
-- `toTUC`
+- `toUTC`
 - `toTimestamp`
 
 ## Changes
