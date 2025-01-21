@@ -1,3 +1,39 @@
+# v1.32.0
+
+## :zap: Notable Changes
+
+### A new template function `prettyJSON`
+
+You can now use a new template function `prettyJSON` that parse input and emit it as pretty printed JSON. If it parse fails output string as is.
+
+```
+# Will try to parse .Message as JSON and pretty print it, if not json will output as is
+stern --template='{{ .Message | prettyJSON }}{{"\n"}}' backend
+# Or with parsed json, will drop non-json logs because of `with`
+stern --template='{{ with $msg := .Message | tryParseJSON }}{{ prettyJSON $msg }}{{"\n"}}{{end}}' backend
+```
+
+### A new template function `bunyanLevelColor`
+
+You can now use a new template function `bunyanLevelColor` that print [bunyan](https://github.com/trentm/node-bunyan) numeric log level using appropriate color.
+
+### A new flag `--condition`
+
+A new `--condition` allows you to filter logs with the pod condition on: `[condition-name[=condition-value]`. The default condition-value is true. Match is case-insensitive. Currently, it is only supported with --tail=0 or --no-follow.
+
+```
+# Only display logs for pods that are not ready:
+stern . --condition=ready=false --tail=0
+```
+
+## Changes
+
+* Add `--condition` (#276) 2576972 (Felipe Santos)
+* Add check for when `--no-follow` is set with `--tail=0` (#331) 276e906 (Felipe Santos)
+* Implement JSON pretty print (#324) ccd8add (Fabio Napoleoni)
+* Fix descriptions of `extjson` and `ppextjson` (#325) d9a9858 (Takashi Kusumi)
+* Allow `levelColor` template function to parse numbers (#321) db69276 (Jimmie Högklint)
+
 # v1.31.0
 
 ## Changes
