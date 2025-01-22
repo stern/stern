@@ -50,6 +50,8 @@ type TailOptions struct {
 
 	// regexp for highlighting the matched string
 	reHightlight *regexp.Regexp
+
+	SamePrefixColor bool // New option to color containers with the same prefix the same
 }
 
 func (o TailOptions) IsExclude(msg string) bool {

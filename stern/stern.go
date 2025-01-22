@@ -63,6 +63,7 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 			TailLines:       config.TailLines,
 			Follow:          config.Follow,
 			OnlyLogLines:    config.OnlyLogLines,
+			SamePrefixColor: config.SamePrefixColor,
 		}
 	}
 	newTail := func(t *Target) *Tail {
