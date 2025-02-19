@@ -83,7 +83,7 @@ func (f *targetFilter) visit(pod *corev1.Pod, visitor func(t *Target, conditionF
 	// filter by condition
 	conditionFound := true
 	if f.c.condition != (Condition{}) {
-		conditionFound = f.c.condition.Match(pod.Status.Conditions)
+		conditionFound = f.c.condition.Match(pod)
 	}
 
 	// filter by container statuses
