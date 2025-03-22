@@ -43,12 +43,9 @@ const TimestampFormatShort = "01-02 15:04:05"
 type Tail struct {
 	clientset corev1client.CoreV1Interface
 
-	NodeName       string
-	Namespace      string
-	PodName        string
-	ContainerName  string
-	Labels         map[string]string
-	Annotations    map[string]string
+	Pod           *corev1.Pod
+	ContainerName string
+
 	Options        *TailOptions
 	closed         chan struct{}
 	podColor       *color.Color
@@ -69,17 +66,13 @@ type ResumeRequest struct {
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
-func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podName, containerName string, labels map[string]string, annotations map[string]string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions, diffContainer bool) *Tail {
-	podColor, containerColor := determineColor(podName, containerName, diffContainer)
+func NewTail(clientset corev1client.CoreV1Interface, pod *corev1.Pod, containerName string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions, diffContainer bool) *Tail {
+	podColor, containerColor := determineColor(pod.Name, containerName, diffContainer)
 
 	return &Tail{
 		clientset:      clientset,
-		NodeName:       nodeName,
-		Namespace:      namespace,
-		PodName:        podName,
+		Pod:            pod,
 		ContainerName:  containerName,
-		Labels:         labels,
-		Annotations:    annotations,
 		Options:        options,
 		closed:         make(chan struct{}),
 		tmpl:           tmpl,
@@ -115,7 +108,7 @@ func (t *Tail) Start(ctx context.Context) error {
 
 	t.printStarting()
 
-	req := t.clientset.Pods(t.Namespace).GetLogs(t.PodName, &corev1.PodLogOptions{
+	req := t.clientset.Pods(t.Pod.Namespace).GetLogs(t.Pod.Name, &corev1.PodLogOptions{
 		Follow:       t.Options.Follow,
 		Timestamps:   true,
 		Container:    t.ContainerName,
@@ -159,9 +152,9 @@ func (t *Tail) printStarting() {
 		p := t.podColor.SprintFunc()
 		c := t.containerColor.SprintFunc()
 		if t.Options.Namespace {
-			fmt.Fprintf(t.errOut, "%s %s %s › %s\n", g("+"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
+			fmt.Fprintf(t.errOut, "%s %s %s › %s\n", g("+"), p(t.Pod.Namespace), p(t.Pod.Name), c(t.ContainerName))
 		} else {
-			fmt.Fprintf(t.errOut, "%s %s › %s\n", g("+"), p(t.PodName), c(t.ContainerName))
+			fmt.Fprintf(t.errOut, "%s %s › %s\n", g("+"), p(t.Pod.Name), c(t.ContainerName))
 		}
 	}
 }
@@ -172,9 +165,9 @@ func (t *Tail) printStopping() {
 		p := t.podColor.SprintFunc()
 		c := t.containerColor.SprintFunc()
 		if t.Options.Namespace {
-			fmt.Fprintf(t.errOut, "%s %s %s › %s\n", r("-"), p(t.Namespace), p(t.PodName), c(t.ContainerName))
+			fmt.Fprintf(t.errOut, "%s %s %s › %s\n", r("-"), p(t.Pod.Namespace), p(t.Pod.Name), c(t.ContainerName))
 		} else {
-			fmt.Fprintf(t.errOut, "%s %s › %s\n", r("-"), p(t.PodName), c(t.ContainerName))
+			fmt.Fprintf(t.errOut, "%s %s › %s\n", r("-"), p(t.Pod.Name), c(t.ContainerName))
 		}
 	}
 }
@@ -208,12 +201,12 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper)
 func (t *Tail) Print(msg string) {
 	vm := Log{
 		Message:        msg,
-		NodeName:       t.NodeName,
-		Namespace:      t.Namespace,
-		PodName:        t.PodName,
+		NodeName:       t.Pod.Spec.NodeName,
+		Namespace:      t.Pod.Namespace,
+		PodName:        t.Pod.Name,
 		ContainerName:  t.ContainerName,
-		Labels:         t.Labels,
-		Annotations:    t.Annotations,
+		Labels:         t.Pod.Labels,
+		Annotations:    t.Pod.Annotations,
 		PodColor:       t.podColor,
 		ContainerColor: t.containerColor,
 	}

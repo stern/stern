@@ -8,6 +8,8 @@ import (
 	"testing"
 	"text/template"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -103,7 +105,16 @@ line 4 (my-node/my-namespace/my-pod/my-container)
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			out := new(bytes.Buffer)
-			tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", map[string]string{}, map[string]string{}, tmpl, out, io.Discard, &TailOptions{}, false)
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "my-namespace",
+					Name:      "my-pod",
+				},
+				Spec: corev1.PodSpec{
+					NodeName: "my-node",
+				},
+			}
+			tail := NewTail(clientset.CoreV1(), pod, "my-container", tmpl, out, io.Discard, &TailOptions{}, false)
 			tail.resumeRequest = tt.resumeReq
 			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(logLines)}); err != nil {
 				t.Fatalf("%d: unexpected err %v", i, err)
@@ -162,7 +173,13 @@ func TestPrintStarting(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	for i, tt := range tests {
 		errOut := new(bytes.Buffer)
-		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", map[string]string{}, map[string]string{}, nil, io.Discard, errOut, tt.options, false)
+		pod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "my-namespace",
+				Name:      "my-pod",
+			},
+		}
+		tail := NewTail(clientset.CoreV1(), pod, "my-container", nil, io.Discard, errOut, tt.options, false)
 		tail.printStarting()
 
 		if !bytes.Equal(tt.expected, errOut.Bytes()) {
@@ -204,7 +221,13 @@ func TestPrintStopping(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	for i, tt := range tests {
 		errOut := new(bytes.Buffer)
-		tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", map[string]string{}, map[string]string{}, nil, io.Discard, errOut, tt.options, false)
+		pod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "my-namespace",
+				Name:      "my-pod",
+			},
+		}
+		tail := NewTail(clientset.CoreV1(), pod, "my-container", nil, io.Discard, errOut, tt.options, false)
 		tail.printStopping()
 
 		if !bytes.Equal(tt.expected, errOut.Bytes()) {
