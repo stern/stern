@@ -47,6 +47,8 @@ type Tail struct {
 	Namespace      string
 	PodName        string
 	ContainerName  string
+	Labels         map[string]string
+	Annotations    map[string]string
 	Options        *TailOptions
 	closed         chan struct{}
 	podColor       *color.Color
@@ -67,7 +69,7 @@ type ResumeRequest struct {
 }
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
-func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podName, containerName string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions, diffContainer bool) *Tail {
+func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podName, containerName string, labels map[string]string, annotations map[string]string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions, diffContainer bool) *Tail {
 	podColor, containerColor := determineColor(podName, containerName, diffContainer)
 
 	return &Tail{
@@ -76,6 +78,8 @@ func NewTail(clientset corev1client.CoreV1Interface, nodeName, namespace, podNam
 		Namespace:      namespace,
 		PodName:        podName,
 		ContainerName:  containerName,
+		Labels:         labels,
+		Annotations:    annotations,
 		Options:        options,
 		closed:         make(chan struct{}),
 		tmpl:           tmpl,
@@ -208,6 +212,8 @@ func (t *Tail) Print(msg string) {
 		Namespace:      t.Namespace,
 		PodName:        t.PodName,
 		ContainerName:  t.ContainerName,
+		Labels:         t.Labels,
+		Annotations:    t.Annotations,
 		PodColor:       t.podColor,
 		ContainerColor: t.containerColor,
 	}

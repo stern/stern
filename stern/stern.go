@@ -66,7 +66,15 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		}
 	}
 	newTail := func(t *Target) *Tail {
-		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, newTailOptions(), config.DiffContainer)
+		// Get pod labels and annotations
+		pod, err := client.CoreV1().Pods(t.Namespace).Get(ctx, t.Pod, metav1.GetOptions{})
+		labels := map[string]string{}
+		annotations := map[string]string{}
+		if err == nil {
+			labels = pod.Labels
+			annotations = pod.Annotations
+		}
+		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, labels, annotations, config.Template, config.Out, config.ErrOut, newTailOptions(), config.DiffContainer)
 	}
 
 	if config.Stdin {
