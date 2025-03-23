@@ -57,7 +57,7 @@ func (t *FileTail) ConsumeReader(reader *bufio.Reader) error {
 }
 
 // Print prints a color coded log message
-func (t *FileTail) Print(msg string) {
+func (t *FileTail) Print(msg string, withHighlight bool) {
 	vm := Log{
 		Message:        msg,
 		NodeName:       "",
@@ -74,6 +74,10 @@ func (t *FileTail) Print(msg string) {
 		return
 	}
 
+	if withHighlight {
+		fmt.Fprint(t.out, t.Options.HighlightMatchedString(buf.String()))
+		return
+	}
 	fmt.Fprint(t.out, buf.String())
 }
 
@@ -84,6 +88,5 @@ func (t *FileTail) consumeLine(line string) {
 		return
 	}
 
-	msg := t.Options.HighlightMatchedString(content)
-	t.Print(msg)
+	t.Print(content, true)
 }
