@@ -49,10 +49,9 @@ func TestTargetFilter(t *testing.T) {
 	}
 
 	genTarget := func(node, pod, container string) Target {
+		p := createPod(node, pod)
 		return Target{
-			Namespace: "ns1",
-			Node:      node,
-			Pod:       pod,
+			Pod:       p,
 			Container: container,
 		}
 	}
@@ -346,12 +345,17 @@ func TestTargetFilterShouldAdd(t *testing.T) {
 			},
 		}
 	}
-	genTarget := func(container string) Target {
+	genTarget := func(containerName, containerID string) Target {
+		pod := createPod(corev1.ContainerStatus{
+			Name:        containerName,
+			ContainerID: containerID,
+			State: corev1.ContainerState{
+				Running: &corev1.ContainerStateRunning{},
+			},
+		})
 		return Target{
-			Namespace: "ns1",
-			Node:      "node1",
-			Pod:       "pod1",
-			Container: container,
+			Pod:       pod,
+			Container: containerName,
 		}
 	}
 	tests := []struct {
@@ -374,7 +378,7 @@ func TestTargetFilterShouldAdd(t *testing.T) {
 					Running: &corev1.ContainerStateRunning{},
 				},
 			},
-			expected: []Target{genTarget("c1")},
+			expected: []Target{genTarget("c1", "cid1")},
 		},
 		{
 			name: "same container ID should be ignored",
@@ -396,7 +400,7 @@ func TestTargetFilterShouldAdd(t *testing.T) {
 					Running: &corev1.ContainerStateRunning{},
 				},
 			},
-			expected: []Target{genTarget("c1")},
+			expected: []Target{genTarget("c1", "cid2")},
 		},
 		{
 			name:   "forget() allows the same ID ",
@@ -408,7 +412,7 @@ func TestTargetFilterShouldAdd(t *testing.T) {
 					Running: &corev1.ContainerStateRunning{},
 				},
 			},
-			expected: []Target{genTarget("c1")},
+			expected: []Target{genTarget("c1", "cid2")},
 		},
 	}
 	for _, tt := range tests {
