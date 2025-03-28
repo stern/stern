@@ -66,7 +66,7 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		}
 	}
 	newTail := func(t *Target) *Tail {
-		return NewTail(client.CoreV1(), t.Node, t.Namespace, t.Pod, t.Container, config.Template, config.Out, config.ErrOut, newTailOptions(), config.DiffContainer)
+		return NewTail(client.CoreV1(), t.Pod, t.Container, config.Template, config.Out, config.ErrOut, newTailOptions(), config.DiffContainer)
 	}
 
 	if config.Stdin {

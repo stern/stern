@@ -271,7 +271,7 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 				return o
 			}(),
 			"json message",
-			`{"message":"json message","nodeName":"node1","namespace":"ns1","podName":"pod1","containerName":"container1"}
+			`{"message":"json message","nodeName":"node1","namespace":"ns1","podName":"pod1","containerName":"container1","labels":{"app":"nginx","env":"prod"},"annotations":{"version":"1.23.4"}}
 `,
 			false,
 		},
@@ -432,6 +432,72 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			`Jan 01 2024 05:00 UTC`,
 			false,
 		},
+		{
+			"template with specific label",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = "{{.PodName}} [{{.Labels.app}}] {{.Message}}"
+				return o
+			}(),
+			"message with app label",
+			"pod1 [nginx] message with app label",
+			false,
+		},
+		{
+			"template with specific annotation",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = "{{.PodName}} [{{.Annotations.version}}] {{.Message}}"
+				return o
+			}(),
+			"message with version annotation",
+			"pod1 [1.23.4] message with version annotation",
+			false,
+		},
+		{
+			"template with labels as json",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = "{{.PodName}} {{json .Labels}} {{.Message}}"
+				return o
+			}(),
+			"message with json labels",
+			"pod1 {\"app\":\"nginx\",\"env\":\"prod\"} message with json labels",
+			false,
+		},
+		{
+			"template with annotations as json",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = "{{.PodName}} {{json .Annotations}} {{.Message}}"
+				return o
+			}(),
+			"message with json annotations",
+			"pod1 {\"version\":\"1.23.4\"} message with json annotations",
+			false,
+		},
+		{
+			"template with missing label",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = "{{.PodName}} [{{.Labels.missing}}] {{.Message}}"
+				return o
+			}(),
+			"message with missing label",
+			"pod1 [<no value>] message with missing label",
+			false,
+		},
+		{
+			"template with missing annotation",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = "{{.PodName}} [{{.Annotations.missing}}] {{.Message}}"
+				return o
+			}(),
+			"message with missing annotation",
+			"pod1 [<no value>] message with missing annotation",
+			false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -442,6 +508,8 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 				Namespace:      "ns1",
 				PodName:        "pod1",
 				ContainerName:  "container1",
+				Labels:         map[string]string{"app": "nginx", "env": "prod"},
+				Annotations:    map[string]string{"version": "1.23.4"},
 				PodColor:       color.New(color.FgRed),
 				ContainerColor: color.New(color.FgBlue),
 			}

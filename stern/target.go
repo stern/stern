@@ -25,15 +25,13 @@ import (
 
 // Target is a target to watch
 type Target struct {
-	Node      string
-	Namespace string
-	Pod       string
+	Pod       *corev1.Pod
 	Container string
 }
 
 // GetID returns the ID of the object
 func (t *Target) GetID() string {
-	return fmt.Sprintf("%s-%s-%s", t.Namespace, t.Pod, t.Container)
+	return fmt.Sprintf("%s-%s-%s", t.Pod.Namespace, t.Pod.Name, t.Container)
 }
 
 // targetState holds a last shown container ID
@@ -112,9 +110,7 @@ OUTER:
 		}
 
 		t := &Target{
-			Node:      pod.Spec.NodeName,
-			Namespace: pod.Namespace,
-			Pod:       pod.Name,
+			Pod:       pod,
 			Container: c.Name,
 		}
 

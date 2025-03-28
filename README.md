@@ -147,13 +147,15 @@ It accepts a custom template through the `--template` flag, which will be
 compiled to a Go template and then used for every log message. This Go template
 will receive the following struct:
 
-| property        | type   | description                                 |
-|-----------------|--------|---------------------------------------------|
-| `Message`       | string | The log message itself                      |
-| `NodeName`      | string | The node name where the pod is scheduled on |
-| `Namespace`     | string | The namespace of the pod                    |
-| `PodName`       | string | The name of the pod                         |
-| `ContainerName` | string | The name of the container                   |
+| property        | type              | description                                 |
+|-----------------|-------------------|---------------------------------------------|
+| `Message`       | string            | The log message itself                      |
+| `NodeName`      | string            | The node name where the pod is scheduled on |
+| `Namespace`     | string            | The namespace of the pod                    |
+| `PodName`       | string            | The name of the pod                         |
+| `ContainerName` | string            | The name of the container                   |
+| `Labels`        | map[string]string | The labels of the pod                       |
+| `Annotations`   | map[string]string | The annotations of the pod                  |
 
 The following functions are available within the template (besides the [builtin
 functions](https://golang.org/pkg/text/template/#hdr-Functions)):
