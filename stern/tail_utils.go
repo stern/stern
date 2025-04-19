@@ -97,7 +97,6 @@ func (o TailOptions) HighlightMatchedString(msg string) string {
 
 		o.reHightlight = regexp.MustCompile("(" + strings.Join(ss, "|") + ")")
 	}
-
 	msg = o.reHightlight.ReplaceAllStringFunc(msg, func(part string) string {
 		return colorHighlight(part)
 	})

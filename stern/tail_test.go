@@ -3,8 +3,11 @@ package stern
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"github.com/fatih/color"
 	"io"
 	"reflect"
+	"regexp"
 	"testing"
 	"text/template"
 
@@ -110,7 +113,122 @@ line 4 (my-node/my-namespace/my-pod/my-container)
 			}
 
 			if !bytes.Equal(tt.expected, out.Bytes()) {
-				t.Errorf("%d: expected %s, but actual %s", i, tt.expected, out)
+				t.Errorf("%d: expected `%s`, but actual `%s`", i, tt.expected, out)
+			}
+		})
+	}
+}
+
+func TestHighlight(t *testing.T) {
+	color.NoColor = false
+	defer func() { color.NoColor = true }()
+	coloredLine := colorHighlight("line")
+
+	tmpl := template.Must(template.New("").Parse(`{{printf "%s (%s/%s/%s/%s)\n" .Message .NodeName .Namespace .PodName .ContainerName}}`))
+
+	tests := []struct {
+		name     string
+		logLine  string
+		expected []byte
+	}{
+		{
+			name: "normal",
+			logLine: `2023-02-13T21:20:30.000000001Z line 1
+2023-02-13T21:20:30.000000002Z line 2
+2023-02-13T21:20:31.000000001Z line 3
+2023-02-13T21:20:31.000000002Z line 4`,
+			expected: []byte(fmt.Sprintf(`%s 1 (my-node/my-namespace/my-pod/my-container)
+%s 2 (my-node/my-namespace/my-pod/my-container)
+%s 3 (my-node/my-namespace/my-pod/my-container)
+%s 4 (my-node/my-namespace/my-pod/my-container)
+`, coloredLine, coloredLine, coloredLine, coloredLine)),
+		},
+		{
+			name: "no highlight",
+			logLine: `2023-02-13T21:20:30.000000001Z log 1
+2023-02-13T21:20:30.000000002Z log 2
+2023-02-13T21:20:31.000000001Z log 3
+2023-02-13T21:20:31.000000002Z log 4`,
+			expected: []byte(fmt.Sprintf(`log 1 (my-node/my-namespace/my-pod/my-container)
+log 2 (my-node/my-namespace/my-pod/my-container)
+log 3 (my-node/my-namespace/my-pod/my-container)
+log 4 (my-node/my-namespace/my-pod/my-container)
+`)),
+		},
+	}
+
+	clientset := fake.NewSimpleClientset()
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := new(bytes.Buffer)
+			tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", tmpl, out, io.Discard, &TailOptions{Highlight: []*regexp.Regexp{regexp.MustCompile("line")}}, false)
+			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != nil {
+				t.Fatalf("%d: unexpected err %v", i, err)
+			}
+
+			if !bytes.Equal(tt.expected, out.Bytes()) {
+				t.Errorf("%d: expected `%s`, but actual `%s`", i, tt.expected, out)
+			}
+		})
+	}
+}
+
+func TestInclude(t *testing.T) {
+	color.NoColor = false
+	defer func() { color.NoColor = true }()
+
+	coloredLine := colorHighlight("line")
+
+	tmpl := template.Must(template.New("").Parse(`{{printf "%s (%s/%s/%s/%s)\n" .Message .NodeName .Namespace .PodName .ContainerName}}`))
+
+	tests := []struct {
+		name     string
+		logLine  string
+		expected []byte
+	}{
+		{
+			name: "normal",
+			logLine: `2023-02-13T21:20:30.000000001Z line 1
+2023-02-13T21:20:30.000000002Z line 2
+2023-02-13T21:20:31.000000001Z line 3
+2023-02-13T21:20:31.000000002Z line 4`,
+			expected: []byte(fmt.Sprintf(`%s 1 (my-node/my-namespace/my-pod/my-container)
+%s 2 (my-node/my-namespace/my-pod/my-container)
+%s 3 (my-node/my-namespace/my-pod/my-container)
+%s 4 (my-node/my-namespace/my-pod/my-container)
+`, coloredLine, coloredLine, coloredLine, coloredLine)),
+		},
+		{
+			name: "full excluded",
+			logLine: `2023-02-13T21:20:30.000000001Z log 1
+2023-02-13T21:20:30.000000002Z log 2
+2023-02-13T21:20:31.000000001Z log 3
+2023-02-13T21:20:31.000000002Z log 4`,
+			expected: []byte(fmt.Sprintf(``)),
+		},
+
+		{
+			name: "one included",
+			logLine: `2023-02-13T21:20:30.000000001Z log 1
+2023-02-13T21:20:30.000000002Z line 2
+2023-02-13T21:20:31.000000001Z log 3
+2023-02-13T21:20:31.000000002Z log 4`,
+			expected: []byte(fmt.Sprintf(`%s 2 (my-node/my-namespace/my-pod/my-container)
+`, coloredLine)),
+		},
+	}
+
+	clientset := fake.NewSimpleClientset()
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := new(bytes.Buffer)
+			tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", tmpl, out, io.Discard, &TailOptions{Include: []*regexp.Regexp{regexp.MustCompile("line")}}, false)
+			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != nil {
+				t.Fatalf("%d: unexpected err %v", i, err)
+			}
+
+			if !bytes.Equal(tt.expected, out.Bytes()) {
+				t.Errorf("%d: expected `%s`, but actual `%s`", i, tt.expected, out)
 			}
 		})
 	}
