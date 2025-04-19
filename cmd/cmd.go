@@ -641,6 +641,9 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		"color": func(color color.Color, text string) string {
 			return color.SprintFunc()(text)
 		},
+		"colorCustom": func(text string, args ...color.Attribute) string {
+			return color.New(args...).SprintFunc()(text)
+		},
 		"colorBlack":   color.BlackString,
 		"colorRed":     color.RedString,
 		"colorGreen":   color.GreenString,
