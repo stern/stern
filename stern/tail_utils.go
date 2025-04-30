@@ -29,6 +29,12 @@ type Log struct {
 	// ContainerName of the container
 	ContainerName string `json:"containerName"`
 
+	// Labels of the pod
+	Labels map[string]string `json:"labels"`
+
+	// Annotations of the pod
+	Annotations map[string]string `json:"annotations"`
+
 	PodColor       *color.Color `json:"-"`
 	ContainerColor *color.Color `json:"-"`
 }
