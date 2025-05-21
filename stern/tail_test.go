@@ -149,11 +149,11 @@ func TestHighlight(t *testing.T) {
 2023-02-13T21:20:30.000000002Z log 2
 2023-02-13T21:20:31.000000001Z log 3
 2023-02-13T21:20:31.000000002Z log 4`,
-			expected: []byte(fmt.Sprintf(`log 1 (my-node/my-namespace/my-pod/my-container)
+			expected: []byte(`log 1 (my-node/my-namespace/my-pod/my-container)
 log 2 (my-node/my-namespace/my-pod/my-container)
 log 3 (my-node/my-namespace/my-pod/my-container)
 log 4 (my-node/my-namespace/my-pod/my-container)
-`)),
+`),
 		},
 	}
 
@@ -204,7 +204,7 @@ func TestInclude(t *testing.T) {
 2023-02-13T21:20:30.000000002Z log 2
 2023-02-13T21:20:31.000000001Z log 3
 2023-02-13T21:20:31.000000002Z log 4`,
-			expected: []byte(fmt.Sprintf(``)),
+			expected: []byte(""),
 		},
 
 		{

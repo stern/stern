@@ -200,8 +200,7 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper)
 	}
 }
 
-// Print prints a color coded log message with the pod and container names
-func (t *Tail) Print(msg string, withHighlight bool) {
+func (t *Tail) sprint(msg string) (string, error) {
 	vm := Log{
 		Message:        msg,
 		NodeName:       t.NodeName,
@@ -214,15 +213,32 @@ func (t *Tail) Print(msg string, withHighlight bool) {
 
 	var buf bytes.Buffer
 	if err := t.tmpl.Execute(&buf, vm); err != nil {
-		fmt.Fprintf(t.errOut, "expanding template failed: %s\n", err)
+		return "", fmt.Errorf("expanding template failed: %s", err)
+	}
+
+	return buf.String(), nil
+}
+
+// Print prints a color coded log message with the pod and container names
+func (t *Tail) Print(msg string) {
+	buf, err := t.sprint(msg)
+	if err != nil {
+		fmt.Fprintf(t.errOut, "%s\n", err)
 		return
 	}
 
-	if withHighlight {
-		fmt.Fprint(t.out, t.Options.HighlightMatchedString(buf.String()))
+	fmt.Fprint(t.out, t.Options.HighlightMatchedString(buf))
+}
+
+// PrintWithoutHighlight prints a log message without applying any highlight.
+func (t *Tail) PrintWithoutHighlight(msg string) {
+	buf, err := t.sprint(msg)
+	if err != nil {
+		fmt.Fprintf(t.errOut, "%s\n", err)
 		return
 	}
-	fmt.Fprint(t.out, buf.String())
+
+	fmt.Fprint(t.out, buf)
 }
 
 func (t *Tail) GetResumeRequest() *ResumeRequest {
@@ -235,7 +251,7 @@ func (t *Tail) GetResumeRequest() *ResumeRequest {
 func (t *Tail) consumeLine(line string) {
 	rfc3339Nano, content, err := splitLogLine(line)
 	if err != nil {
-		t.Print(fmt.Sprintf("[%v] %s", err, line), false)
+		t.PrintWithoutHighlight(fmt.Sprintf("[%v] %s", err, line))
 		return
 	}
 
@@ -254,13 +270,13 @@ func (t *Tail) consumeLine(line string) {
 	if t.Options.Timestamps {
 		updatedTs, err := t.Options.UpdateTimezoneAndFormat(rfc3339Nano)
 		if err != nil {
-			t.Print(fmt.Sprintf("[%v] %s", err, line), false)
+			t.PrintWithoutHighlight(fmt.Sprintf("[%v] %s", err, line))
 			return
 		}
 		content = updatedTs + " " + content
 	}
 
-	t.Print(content, true)
+	t.Print(content)
 }
 
 func (t *Tail) rememberLastTimestamp(timestamp string) {
