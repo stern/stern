@@ -135,7 +135,7 @@ func TestHighlight(t *testing.T) {
 	defer func() { color.NoColor = true }()
 	coloredLine := colorHighlight("line")
 
-	tmpl := template.Must(template.New("").Parse(`{{printf "%s (%s/%s/%s/%s)\n" .Message .NodeName .Namespace .PodName .ContainerName}}`))
+	tmpl := template.Must(template.New("").Parse(`{{printf "%s (%s/%s/%s)\n" .Message .Namespace .PodName .ContainerName}}`))
 
 	tests := []struct {
 		name     string
@@ -148,10 +148,10 @@ func TestHighlight(t *testing.T) {
 2023-02-13T21:20:30.000000002Z line 2
 2023-02-13T21:20:31.000000001Z line 3
 2023-02-13T21:20:31.000000002Z line 4`,
-			expected: []byte(fmt.Sprintf(`%s 1 (my-node/my-namespace/my-pod/my-container)
-%s 2 (my-node/my-namespace/my-pod/my-container)
-%s 3 (my-node/my-namespace/my-pod/my-container)
-%s 4 (my-node/my-namespace/my-pod/my-container)
+			expected: []byte(fmt.Sprintf(`%s 1 (my-namespace/my-pod/my-container)
+%s 2 (my-namespace/my-pod/my-container)
+%s 3 (my-namespace/my-pod/my-container)
+%s 4 (my-namespace/my-pod/my-container)
 `, coloredLine, coloredLine, coloredLine, coloredLine)),
 		},
 		{
@@ -160,10 +160,10 @@ func TestHighlight(t *testing.T) {
 2023-02-13T21:20:30.000000002Z log 2
 2023-02-13T21:20:31.000000001Z log 3
 2023-02-13T21:20:31.000000002Z log 4`,
-			expected: []byte(`log 1 (my-node/my-namespace/my-pod/my-container)
-log 2 (my-node/my-namespace/my-pod/my-container)
-log 3 (my-node/my-namespace/my-pod/my-container)
-log 4 (my-node/my-namespace/my-pod/my-container)
+			expected: []byte(`log 1 (my-namespace/my-pod/my-container)
+log 2 (my-namespace/my-pod/my-container)
+log 3 (my-namespace/my-pod/my-container)
+log 4 (my-namespace/my-pod/my-container)
 `),
 		},
 	}
@@ -172,7 +172,14 @@ log 4 (my-node/my-namespace/my-pod/my-container)
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			out := new(bytes.Buffer)
-			tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", tmpl, out, io.Discard, &TailOptions{Highlight: []*regexp.Regexp{regexp.MustCompile("line")}}, false)
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "my-namespace",
+					Name:      "my-pod",
+				},
+			}
+
+			tail := NewTail(clientset.CoreV1(), pod, "my-container", tmpl, out, io.Discard, &TailOptions{Highlight: []*regexp.Regexp{regexp.MustCompile("line")}}, false)
 			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != nil {
 				t.Fatalf("%d: unexpected err %v", i, err)
 			}
@@ -190,7 +197,7 @@ func TestInclude(t *testing.T) {
 
 	coloredLine := colorHighlight("line")
 
-	tmpl := template.Must(template.New("").Parse(`{{printf "%s (%s/%s/%s/%s)\n" .Message .NodeName .Namespace .PodName .ContainerName}}`))
+	tmpl := template.Must(template.New("").Parse(`{{printf "%s (%s/%s/%s)\n" .Message .Namespace .PodName .ContainerName}}`))
 
 	tests := []struct {
 		name     string
@@ -203,10 +210,10 @@ func TestInclude(t *testing.T) {
 2023-02-13T21:20:30.000000002Z line 2
 2023-02-13T21:20:31.000000001Z line 3
 2023-02-13T21:20:31.000000002Z line 4`,
-			expected: []byte(fmt.Sprintf(`%s 1 (my-node/my-namespace/my-pod/my-container)
-%s 2 (my-node/my-namespace/my-pod/my-container)
-%s 3 (my-node/my-namespace/my-pod/my-container)
-%s 4 (my-node/my-namespace/my-pod/my-container)
+			expected: []byte(fmt.Sprintf(`%s 1 (my-namespace/my-pod/my-container)
+%s 2 (my-namespace/my-pod/my-container)
+%s 3 (my-namespace/my-pod/my-container)
+%s 4 (my-namespace/my-pod/my-container)
 `, coloredLine, coloredLine, coloredLine, coloredLine)),
 		},
 		{
@@ -224,7 +231,7 @@ func TestInclude(t *testing.T) {
 2023-02-13T21:20:30.000000002Z line 2
 2023-02-13T21:20:31.000000001Z log 3
 2023-02-13T21:20:31.000000002Z log 4`,
-			expected: []byte(fmt.Sprintf(`%s 2 (my-node/my-namespace/my-pod/my-container)
+			expected: []byte(fmt.Sprintf(`%s 2 (my-namespace/my-pod/my-container)
 `, coloredLine)),
 		},
 	}
@@ -233,7 +240,14 @@ func TestInclude(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			out := new(bytes.Buffer)
-			tail := NewTail(clientset.CoreV1(), "my-node", "my-namespace", "my-pod", "my-container", tmpl, out, io.Discard, &TailOptions{Include: []*regexp.Regexp{regexp.MustCompile("line")}}, false)
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "my-namespace",
+					Name:      "my-pod",
+				},
+			}
+
+			tail := NewTail(clientset.CoreV1(), pod, "my-container", tmpl, out, io.Discard, &TailOptions{Include: []*regexp.Regexp{regexp.MustCompile("line")}}, false)
 			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != nil {
 				t.Fatalf("%d: unexpected err %v", i, err)
 			}
