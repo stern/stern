@@ -181,6 +181,7 @@ functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 | `colorMagenta`        | `string`                    | Print text using magenta color                                                                                                              |
 | `colorCyan`           | `string`                    | Print text using cyan color                                                                                                                 |
 | `colorWhite`          | `string`                    | Print text using white color                                                                                                                |
+| `colorCustom`         | `string, int [, int]`       | Print text using custom color, i.e. {{color "Hi" 3 96}} will print "Hi" as italic with cyan color                                           |
 
 ### Log level verbosity
 

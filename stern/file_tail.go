@@ -56,8 +56,7 @@ func (t *FileTail) ConsumeReader(reader *bufio.Reader) error {
 	}
 }
 
-// Print prints a color coded log message
-func (t *FileTail) Print(msg string) {
+func (t *FileTail) sprint(msg string) (string, error) {
 	vm := Log{
 		Message:        msg,
 		NodeName:       "",
@@ -70,11 +69,32 @@ func (t *FileTail) Print(msg string) {
 
 	var buf bytes.Buffer
 	if err := t.tmpl.Execute(&buf, vm); err != nil {
-		fmt.Fprintf(t.errOut, "expanding template failed: %s\n", err)
+		return "", fmt.Errorf("expanding template failed: %s", err)
+	}
+
+	return buf.String(), nil
+}
+
+// Print prints a color coded log message
+func (t *FileTail) Print(msg string) {
+	buf, err := t.sprint(msg)
+	if err != nil {
+		fmt.Fprintf(t.errOut, "%s\n", err)
 		return
 	}
 
-	fmt.Fprint(t.out, buf.String())
+	fmt.Fprint(t.out, t.Options.HighlightMatchedString(buf))
+}
+
+// PrintWithoutHighlight prints a log message without applying any highlight.
+func (t *FileTail) PrintWithoutHighlight(msg string) {
+	buf, err := t.sprint(msg)
+	if err != nil {
+		fmt.Fprintf(t.errOut, "%s\n", err)
+		return
+	}
+
+	fmt.Fprint(t.out, buf)
 }
 
 func (t *FileTail) consumeLine(line string) {
@@ -84,6 +104,5 @@ func (t *FileTail) consumeLine(line string) {
 		return
 	}
 
-	msg := t.Options.HighlightMatchedString(content)
-	t.Print(msg)
+	t.Print(content)
 }
