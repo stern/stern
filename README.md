@@ -32,7 +32,7 @@ go install github.com/stern/stern@latest
 
 If you use [asdf](https://asdf-vm.com/), you can install like this:
 ```
-asdf plugin-add stern
+asdf plugin add stern
 asdf install stern latest
 ```
 
