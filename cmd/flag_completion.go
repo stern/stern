@@ -47,7 +47,7 @@ func runCompletion(shell string, cmd *cobra.Command, out io.Writer) error {
 	case "fish":
 		err = cmd.GenFishCompletion(out, true)
 	default:
-		err = fmt.Errorf("Unsupported shell type: %q", shell)
+		err = fmt.Errorf("unsupported shell type: %q", shell)
 	}
 
 	return err
