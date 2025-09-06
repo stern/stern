@@ -35,7 +35,7 @@ func WatchTargets(ctx context.Context, i v1.PodInterface, labelSelector labels.S
 	// RetryWatcher will make sure that in case the underlying watcher is
 	// closed (e.g. due to API timeout or etcd timeout) it will get restarted
 	// from the last point without the consumer even knowing about it.
-	watcher, err := watchtools.NewRetryWatcher("1", &cache.ListWatch{
+	watcher, err := watchtools.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			return i.Watch(ctx, metav1.ListOptions{LabelSelector: labelSelector.String(), FieldSelector: fieldSelector.String()})
 		},

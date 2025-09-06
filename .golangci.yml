@@ -1,13 +1,21 @@
+version: "2"
 run:
   timeout: 5m
 linters:
-  disable-all: true
+  default: none
   enable:
   - errcheck
-  - gofmt
-  - gosimple
   - govet
   - ineffassign
   - staticcheck
-  - typecheck
   - unused
+  exclusions:
+    generated: lax
+    presets:
+    - comments
+    - common-false-positives
+    - legacy
+    - std-error-handling
+formatters:
+  enable:
+    - gofmt

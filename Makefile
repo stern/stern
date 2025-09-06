@@ -5,11 +5,11 @@ build:
 	go build -o dist/stern .
 
 TOOLS_BIN_DIR := $(CURDIR)/hack/tools/bin
-GORELEASER_VERSION ?= v2.5.1
+GORELEASER_VERSION ?= v2.12.0
 GORELEASER := $(TOOLS_BIN_DIR)/goreleaser
-GOLANGCI_LINT_VERSION ?= v1.63.4
+GOLANGCI_LINT_VERSION ?= v2.4.0
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
-VALIDATE_KREW_MAIFEST_VERSION ?= v0.4.4
+VALIDATE_KREW_MAIFEST_VERSION ?= v0.4.5
 VALIDATE_KREW_MAIFEST := $(TOOLS_BIN_DIR)/validate-krew-manifest
 GORELEASER_FILTER_VERSION ?= v0.3.0
 GORELEASER_FILTER := $(TOOLS_BIN_DIR)/goreleaser-filter
@@ -18,7 +18,7 @@ $(GORELEASER):
 	GOBIN=$(TOOLS_BIN_DIR) go install github.com/goreleaser/goreleaser/v2@$(GORELEASER_VERSION)
 
 $(GOLANGCI_LINT):
-	GOBIN=$(TOOLS_BIN_DIR) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	GOBIN=$(TOOLS_BIN_DIR) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 $(VALIDATE_KREW_MAIFEST):
 	GOBIN=$(TOOLS_BIN_DIR) go install sigs.k8s.io/krew/cmd/validate-krew-manifest@$(VALIDATE_KREW_MAIFEST_VERSION)

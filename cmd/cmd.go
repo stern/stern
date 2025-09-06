@@ -476,7 +476,7 @@ func (o *options) addKubernetesFlags(fs *pflag.FlagSet) {
 	o.configFlags.AddFlags(flagset)
 	flagset.VisitAll(func(f *pflag.Flag) {
 		// Hide Kubernetes flags except some
-		if !(f.Name == "kubeconfig" || f.Name == "context") {
+		if f.Name != "kubeconfig" && f.Name != "context" {
 			f.Hidden = true
 		}
 

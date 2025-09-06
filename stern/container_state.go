@@ -31,13 +31,14 @@ const (
 
 // NewContainerState returns corresponding ContainerState
 func NewContainerState(stateConfig string) (ContainerState, error) {
-	if stateConfig == RUNNING {
+	switch stateConfig {
+	case RUNNING:
 		return RUNNING, nil
-	} else if stateConfig == WAITING {
+	case WAITING:
 		return WAITING, nil
-	} else if stateConfig == TERMINATED {
+	case TERMINATED:
 		return TERMINATED, nil
-	} else if stateConfig == ALL_STATES {
+	case ALL_STATES:
 		return ALL_STATES, nil
 	}
 
