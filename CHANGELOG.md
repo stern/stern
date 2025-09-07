@@ -1,3 +1,22 @@
+# v1.33.0
+
+## :zap: Notable Changes
+
+### New template variables `Labels` and `Annotations`
+
+You can now use `Labels` and `Annotations` in your templates.
+
+```
+stern -n kube-system -l component --template '{{printf "%-25s %s" .Labels.component .Message}}{{"\n"}}'
+```
+
+## Changes
+
+* Update dependencies for Kubernetes 1.34 ([#349](https://github.com/stern/stern/pull/349)) d6a0679 (Takashi Kusumi)
+* Fix asdf installation typo ([#348](https://github.com/stern/stern/pull/348)) 5946e7f (Guruprasad Bhat)
+* 338: fix: move highlighting after formatting ([#339](https://github.com/stern/stern/pull/339)) 6d915a8 (Peter)
+* Add support for labels & annotations in templates ([#344](https://github.com/stern/stern/pull/344)) 3cd85b4 (Nicholas Hurden)
+
 # v1.32.0
 
 ## :zap: Notable Changes
