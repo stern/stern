@@ -50,6 +50,13 @@ If you use [Krew](https://krew.sigs.k8s.io/) which is the package manager for ku
 kubectl krew install stern
 ```
 
+### WinGet (Windows)
+
+If you're running on Windows, usually the actual best way is to use [WinGet](https://github.com/microsoft/winget-cli) to install which is Windows' built-in package manager, you can install like this:
+```
+winget install stern.stern
+```
+
 ## Usage
 
 ```
