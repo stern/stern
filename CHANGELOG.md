@@ -1,3 +1,19 @@
+# v1.33.1
+
+## :zap: Notable Changes
+
+### WinGet is now supported for installing stern
+
+If you're running on Windows, usually the actual best way is to use [WinGet](https://github.com/microsoft/winget-cli) to install which is Windows' built-in package manager, you can install like this:
+
+```
+winget install stern.stern
+```
+
+## Changes
+
+* Added WinGet release target. ([#354](https://github.com/stern/stern/pull/354)) aa558b6 (Gregor Noczinski)
+
 # v1.33.0
 
 ## :zap: Notable Changes
