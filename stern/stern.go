@@ -17,6 +17,7 @@ package stern
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -156,6 +157,16 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 			tail.Close()
 			if err == nil {
 				return
+			}
+			if err == io.EOF {
+				// In most cases, EOF signals that the container has terminated.
+				// (and is no longer producting logs).
+				// However, long-running connections might also be closed gracefully by the API server
+				// (or a load balancer in between). Thus, we check whether the target is still active
+				// before stopping tailing logs.
+				if filter.isActive(target) {
+					continue
+				}
 			}
 			if !filter.isActive(target) {
 				fmt.Fprintf(config.ErrOut, "failed to tail: %v\n", err)

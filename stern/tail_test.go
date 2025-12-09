@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/fatih/color"
 	"io"
 	"reflect"
 	"regexp"
 	"testing"
 	"text/template"
+
+	"github.com/fatih/color"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -119,7 +120,7 @@ line 4 (my-node/my-namespace/my-pod/my-container)
 			}
 			tail := NewTail(clientset.CoreV1(), pod, "my-container", tmpl, out, io.Discard, &TailOptions{}, false)
 			tail.resumeRequest = tt.resumeReq
-			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(logLines)}); err != nil {
+			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(logLines)}); err != io.EOF {
 				t.Fatalf("%d: unexpected err %v", i, err)
 			}
 
@@ -180,7 +181,7 @@ log 4 (my-namespace/my-pod/my-container)
 			}
 
 			tail := NewTail(clientset.CoreV1(), pod, "my-container", tmpl, out, io.Discard, &TailOptions{Highlight: []*regexp.Regexp{regexp.MustCompile("line")}}, false)
-			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != nil {
+			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != io.EOF {
 				t.Fatalf("%d: unexpected err %v", i, err)
 			}
 
@@ -248,7 +249,7 @@ func TestInclude(t *testing.T) {
 			}
 
 			tail := NewTail(clientset.CoreV1(), pod, "my-container", tmpl, out, io.Discard, &TailOptions{Include: []*regexp.Regexp{regexp.MustCompile("line")}}, false)
-			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != nil {
+			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != io.EOF {
 				t.Fatalf("%d: unexpected err %v", i, err)
 			}
 

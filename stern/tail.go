@@ -189,10 +189,7 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper)
 		}
 
 		if err != nil {
-			if err != io.EOF {
-				return err
-			}
-			return nil
+			return err
 		}
 	}
 }
