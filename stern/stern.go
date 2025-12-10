@@ -171,7 +171,11 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 				// To ensure we retry fetching the pod logs in that case, we wait a bit before exiting.
 				// If we receive the "pod deleted" event during this time, then the
 				// target will be removed from the filter (see next check) and we won't retry.
-				time.Sleep(2 * time.Second)
+				select {
+				case <-time.After(2 * time.Second):
+				case <-ctx.Done():
+					return
+				}
 			}
 			if !filter.isActive(target) {
 				fmt.Fprintf(config.ErrOut, "failed to tail: %v\n", err)
