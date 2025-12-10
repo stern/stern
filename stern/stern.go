@@ -31,6 +31,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/ptr"
 
@@ -158,15 +159,19 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 			if err == nil {
 				return
 			}
+			if apierrors.IsNotFound(err) {
+				// When the pod is deleted, we'll receive an EOF.
+				// Since we retry EOF (see below), we may occasionally try to tail a deleted pod again.
+				// This case is detected here and we stop retrying without priting an error message.
+				return
+			}
 			if err == io.EOF {
-				// In most cases, EOF signals that the container has terminated.
-				// (and is no longer producting logs).
-				// However, long-running connections might also be closed gracefully by the API server
-				// (or a load balancer in between). Thus, we check whether the target is still active
-				// before stopping tailing logs.
-				if filter.isActive(target) {
-					continue
-				}
+				// In most situations, EOF means the container exited and we should stop tailing logs.
+				// However, the server may also close long-running connections with EOF.
+				// To ensure we retry fetching the pod logs in that case, we wait a bit before exiting.
+				// If we receive the "pod deleted" event during this time, then the
+				// target will be removed from the filter (see next check) and we won't retry.
+				time.Sleep(2 * time.Second)
 			}
 			if !filter.isActive(target) {
 				fmt.Fprintf(config.ErrOut, "failed to tail: %v\n", err)
