@@ -359,12 +359,20 @@ func (o *options) sternConfig() (*stern.Config, error) {
 
 // setVerbosity sets the log level verbosity
 func (o *options) setVerbosity() error {
+	// klog does not have an external method to set verbosity,
+	// so we need to set it by a flag.
+	// See https://github.com/kubernetes/klog/issues/336 for details
+	var fs goflag.FlagSet
+	klog.InitFlags(&fs)
+
+	// Opt into the new klog behavior so that -stderrthreshold is honored even
+	// when -logtostderr=true (the default).
+	// Ref: kubernetes/klog#212, kubernetes/klog#432
+	if err := fs.Set("legacy_stderr_threshold_behavior", "false"); err != nil {
+		return err
+	}
+
 	if o.verbosity != 0 {
-		// klog does not have an external method to set verbosity,
-		// so we need to set it by a flag.
-		// See https://github.com/kubernetes/klog/issues/336 for details
-		var fs goflag.FlagSet
-		klog.InitFlags(&fs)
 		return fs.Set("v", strconv.Itoa(o.verbosity))
 	}
 	return nil
