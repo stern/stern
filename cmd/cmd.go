@@ -372,6 +372,13 @@ func (o *options) setVerbosity() error {
 		return err
 	}
 
+	// The new klog behavior defaults stderrthreshold to ERROR, which would
+	// suppress INFO/WARNING messages. Set it to INFO to preserve the existing
+	// behavior where all log levels are emitted to stderr.
+	if err := fs.Set("stderrthreshold", "INFO"); err != nil {
+		return err
+	}
+
 	if o.verbosity != 0 {
 		return fs.Set("v", strconv.Itoa(o.verbosity))
 	}
