@@ -79,6 +79,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  flag                        | default                       | purpose
 -----------------------------|-------------------------------|---------
  `--all-namespaces`, `-A`    | `false`                       | If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.
+ `--burst`                   | `0`                           | Maximum burst for throttle to the Kubernetes API server. Defaults to 0 (use client-go default). Ignored when --qps=-1.
  `--color`                   | `auto`                        | Force set color output. 'auto':  colorize if tty attached, 'always': always colorize, 'never': never colorize.
  `--completion`              |                               | Output stern command-line completion code for the specified shell. Can be 'bash', 'zsh' or 'fish'.
  `--condition`               |                               | The condition to filter on: [condition-name[=condition-value]. The default condition-value is true. Match is case-insensitive. Currently only supported with --tail=0 or --no-follow.
@@ -105,6 +106,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--output`, `-o`            | `default`                     | Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]
  `--pod-colors`              |                               | Specifies the colors used to highlight pod names. Provide colors as a comma-separated list using SGR (Select Graphic Rendition) sequences, e.g., "91,92,93,94,95,96".
  `--prompt`, `-p`            | `false`                       | Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.
+ `--qps`                     | `0`                           | Maximum QPS to the Kubernetes API server. Defaults to 0 (use client-go default). Use -1 to disable client-side throttling.
  `--selector`, `-l`          |                               | Selector (label query) to filter on. If present, default to ".*" for the pod-query.
  `--show-hidden-options`     | `false`                       | Print a list of hidden options.
  `--since`, `-s`             | `48h0m0s`                     | Return logs newer than a relative duration like 5s, 2m, or 3h.

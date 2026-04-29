@@ -38,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
@@ -83,6 +84,8 @@ type options struct {
 	verbosity           int
 	onlyLogLines        bool
 	maxLogRequests      int
+	qps                 float32
+	burst               int
 	node                string
 	configFilePath      string
 	showHiddenOptions   bool
@@ -143,6 +146,15 @@ func (o *options) Complete(args []string) error {
 	restConfig, err := o.configFlags.ToRESTConfig()
 	if err != nil {
 		return err
+	}
+
+	if o.qps != 0 {
+		restConfig.QPS = o.qps
+	}
+	if o.burst > 0 {
+		restConfig.Burst = o.burst
+	} else if o.qps > 0 {
+		restConfig.Burst = rest.DefaultBurst
 	}
 
 	o.client = kubernetes.NewForConfigOrDie(restConfig)
@@ -448,6 +460,8 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVarP(&o.namespaces, "namespace", "n", o.namespaces, "Kubernetes namespace to use. Default to namespace configured in kubernetes context. To specify multiple namespaces, repeat this or set comma-separated value.")
 	fs.StringVar(&o.node, "node", o.node, "Node name to filter on.")
 	fs.IntVar(&o.maxLogRequests, "max-log-requests", o.maxLogRequests, "Maximum number of concurrent logs to request. Defaults to 50, but 5 when specifying --no-follow")
+	fs.Float32Var(&o.qps, "qps", o.qps, "Maximum QPS to the Kubernetes API server. Defaults to 0 (use client-go default). Use -1 to disable client-side throttling.")
+	fs.IntVar(&o.burst, "burst", o.burst, "Maximum burst for throttle to the Kubernetes API server. Defaults to 0 (use client-go default). Ignored when --qps=-1.")
 	fs.StringVarP(&o.output, "output", "o", o.output, "Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]")
 	fs.BoolVarP(&o.prompt, "prompt", "p", o.prompt, "Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.")
 	fs.StringVarP(&o.selector, "selector", "l", o.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
