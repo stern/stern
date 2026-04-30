@@ -167,7 +167,7 @@ will receive the following struct:
 | `Annotations`   | map[string]string | The annotations of the pod                  |
 
 The following functions are available within the template (besides the [builtin
-functions](https://golang.org/pkg/text/template/#hdr-Functions)):
+functions](https://golang.org/pkg/text/template/#hdr-Functions) and the [Sprig library](https://masterminds.github.io/sprig/)):
 
 | func                  | arguments                   | description                                                                                                                                 |
 |-----------------------|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|

@@ -27,6 +27,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	"github.com/fatih/color"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
@@ -733,7 +734,7 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			return levelColor.SprintFunc()(lv)
 		},
 	}
-	template, err := template.New("log").Funcs(funs).Parse(t)
+	template, err := template.New("log").Funcs(funs).Funcs(sprig.FuncMap()).Parse(t)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to parse template")
 	}
