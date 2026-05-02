@@ -441,14 +441,14 @@ func (o *options) overrideFlagSetDefaultFromConfig(fs *pflag.FlagSet) error {
 					values[i] = fmt.Sprint(v)
 				}
 				if err := flagSlice.Replace(values); err != nil {
-					return fmt.Errorf("invalid value %q for %q in the config file: %v", value, name, err)
+					return fmt.Errorf("invalid value %v for %q in the config file: %v", value, name, err)
 				}
 				continue
 			}
 		}
 
 		if err := flag.Value.Set(fmt.Sprint(value)); err != nil {
-			return fmt.Errorf("invalid value %q for %q in the config file: %v", value, name, err)
+			return fmt.Errorf("invalid value %v for %q in the config file: %v", value, name, err)
 		}
 	}
 
