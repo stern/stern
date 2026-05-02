@@ -1,3 +1,21 @@
+# v1.34.0
+
+## :zap: Notable Changes
+
+### New `--qps` and `--burst` flags for client-side throttling
+
+You can now control the rate of requests to the Kubernetes API server with `--qps` and `--burst` flags. This is useful when you are tailing many pods and want to avoid overwhelming the API server.
+
+```
+stern . --qps 10 --burst 20
+```
+
+## Changes
+
+* Add --qps and --burst flags to control client-side throttling ([#363](https://github.com/stern/stern/pull/363)) 7e59e4e (Abhishek Pareek)
+* fix: honor klog -stderrthreshold even when -logtostderr is true ([#364](https://github.com/stern/stern/pull/364)) 8e4ece3 (Pierluigi Lenoci)
+* Update dependencies for Kubernetes 1.36 ([#365](https://github.com/stern/stern/pull/365)) 6761a78 (Takashi Kusumi)
+
 # v1.33.1
 
 ## :zap: Notable Changes
