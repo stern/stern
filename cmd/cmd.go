@@ -410,6 +410,7 @@ func (o *options) overrideFlagSetDefaultFromConfig(fs *pflag.FlagSet) error {
 	if err != nil {
 		return err
 	}
+	defer configFile.Close()
 
 	data := make(map[string]interface{})
 
