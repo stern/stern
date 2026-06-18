@@ -42,6 +42,46 @@ func TestIsIncludeTestOptions(t *testing.T) {
 	}
 }
 
+func TestIsExclude(t *testing.T) {
+	msg := "this is a log message"
+
+	tests := []struct {
+		exclude  []*regexp.Regexp
+		expected bool
+	}{
+		{
+			exclude:  []*regexp.Regexp{},
+			expected: false,
+		},
+		{
+			exclude: []*regexp.Regexp{
+				regexp.MustCompile(`this is not`),
+			},
+			expected: false,
+		},
+		{
+			exclude: []*regexp.Regexp{
+				regexp.MustCompile(`this is`),
+			},
+			expected: true,
+		},
+		{
+			exclude: []*regexp.Regexp{
+				regexp.MustCompile(`no match`),
+				regexp.MustCompile(`log message`),
+			},
+			expected: true,
+		},
+	}
+
+	for i, tt := range tests {
+		o := &TailOptions{Exclude: tt.exclude}
+		if o.IsExclude(msg) != tt.expected {
+			t.Errorf("%d: expected %s, but actual %s", i, fmt.Sprint(tt.expected), fmt.Sprint(!tt.expected))
+		}
+	}
+}
+
 func TestUpdateTimezoneAndFormat(t *testing.T) {
 	location, _ := time.LoadLocation("Asia/Tokyo")
 
