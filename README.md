@@ -209,7 +209,7 @@ The behavior and the default are different depending on the presence of the `--n
 | `--no-follow` | default | behavior         |
 |---------------|---------|------------------|
 | specified     | 5       | limits the number of concurrent logs to request |
-| not specified | 50      | exits with an error when if it reaches the concurrent limit |
+| not specified | 50      | exits with an error when it reaches the concurrent limit |
 
 The combination of `--max-log-requests 1` and `--no-follow` will be helpful if you want to show logs in order.
 
