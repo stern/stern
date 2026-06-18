@@ -541,12 +541,12 @@ func (o *options) generateTemplate() (*template.Template, error) {
 	if t == "" {
 		switch o.output {
 		case "default":
-			t = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}"
+			t = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{if .Timestamp}}{{.Timestamp}} {{end}}{{.Message}}"
 			if o.allNamespaces || len(o.namespaces) > 1 {
 				t = fmt.Sprintf("{{color .PodColor .Namespace}} %s", t)
 			}
 		case "raw":
-			t = "{{.Message}}"
+			t = "{{if .Timestamp}}{{.Timestamp}} {{end}}{{.Message}}"
 		case "json":
 			t = "{{json .}}"
 		case "extjson":

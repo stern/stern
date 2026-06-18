@@ -159,6 +159,7 @@ will receive the following struct:
 | property        | type              | description                                 |
 |-----------------|-------------------|---------------------------------------------|
 | `Message`       | string            | The log message itself                      |
+| `Timestamp`     | string            | The log timestamp formatted per `--timestamps`/`--timezone`, empty unless `--timestamps` is set |
 | `NodeName`      | string            | The node name where the pod is scheduled on |
 | `Namespace`     | string            | The namespace of the pod                    |
 | `PodName`       | string            | The name of the pod                         |

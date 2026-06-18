@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"testing"
 	"text/template"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -444,5 +445,55 @@ func TestRemoveSubsecond(t *testing.T) {
 		if tt.expected != actual {
 			t.Errorf("expected %v, but actual %v", tt.expected, actual)
 		}
+	}
+}
+
+// Regression test for stern/stern#342: when --timestamps is enabled, the
+// timestamp must be exposed via the separate .Timestamp template field and must
+// NOT be prepended to .Message, otherwise templates that parse .Message as JSON
+// fail with "invalid character ... after top-level value".
+func TestConsumeStreamTailTimestamp(t *testing.T) {
+	logLines := `2023-02-13T21:20:30.000000001Z {"msg":"hello"}
+2023-02-13T21:20:31.000000002Z {"msg":"world"}`
+
+	tests := []struct {
+		name     string
+		tmpl     *template.Template
+		expected []byte
+	}{
+		{
+			// .Message stays raw and parseable as JSON.
+			name:     "message stays raw json",
+			tmpl:     template.Must(template.New("").Parse(`{{.Message}}` + "\n")),
+			expected: []byte("{\"msg\":\"hello\"}\n{\"msg\":\"world\"}\n"),
+		},
+		{
+			// .Timestamp carries the formatted timestamp separately.
+			name:     "timestamp available as field",
+			tmpl:     template.Must(template.New("").Parse(`{{.Timestamp}} {{.Message}}` + "\n")),
+			expected: []byte("02-13 21:20:30 {\"msg\":\"hello\"}\n02-13 21:20:31 {\"msg\":\"world\"}\n"),
+		},
+	}
+
+	clientset := fake.NewSimpleClientset()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := new(bytes.Buffer)
+			errOut := new(bytes.Buffer)
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "my-namespace", Name: "my-pod"},
+			}
+			tail := NewTail(clientset.CoreV1(), pod, "my-container", tt.tmpl, out, errOut,
+				&TailOptions{Timestamps: true, TimestampFormat: TimestampFormatShort, Location: time.UTC}, false)
+			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(logLines)}); err != nil {
+				t.Fatalf("unexpected err %v", err)
+			}
+			if errOut.Len() != 0 {
+				t.Fatalf("unexpected template error: %s", errOut.String())
+			}
+			if !bytes.Equal(tt.expected, out.Bytes()) {
+				t.Errorf("expected `%s`, but actual `%s`", tt.expected, out)
+			}
+		})
 	}
 }
