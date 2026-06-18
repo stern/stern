@@ -197,9 +197,10 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper)
 	}
 }
 
-func (t *Tail) sprint(msg string) (string, error) {
+func (t *Tail) sprint(msg string, timestamp string) (string, error) {
 	vm := Log{
 		Message:        msg,
+		Timestamp:      timestamp,
 		NodeName:       t.Pod.Spec.NodeName,
 		Namespace:      t.Pod.Namespace,
 		PodName:        t.Pod.Name,
@@ -219,8 +220,8 @@ func (t *Tail) sprint(msg string) (string, error) {
 }
 
 // Print prints a color coded log message with the pod and container names
-func (t *Tail) Print(msg string) {
-	buf, err := t.sprint(msg)
+func (t *Tail) Print(msg string, timestamp string) {
+	buf, err := t.sprint(msg, timestamp)
 	if err != nil {
 		fmt.Fprintf(t.errOut, "%s\n", err)
 		return
@@ -231,7 +232,7 @@ func (t *Tail) Print(msg string) {
 
 // PrintWithoutHighlight prints a log message without applying any highlight.
 func (t *Tail) PrintWithoutHighlight(msg string) {
-	buf, err := t.sprint(msg)
+	buf, err := t.sprint(msg, "")
 	if err != nil {
 		fmt.Fprintf(t.errOut, "%s\n", err)
 		return
@@ -266,16 +267,17 @@ func (t *Tail) consumeLine(line string) {
 		return
 	}
 
+	var timestamp string
 	if t.Options.Timestamps {
 		updatedTs, err := t.Options.UpdateTimezoneAndFormat(rfc3339Nano)
 		if err != nil {
 			t.PrintWithoutHighlight(fmt.Sprintf("[%v] %s", err, line))
 			return
 		}
-		content = updatedTs + " " + content
+		timestamp = updatedTs
 	}
 
-	t.Print(content)
+	t.Print(content, timestamp)
 }
 
 func (t *Tail) rememberLastTimestamp(timestamp string) {

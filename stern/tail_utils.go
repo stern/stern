@@ -17,6 +17,11 @@ type Log struct {
 	// Message is the log message itself
 	Message string `json:"message"`
 
+	// Timestamp is the log timestamp, formatted according to --timestamps and
+	// --timezone. It is empty when --timestamps is not set. It is kept separate
+	// from Message so that templates can still parse Message as JSON.
+	Timestamp string `json:"timestamp,omitempty"`
+
 	// Node name of the pod
 	NodeName string `json:"nodeName"`
 

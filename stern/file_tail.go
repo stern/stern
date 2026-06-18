@@ -56,9 +56,10 @@ func (t *FileTail) ConsumeReader(reader *bufio.Reader) error {
 	}
 }
 
-func (t *FileTail) sprint(msg string) (string, error) {
+func (t *FileTail) sprint(msg string, timestamp string) (string, error) {
 	vm := Log{
 		Message:        msg,
+		Timestamp:      timestamp,
 		NodeName:       "",
 		Namespace:      "",
 		PodName:        "",
@@ -77,7 +78,7 @@ func (t *FileTail) sprint(msg string) (string, error) {
 
 // Print prints a color coded log message
 func (t *FileTail) Print(msg string) {
-	buf, err := t.sprint(msg)
+	buf, err := t.sprint(msg, "")
 	if err != nil {
 		fmt.Fprintf(t.errOut, "%s\n", err)
 		return
@@ -88,7 +89,7 @@ func (t *FileTail) Print(msg string) {
 
 // PrintWithoutHighlight prints a log message without applying any highlight.
 func (t *FileTail) PrintWithoutHighlight(msg string) {
-	buf, err := t.sprint(msg)
+	buf, err := t.sprint(msg, "")
 	if err != nil {
 		fmt.Fprintf(t.errOut, "%s\n", err)
 		return
