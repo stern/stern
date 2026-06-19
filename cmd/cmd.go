@@ -598,7 +598,7 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			}
 			parts := make([]string, 0)
 			for _, key := range part {
-				parts = append(parts, fmt.Sprintf("%v", obj[key]))
+				parts = append(parts, fmt.Sprintf("%v", extractJSONPart(obj, key)))
 			}
 			return strings.Join(parts, ", "), nil
 		},
@@ -609,7 +609,7 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			}
 			parts := make([]string, 0)
 			for _, key := range part {
-				parts = append(parts, fmt.Sprintf("%v", obj[key]))
+				parts = append(parts, fmt.Sprintf("%v", extractJSONPart(obj, key)))
 			}
 			return strings.Join(parts, ", ")
 		},
@@ -754,6 +754,29 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		return nil, errors.Wrap(err, "unable to parse template")
 	}
 	return template, err
+}
+
+// extractJSONPart resolves a key against a decoded JSON object. The key is first
+// looked up as a literal top-level key to preserve backward compatibility; if it
+// is absent, the key is treated as a dot-separated path and walked through nested
+// objects (e.g. "python.levelname" descends into the "python" object and reads
+// "levelname"). A missing key or a non-object value along the path yields nil.
+func extractJSONPart(obj map[string]interface{}, key string) interface{} {
+	if v, ok := obj[key]; ok {
+		return v
+	}
+
+	var current interface{} = obj
+	for _, segment := range strings.Split(key, ".") {
+		m, ok := current.(map[string]interface{})
+		if !ok {
+			return nil
+		}
+		if current, ok = m[segment]; !ok {
+			return nil
+		}
+	}
+	return current
 }
 
 func (o *options) generateFieldSelector() (fields.Selector, error) {

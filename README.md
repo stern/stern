@@ -176,8 +176,8 @@ functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 | `color`               | `color.Color, string`       | Wrap the text in color (.ContainerColor and .PodColor provided)                                                                             |
 | `parseJSON`           | `string`                    | Parse string as JSON                                                                                                                        |
 | `tryParseJSON`        | `string`                    | Attempt to parse string as JSON, return nil on failure                                                                                      |
-| `extractJSONParts`    | `string, ...string`         | Parse string as JSON and concatenate the given keys.                                                                                        |
-| `tryExtractJSONParts` | `string, ...string`         | Attempt to parse string as JSON and concatenate the given keys. , return text on failure                                                    |
+| `extractJSONParts`    | `string, ...string`         | Parse string as JSON and concatenate the given keys. Keys may use dot notation (e.g. `python.levelname`) to access nested fields.           |
+| `tryExtractJSONParts` | `string, ...string`         | Attempt to parse string as JSON and concatenate the given keys (dot notation accesses nested fields), return text on failure.               |
 | `prettyJSON`          | `any`                       | Parse input and emit it as pretty printed JSON, if parse fails output string as is.                                                         |
 | `toRFC3339Nano`       | `object`                    | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format                                                           |
 | `toTimestamp`         | `object, string [, string]` | Parse timestamp (string, int, json.Number) and output it using the given layout in the timezone that is optionally given (defaults to UTC). |
@@ -348,6 +348,13 @@ Pretty print JSON (if it is JSON) and output it:
 stern --template='{{ .Message | prettyJSON }}{{"\n"}}' backend
 # Or with parsed json, will drop non-json logs because of `with`
 stern --template='{{ with $msg := .Message | tryParseJSON }}{{ prettyJSON $msg }}{{"\n"}}{{end}}' backend
+```
+
+Extract fields from JSON, including nested fields via dot notation:
+
+```
+# Given a message like {"python": {"levelname": "INFO", "module": "router"}}
+stern --template='{{ levelColor (extractJSONParts .Message "python.levelname") }} {{ extractJSONParts .Message "python.module" }}{{"\n"}}' backend
 ```
 
 Load custom template from file:

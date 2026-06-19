@@ -498,6 +498,72 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			"pod1 [<no value>] message with missing annotation",
 			false,
 		},
+		{
+			"template with extractJSONParts flat key",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{extractJSONParts .Message "level"}}`
+				return o
+			}(),
+			`{"level":"INFO"}`,
+			"INFO",
+			false,
+		},
+		{
+			"template with extractJSONParts nested key",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{extractJSONParts .Message "python.levelname"}}`
+				return o
+			}(),
+			`{"python":{"levelname":"INFO","lineno":96}}`,
+			"INFO",
+			false,
+		},
+		{
+			"template with extractJSONParts multiple nested keys",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{extractJSONParts .Message "python.levelname" "python.lineno"}}`
+				return o
+			}(),
+			`{"python":{"levelname":"INFO","lineno":96}}`,
+			"INFO, 96",
+			false,
+		},
+		{
+			"template with extractJSONParts missing nested key",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{extractJSONParts .Message "python.missing"}}`
+				return o
+			}(),
+			`{"python":{"levelname":"INFO"}}`,
+			"<nil>",
+			false,
+		},
+		{
+			"template with tryExtractJSONParts nested key",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{tryExtractJSONParts .Message "python.levelname"}}`
+				return o
+			}(),
+			`{"python":{"levelname":"INFO"}}`,
+			"INFO",
+			false,
+		},
+		{
+			"template with tryExtractJSONParts on invalid json",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{tryExtractJSONParts .Message "python.levelname"}}`
+				return o
+			}(),
+			"not json",
+			"not json",
+			false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -533,6 +599,39 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			}
 			if want, got := tt.want, buf.String(); want != got {
 				t.Errorf("want %v, but got %v", want, got)
+			}
+		})
+	}
+}
+
+func TestExtractJSONPart(t *testing.T) {
+	obj := map[string]interface{}{
+		"level": "INFO",
+		"python": map[string]interface{}{
+			"levelname": "INFO",
+			"lineno":    float64(96),
+		},
+		"with.dot": "literal",
+	}
+
+	tests := []struct {
+		name string
+		key  string
+		want interface{}
+	}{
+		{"flat key", "level", "INFO"},
+		{"nested key", "python.levelname", "INFO"},
+		{"nested numeric key", "python.lineno", float64(96)},
+		{"literal key containing a dot", "with.dot", "literal"},
+		{"missing top-level key", "missing", nil},
+		{"missing nested key", "python.missing", nil},
+		{"path through a non-object value", "level.deeper", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := extractJSONPart(obj, tt.key); got != tt.want {
+				t.Errorf("extractJSONPart(obj, %q) = %v, want %v", tt.key, got, tt.want)
 			}
 		})
 	}
