@@ -293,6 +293,20 @@ func retrieveNamesFromResource(ctx context.Context, client kubernetes.Interface,
 		for _, item := range l.Items {
 			names = append(names, item.GetName())
 		}
+	case stern.BuildMatcher.Matches(kind):
+		opt.LabelSelector = "openshift.io/build.name"
+		l, err := client.CoreV1().Pods(namespace).List(ctx, opt)
+		if err != nil {
+			return nil, err
+		}
+		builds := map[string]struct{}{}
+		for _, item := range l.Items {
+			name := item.Labels["openshift.io/build.name"]
+			if _, ok := builds[name]; !ok {
+				names = append(names, name)
+				builds[name] = struct{}{}
+			}
+		}
 	default:
 		return nil, fmt.Errorf("resource type %s is not supported", kind)
 	}

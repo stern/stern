@@ -21,7 +21,11 @@ func TestRetrieveNamesFromResource(t *testing.T) {
 		}
 	}
 	objs := []runtime.Object{
-		&corev1.Pod{ObjectMeta: genMeta("pod1")},
+		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod1",
+			Namespace: "ns1",
+			Labels:    map[string]string{"openshift.io/build.name": "build1"},
+		}},
 		&corev1.Pod{ObjectMeta: genMeta("pod2")},
 		&corev1.Pod{ObjectMeta: genMeta("pod3")},
 		&corev1.ReplicationController{ObjectMeta: genMeta("rc1")},
@@ -81,6 +85,11 @@ func TestRetrieveNamesFromResource(t *testing.T) {
 			desc:     "jobs",
 			kinds:    []string{"job", "jobs"},
 			expected: []string{"job1", "job2"},
+		},
+		{
+			desc:     "builds",
+			kinds:    []string{"build", "builds"},
+			expected: []string{"build1"},
 		},
 		// invalid
 		{

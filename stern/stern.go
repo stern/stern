@@ -229,6 +229,9 @@ func chooseSelector(ctx context.Context, client kubernetes.Interface, namespace,
 		// We use an exact match for pods instead of a label to select pods without labels.
 		return labels.Everything(), nil
 	}
+	if BuildMatcher.Matches(kind) {
+		return labels.SelectorFromSet(labels.Set{"openshift.io/build.name": name}), nil
+	}
 	labelMap, err := retrieveLabelsFromResource(ctx, client, namespace, kind, name)
 	if err != nil {
 		return nil, err
