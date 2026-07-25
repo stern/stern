@@ -217,6 +217,8 @@ The combination of `--max-log-requests 1` and `--no-follow` will be helpful if y
 ### Customize highlight colors
 You can configure highlight colors for pods and containers in [the config file](#config-file) using a comma-separated list of [SGR (Select Graphic Rendition) sequences](https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters), as shown below. If you omit `container-colors`, the pod colors will be used as container colors as well.
 
+stern picks colors from this list so that pods created by the same workload (such as replicas of a Deployment or a StatefulSet) get distinct colors as long as unused colors remain in the list.
+
 ```yaml
 # Green, Yellow, Blue, Magenta, Cyan, White
 pod-colors: "32,33,34,35,36,37"

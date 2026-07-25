@@ -67,7 +67,7 @@ type ResumeRequest struct {
 
 // NewTail returns a new tail for a Kubernetes container inside a pod
 func NewTail(clientset corev1client.CoreV1Interface, pod *corev1.Pod, containerName string, tmpl *template.Template, out, errOut io.Writer, options *TailOptions, diffContainer bool) *Tail {
-	podColor, containerColor := determineColor(pod.Name, containerName, diffContainer)
+	podColor, containerColor := determineColor(pod, containerName, diffContainer)
 
 	return &Tail{
 		clientset:      clientset,
@@ -84,8 +84,11 @@ func NewTail(clientset corev1client.CoreV1Interface, pod *corev1.Pod, containerN
 	}
 }
 
-func determineColor(podName, containerName string, diffContainer bool) (podColor, containerColor *color.Color) {
-	colors := colorList[colorIndex(podName)]
+// determineColor returns the colors of the pod and the container. Pods
+// created by the same workload (e.g. replicas of a Deployment) are given
+// distinct colors as long as unused colors remain in the color list.
+func determineColor(pod *corev1.Pod, containerName string, diffContainer bool) (podColor, containerColor *color.Color) {
+	colors := colorList[podColorPicker.pick(pod)]
 	if diffContainer {
 		return colors[0], colorList[colorIndex(containerName)][1]
 	}
