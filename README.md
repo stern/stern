@@ -180,6 +180,7 @@ functions](https://golang.org/pkg/text/template/#hdr-Functions)):
 | `tryExtractJSONParts` | `string, ...string`         | Attempt to parse string as JSON and concatenate the given keys (dot notation accesses nested fields), return text on failure.               |
 | `prettyJSON`          | `any`                       | Parse input and emit it as pretty printed JSON, if parse fails output string as is.                                                         |
 | `toRFC3339Nano`       | `object`                    | Parse timestamp (string, int, json.Number) and output it using RFC3339Nano format                                                           |
+| `toUTC`                | `object`                    | Parse timestamp (string, int, json.Number) and return it as UTC `time.Time`                                                                  |
 | `toTimestamp`         | `object, string [, string]` | Parse timestamp (string, int, json.Number) and output it using the given layout in the timezone that is optionally given (defaults to UTC). |
 | `levelColor`          | `string`                    | Print log level using appropriate color                                                                                                     |
 | `bunyanLevelColor`    | `string`                    | Print [bunyan](https://github.com/trentm/node-bunyan) numeric log level using appropriate color                                             |
