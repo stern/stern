@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/ptr"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -171,6 +172,17 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 	cancelMap := sync.Map{}
 	eg, nctx := errgroup.WithContext(ctx)
 	var numRequests atomic.Int64
+
+	if config.Events {
+		match := podEventMatcher(config)
+		for _, n := range namespaces {
+			n := n
+			eg.Go(func() error {
+				return WatchEvents(nctx, client.CoreV1().Events(n), match, config.Out)
+			})
+		}
+	}
+
 	for _, n := range namespaces {
 		selector, err := chooseSelector(nctx, client, n, resource.kind, resource.name, config.LabelSelector)
 		if err != nil {
@@ -219,6 +231,27 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		})
 	}
 	return eg.Wait()
+}
+
+// podEventMatcher builds a matcher that keeps events whose involved object is a
+// pod selected by the same pod-name filters used for log tailing. This is a
+// pod-granularity first cut: it doesn't yet resolve workload-level events.
+func podEventMatcher(config *Config) eventMatcher {
+	return func(e *corev1.Event) bool {
+		if e.InvolvedObject.Kind != "Pod" {
+			return false
+		}
+		name := e.InvolvedObject.Name
+		if config.PodQuery != nil && !config.PodQuery.MatchString(name) {
+			return false
+		}
+		for _, re := range config.ExcludePodQuery {
+			if re.MatchString(name) {
+				return false
+			}
+		}
+		return true
+	}
 }
 
 func chooseSelector(ctx context.Context, client kubernetes.Interface, namespace, kind, name string, selector labels.Selector) (labels.Selector, error) {
