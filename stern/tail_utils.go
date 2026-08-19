@@ -60,7 +60,7 @@ type TailOptions struct {
 	OnlyLogLines bool
 
 	// regexp for highlighting the matched string
-	reHightlight *regexp.Regexp
+	reHighlight *regexp.Regexp
 }
 
 func (o TailOptions) IsExclude(msg string) bool {
@@ -95,7 +95,7 @@ func (o TailOptions) HighlightMatchedString(msg string) string {
 		return msg
 	}
 
-	if o.reHightlight == nil {
+	if o.reHighlight == nil {
 		ss := make([]string, len(highlight))
 		for i, hl := range highlight {
 			ss[i] = hl.String()
@@ -106,10 +106,10 @@ func (o TailOptions) HighlightMatchedString(msg string) string {
 			return len(ss[i]) > len(ss[j])
 		})
 
-		o.reHightlight = regexp.MustCompile("(" + strings.Join(ss, "|") + ")")
+		o.reHighlight = regexp.MustCompile("(" + strings.Join(ss, "|") + ")")
 	}
 
-	msg = o.reHightlight.ReplaceAllStringFunc(msg, func(part string) string {
+	msg = o.reHighlight.ReplaceAllStringFunc(msg, func(part string) string {
 		return colorHighlight(part)
 	})
 

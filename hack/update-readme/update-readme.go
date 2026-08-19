@@ -79,13 +79,13 @@ func GenerateFlagsMarkdownTable() string {
 			switch flagTypeName {
 			// convert []string{"aaa", "bbb"} to "aaa,bbb"
 			case "strings":
-				stirngSlice, err := fs.GetStringSlice(flag.Name)
+				stringSlice, err := fs.GetStringSlice(flag.Name)
 				if err != nil {
 					panic(err)
 				}
 
 				defaultValuesString := ""
-				for _, s := range stirngSlice {
+				for _, s := range stringSlice {
 					defaultValuesString += fmt.Sprintf("%s,", s)
 				}
 				defaultValuesString = strings.TrimRight(defaultValuesString, ",")
