@@ -78,8 +78,20 @@ func NewCondition(conditionString string) (Condition, error) {
 }
 
 // Match returns if pod matches the condition
-func (conditionConfig Condition) Match(podConditions []v1.PodCondition) bool {
-	for _, condition := range podConditions {
+func (conditionConfig Condition) Match(pod *v1.Pod) bool {
+	// Ready condition for pods owned by Jobs will be True as soon as the pod
+	// starts running, which makes it hard to use stern to watch the progress
+	// of a Job. To work around this, consider the pod as not Ready if it is
+	// owned by a Job and is running (and consider it Ready once it stops).
+	if conditionConfig.Name == v1.PodReady && pod.OwnerReferences != nil {
+		for _, ownerReference := range pod.OwnerReferences {
+			if ownerReference.Kind == "Job" {
+				return true
+			}
+		}
+	}
+
+	for _, condition := range pod.Status.Conditions {
 		if condition.Type == conditionConfig.Name {
 			return condition.Status == conditionConfig.Value
 		}

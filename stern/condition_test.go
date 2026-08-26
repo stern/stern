@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNewCondition(t *testing.T) {
@@ -71,19 +72,23 @@ func TestNewCondition(t *testing.T) {
 
 func TestConditionMatch(t *testing.T) {
 	tests := []struct {
-		condition       Condition
-		v1PodConditions []v1.PodCondition
-		expected        bool
+		condition Condition
+		pod       v1.Pod
+		expected  bool
 	}{
 		{
 			Condition{
 				Name:  v1.PodReady,
 				Value: v1.ConditionTrue,
 			},
-			[]v1.PodCondition{
-				{
-					Type:   v1.PodReady,
-					Status: v1.ConditionTrue,
+			v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.PodReady,
+							Status: v1.ConditionTrue,
+						},
+					},
 				},
 			},
 			true,
@@ -93,10 +98,14 @@ func TestConditionMatch(t *testing.T) {
 				Name:  v1.PodReady,
 				Value: v1.ConditionTrue,
 			},
-			[]v1.PodCondition{
-				{
-					Type:   v1.PodReady,
-					Status: v1.ConditionFalse,
+			v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.PodReady,
+							Status: v1.ConditionFalse,
+						},
+					},
 				},
 			},
 			false,
@@ -106,18 +115,46 @@ func TestConditionMatch(t *testing.T) {
 				Name:  v1.PodReady,
 				Value: v1.ConditionTrue,
 			},
-			[]v1.PodCondition{
-				{
-					Type:   v1.PodInitialized,
-					Status: v1.ConditionFalse,
+			v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.PodInitialized,
+							Status: v1.ConditionFalse,
+						},
+					},
 				},
 			},
 			false,
 		},
+		{
+			Condition{
+				Name:  v1.PodReady,
+				Value: v1.ConditionFalse,
+			},
+			v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Kind: "Job",
+						},
+					},
+				},
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.PodReady,
+							Status: v1.ConditionTrue,
+						},
+					},
+				},
+			},
+			true,
+		},
 	}
 
 	for i, tt := range tests {
-		actual := tt.condition.Match(tt.v1PodConditions)
+		actual := tt.condition.Match(&tt.pod)
 
 		if tt.expected != actual {
 			t.Errorf("%d: expected %v, but actual %v", i, tt.expected, actual)
