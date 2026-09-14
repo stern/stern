@@ -90,6 +90,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--context`                 |                               | The name of the kubeconfig context to use
  `--diff-container`, `-d`    | `false`                       | Display different colors for different containers.
  `--ephemeral-containers`    | `true`                        | Include or exclude ephemeral containers.
+ `--events`                  | `false`                       | Interleave Kubernetes events for the matched pods into the output. Only takes effect when following logs.
  `--exclude`, `-e`           | `[]`                          | Log lines to exclude. (regular expression)
  `--exclude-container`, `-E` | `[]`                          | Container name to exclude when multiple containers in pod. (regular expression)
  `--exclude-pod`             | `[]`                          | Pod name to exclude. (regular expression)

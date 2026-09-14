@@ -83,6 +83,7 @@ type options struct {
 	resource            string
 	verbosity           int
 	onlyLogLines        bool
+	events              bool
 	maxLogRequests      int
 	qps                 float32
 	burst               int
@@ -348,6 +349,7 @@ func (o *options) sternConfig() (*stern.Config, error) {
 		Follow:                !o.noFollow,
 		Resource:              o.resource,
 		OnlyLogLines:          o.onlyLogLines,
+		Events:                o.events,
 		MaxLogRequests:        maxLogRequests,
 		Stdin:                 o.stdin,
 		DiffContainer:         o.diffContainer,
@@ -489,6 +491,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.timestamps, "timestamps", "t", o.timestamps, "Print timestamps with the specified format. One of 'default' or 'short' in the form '--timestamps=format' ('=' cannot be omitted). If specified but without value, 'default' is used.")
 	fs.StringVar(&o.timezone, "timezone", o.timezone, "Set timestamps to specific timezone.")
 	fs.BoolVar(&o.onlyLogLines, "only-log-lines", o.onlyLogLines, "Print only log lines")
+	fs.BoolVar(&o.events, "events", o.events, "Interleave Kubernetes events for the matched pods into the output. Only takes effect when following logs.")
 	fs.StringVar(&o.configFilePath, "config", o.configFilePath, "Path to the stern config file")
 	fs.IntVar(&o.verbosity, "verbosity", o.verbosity, "Number of the log level verbosity")
 	fs.BoolVarP(&o.version, "version", "v", o.version, "Print the version and exit.")
