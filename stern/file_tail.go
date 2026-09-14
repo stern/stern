@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/fatih/color"
 )
@@ -77,8 +78,8 @@ func (t *FileTail) sprint(msg string, timestamp string) (string, error) {
 }
 
 // Print prints a color coded log message
-func (t *FileTail) Print(msg string) {
-	buf, err := t.sprint(msg, "")
+func (t *FileTail) Print(msg string, timestamp string) {
+	buf, err := t.sprint(msg, timestamp)
 	if err != nil {
 		fmt.Fprintf(t.errOut, "%s\n", err)
 		return
@@ -105,5 +106,24 @@ func (t *FileTail) consumeLine(line string) {
 		return
 	}
 
-	t.Print(content)
+	var timestamp string
+	if t.Options.Timestamps {
+		// A piped line may already carry its own timestamp, as anything coming
+		// from `kubectl logs --timestamps` does. Reuse it rather than prefixing a
+		// second one, and fall back to the current time for lines that have none.
+		rfc3339Nano, rest, ok := splitLogLineIfTimestamped(content)
+		if ok {
+			content = rest
+		} else {
+			rfc3339Nano = time.Now().UTC().Format(time.RFC3339Nano)
+		}
+		updatedTs, err := t.Options.UpdateTimezoneAndFormat(rfc3339Nano)
+		if err != nil {
+			t.Print(fmt.Sprintf("[%v] %s", err, content), "")
+			return
+		}
+		timestamp = updatedTs
+	}
+
+	t.Print(content, timestamp)
 }

@@ -324,6 +324,22 @@ func splitLogLine(line string) (timestamp string, content string, err error) {
 	return line[:idx], line[idx+1:], nil
 }
 
+// splitLogLineIfTimestamped splits a line the way splitLogLine does, but only
+// when the leading field really is an RFC3339Nano timestamp. Lines read from the
+// API always carry one, so splitLogLine can assume it; a line read from stdin
+// may be anything, and splitting unconditionally would take its first word for a
+// timestamp.
+func splitLogLineIfTimestamped(line string) (timestamp string, content string, ok bool) {
+	ts, rest, err := splitLogLine(line)
+	if err != nil {
+		return "", line, false
+	}
+	if _, err := time.Parse(time.RFC3339Nano, ts); err != nil {
+		return "", line, false
+	}
+	return ts, rest, true
+}
+
 // removeSubsecond removes the subsecond of the timestamp.
 // It converts RFC3339Nano to RFC3339 fast.
 func removeSubsecond(timestamp string) string {
