@@ -185,3 +185,15 @@ func TestRetrieveLabelsFromResource(t *testing.T) {
 		})
 	}
 }
+
+func TestChooseSelectorForBuild(t *testing.T) {
+	for _, kind := range []string{"build", "builds"} {
+		selector, err := chooseSelector(context.Background(), nil, "ns1", kind, "build1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error for %s: %v", kind, err)
+		}
+		if got, want := selector.String(), "openshift.io/build.name=build1"; got != want {
+			t.Errorf("expected selector %q, but got %q", want, got)
+		}
+	}
+}
