@@ -104,6 +104,7 @@ Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `d
  `--node`                    |                               | Node name to filter on.
  `--only-log-lines`          | `false`                       | Print only log lines
  `--output`, `-o`            | `default`                     | Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]
+ `--pager`                   |                               | Command to pipe stern's output into (e.g. 'less'). It is used only when the standard output is a terminal, and colors are preserved without specifying --color=always.
  `--pod-colors`              |                               | Specifies the colors used to highlight pod names. Provide colors as a comma-separated list using SGR (Select Graphic Rendition) sequences, e.g., "91,92,93,94,95,96".
  `--prompt`, `-p`            | `false`                       | Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.
  `--qps`                     | `0`                           | Maximum QPS to the Kubernetes API server. Defaults to 0 (use client-go default). Use -1 to disable client-side throttling.
@@ -236,6 +237,22 @@ The equivalent flags `--pod-colors` and `--container-colors` are also available.
 podColors="38;2;255;97;136,38;2;169;220;118,38;2;255;216;102,38;2;120;220;232,38;2;171;157;242"
 stern --pod-colors "$podColors" deploy/app
 ```
+
+### Using a pager
+
+You can pipe stern's output into a pager with the `--pager` flag. Unlike piping in the shell (`stern --color=always backend | less -R`), colors are preserved without any extra flags, and stern stops tailing when you quit the pager.
+
+```
+stern --pager less backend
+```
+
+The pager is used only when the standard output is a terminal. If you always want to use a pager, set it in [the config file](#config-file):
+
+```yaml
+pager: less
+```
+
+stern runs the pager with the `LESS=FRX` and `LV=-c` environment variables unless they are already set, so that `less` and `lv` show colors out of the box.
 
 ## Examples:
 Tail all logs from all namespaces

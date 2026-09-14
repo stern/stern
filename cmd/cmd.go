@@ -77,6 +77,7 @@ type options struct {
 	template            string
 	templateFile        string
 	output              string
+	pager               string
 	prompt              bool
 	podQuery            string
 	noFollow            bool
@@ -114,6 +115,7 @@ func NewOptions(streams genericclioptions.IOStreams) *options {
 		initContainers:      true,
 		ephemeralContainers: true,
 		output:              "default",
+		pager:               "",
 		since:               48 * time.Hour,
 		tail:                -1,
 		template:            "",
@@ -204,6 +206,16 @@ func (o *options) Run(cmd *cobra.Command) error {
 		if err := promptHandler(ctx, o.client, config, o.Out); err != nil {
 			return err
 		}
+	}
+
+	// The pager is started after the interactive prompt so that they do not
+	// conflict with each other.
+	if o.pager != "" && isTerminal(o.Out) {
+		closePager, err := o.startPager(cancel, config)
+		if err != nil {
+			return err
+		}
+		defer closePager()
 	}
 
 	return stern.Run(ctx, o.client, config)
@@ -479,6 +491,7 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.Float32Var(&o.qps, "qps", o.qps, "Maximum QPS to the Kubernetes API server. Defaults to 0 (use client-go default). Use -1 to disable client-side throttling.")
 	fs.IntVar(&o.burst, "burst", o.burst, "Maximum burst for throttle to the Kubernetes API server. Defaults to 0 (use client-go default). Ignored when --qps=-1.")
 	fs.StringVarP(&o.output, "output", "o", o.output, "Specify predefined template. Currently support: [default, raw, json, extjson, ppextjson]")
+	fs.StringVar(&o.pager, "pager", o.pager, "Command to pipe stern's output into (e.g. 'less'). It is used only when the standard output is a terminal, and colors are preserved without specifying --color=always.")
 	fs.BoolVarP(&o.prompt, "prompt", "p", o.prompt, "Toggle interactive prompt for selecting 'app.kubernetes.io/instance' label values.")
 	fs.StringVarP(&o.selector, "selector", "l", o.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
 	fs.StringVar(&o.fieldSelector, "field-selector", o.fieldSelector, "Selector (field query) to filter on. If present, default to \".*\" for the pod-query.")
