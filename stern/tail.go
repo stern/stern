@@ -192,7 +192,10 @@ func (t *Tail) ConsumeRequest(ctx context.Context, request rest.ResponseWrapper)
 			if err != io.EOF {
 				return err
 			}
-			return nil
+			// io.EOF from the API stream is expected when the watch times out.
+			// Return EOF to signal the caller to retry, rather than treating
+			// it as a permanent end of logs.
+			return io.EOF
 		}
 	}
 }
