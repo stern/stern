@@ -23,6 +23,14 @@ func TestToTimeE(t *testing.T) {
 		{"1136171045.000000001", base.Add(1 * time.Nanosecond), false},
 		{"1136171045.123456789", base.Add(123456789 * time.Nanosecond), false},
 		{"1136171045.12345678912345", base.Add(123456789 * time.Nanosecond), false},
+		// negative Unix timestamps
+		{"-1", time.Unix(-1, 0).UTC(), false},
+		{"-1.25", time.Unix(-2, 750000000).UTC(), false},
+		{json.Number("-1.25"), time.Unix(-2, 750000000).UTC(), false},
+		{"-0.5", time.Unix(-1, 500000000).UTC(), false},
+		{json.Number("-0.5"), time.Unix(-1, 500000000).UTC(), false},
+		{"-0.000000001", time.Unix(-1, 999999999).UTC(), false},
+		{"-1.12345678912345", time.Unix(-2, 876543211).UTC(), false},
 		// cast.ToTimeE
 		{1136171045, base, false},
 		{"2006-01-02T03:04:05.123456789", base.Add(123456789 * time.Nanosecond), false},

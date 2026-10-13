@@ -54,5 +54,8 @@ func parseUnixTimeNanoString(num string) (time.Time, bool) {
 			return time.Time{}, false
 		}
 	}
+	if strings.HasPrefix(num, "-") {
+		nsec = -nsec
+	}
 	return time.Unix(sec, nsec), true
 }
