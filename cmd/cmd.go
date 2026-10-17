@@ -539,10 +539,11 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		t = string(data)
 	}
 	if t == "" {
+		showNamespace := o.allNamespaces || len(makeUnique(o.namespaces)) > 1
 		switch o.output {
 		case "default":
 			t = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{if .Timestamp}}{{.Timestamp}} {{end}}{{.Message}}"
-			if o.allNamespaces || len(o.namespaces) > 1 {
+			if showNamespace {
 				t = fmt.Sprintf("{{color .PodColor .Namespace}} %s", t)
 			}
 		case "raw":
@@ -551,13 +552,13 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			t = "{{json .}}"
 		case "extjson":
 			t = "\"pod\": \"{{color .PodColor .PodName}}\", \"container\": \"{{color .ContainerColor .ContainerName}}\", \"message\": {{extjson .Message}}"
-			if o.allNamespaces || len(o.namespaces) > 1 {
+			if showNamespace {
 				t = fmt.Sprintf("\"namespace\": \"{{color .PodColor .Namespace}}\", %s", t)
 			}
 			t = fmt.Sprintf("{%s}", t)
 		case "ppextjson":
 			t = "  \"pod\": \"{{color .PodColor .PodName}}\",\n  \"container\": \"{{color .ContainerColor .ContainerName}}\",\n  \"message\": {{extjson .Message}}"
-			if o.allNamespaces || len(o.namespaces) > 1 {
+			if showNamespace {
 				t = fmt.Sprintf("  \"namespace\": \"{{color .PodColor .Namespace}}\",\n%s", t)
 			}
 			t = fmt.Sprintf("{\n%s\n}", t)

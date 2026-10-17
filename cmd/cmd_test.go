@@ -251,6 +251,32 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			false,
 		},
 		{
+			"output=default+multipleNamespaces",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "default"
+				o.namespaces = []string{"ns1", "ns2"}
+
+				return o
+			}(),
+			"default message",
+			"ns1 pod1 container1 default message\n",
+			false,
+		},
+		{
+			"output=default+duplicateNamespaces",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "default"
+				o.namespaces = []string{"ns1", "ns1"}
+
+				return o
+			}(),
+			"default message",
+			"pod1 container1 default message\n",
+			false,
+		},
+		{
 			"output=raw",
 			func() *options {
 				o := NewOptions(streams)
