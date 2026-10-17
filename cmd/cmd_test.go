@@ -303,6 +303,20 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			false,
 		},
 		{
+			"output=extjson+multipleNamespaces",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "extjson"
+				o.namespaces = []string{"ns1", "ns2"}
+
+				return o
+			}(),
+			`{"msg":"extjson message"}`,
+			`{"namespace": "ns1", "pod": "pod1", "container": "container1", "message": {"msg":"extjson message"}}
+`,
+			false,
+		},
+		{
 			"output=ppextjson",
 			func() *options {
 				o := NewOptions(streams)
@@ -325,6 +339,25 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 				o := NewOptions(streams)
 				o.output = "ppextjson"
 				o.allNamespaces = true
+
+				return o
+			}(),
+			`{"msg":"ppextjson message"}`,
+			`{
+  "namespace": "ns1",
+  "pod": "pod1",
+  "container": "container1",
+  "message": {"msg":"ppextjson message"}
+}
+`,
+			false,
+		},
+		{
+			"output=ppextjson+multipleNamespaces",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "ppextjson"
+				o.namespaces = []string{"ns1", "ns2"}
 
 				return o
 			}(),

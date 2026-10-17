@@ -551,13 +551,13 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			t = "{{json .}}"
 		case "extjson":
 			t = "\"pod\": \"{{color .PodColor .PodName}}\", \"container\": \"{{color .ContainerColor .ContainerName}}\", \"message\": {{extjson .Message}}"
-			if o.allNamespaces {
+			if o.allNamespaces || len(o.namespaces) > 1 {
 				t = fmt.Sprintf("\"namespace\": \"{{color .PodColor .Namespace}}\", %s", t)
 			}
 			t = fmt.Sprintf("{%s}", t)
 		case "ppextjson":
 			t = "  \"pod\": \"{{color .PodColor .PodName}}\",\n  \"container\": \"{{color .ContainerColor .ContainerName}}\",\n  \"message\": {{extjson .Message}}"
-			if o.allNamespaces {
+			if o.allNamespaces || len(o.namespaces) > 1 {
 				t = fmt.Sprintf("  \"namespace\": \"{{color .PodColor .Namespace}}\",\n%s", t)
 			}
 			t = fmt.Sprintf("{\n%s\n}", t)
