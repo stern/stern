@@ -18,11 +18,11 @@ import (
 )
 
 func TestDetermineColor(t *testing.T) {
-	podName := "stern"
+	pod := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "stern"}}
 	containerName := "foo"
 	diffContainer := false
-	podColor1, containerColor1 := determineColor(podName, containerName, diffContainer)
-	podColor2, containerColor2 := determineColor(podName, containerName, diffContainer)
+	podColor1, containerColor1 := determineColor(pod, containerName, diffContainer)
+	podColor2, containerColor2 := determineColor(pod, containerName, diffContainer)
 
 	if podColor1 != podColor2 {
 		t.Errorf("expected color for pod to be the same between invocations but was %v and %v",
@@ -35,12 +35,12 @@ func TestDetermineColor(t *testing.T) {
 }
 
 func TestDetermineColorDiffContainer(t *testing.T) {
-	podName := "stern"
+	pod := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "stern"}}
 	containerName1 := "foo"
 	containerName2 := "bar"
 	diffContainer := true
-	podColor1, containerColor1 := determineColor(podName, containerName1, diffContainer)
-	podColor2, containerColor2 := determineColor(podName, containerName2, diffContainer)
+	podColor1, containerColor1 := determineColor(pod, containerName1, diffContainer)
+	podColor2, containerColor2 := determineColor(pod, containerName2, diffContainer)
 
 	if podColor1 != podColor2 {
 		t.Errorf("expected color for pod to be the same between invocations but was %v and %v",
