@@ -315,6 +315,20 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			false,
 		},
 		{
+			"output=extjson+timestamps",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "extjson"
+				o.timestamps = "default"
+
+				return o
+			}(),
+			`{"msg":"extjson message"}`,
+			`{"pod": "pod1", "container": "container1", "timestamp": "2026-01-02T03:04:05.000000000Z", "message": {"msg":"extjson message"}}
+`,
+			false,
+		},
+		{
 			"output=extjson+allNamespaces",
 			func() *options {
 				o := NewOptions(streams)
@@ -354,6 +368,25 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			`{
   "pod": "pod1",
   "container": "container1",
+  "message": {"msg":"ppextjson message"}
+}
+`,
+			false,
+		},
+		{
+			"output=ppextjson+timestamps",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "ppextjson"
+				o.timestamps = "default"
+
+				return o
+			}(),
+			`{"msg":"ppextjson message"}`,
+			`{
+  "pod": "pod1",
+  "container": "container1",
+  "timestamp": "2026-01-02T03:04:05.000000000Z",
   "message": {"msg":"ppextjson message"}
 }
 `,
@@ -637,6 +670,9 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 				Annotations:    map[string]string{"version": "1.23.4"},
 				PodColor:       color.New(color.FgRed),
 				ContainerColor: color.New(color.FgBlue),
+			}
+			if tt.o.timestamps != "" {
+				log.Timestamp = "2026-01-02T03:04:05.000000000Z"
 			}
 			tmpl, err := tt.o.generateTemplate()
 
