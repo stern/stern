@@ -564,13 +564,13 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		case "json":
 			t = "{{json .}}"
 		case "extjson":
-			t = "\"pod\": \"{{color .PodColor .PodName}}\", \"container\": \"{{color .ContainerColor .ContainerName}}\", \"message\": {{extjson .Message}}"
+			t = "\"pod\": \"{{color .PodColor .PodName}}\", \"container\": \"{{color .ContainerColor .ContainerName}}\", {{if .Timestamp}}\"timestamp\": \"{{.Timestamp}}\", {{end}}\"message\": {{extjson .Message}}"
 			if showNamespace {
 				t = fmt.Sprintf("\"namespace\": \"{{color .PodColor .Namespace}}\", %s", t)
 			}
 			t = fmt.Sprintf("{%s}", t)
 		case "ppextjson":
-			t = "  \"pod\": \"{{color .PodColor .PodName}}\",\n  \"container\": \"{{color .ContainerColor .ContainerName}}\",\n  \"message\": {{extjson .Message}}"
+			t = "  \"pod\": \"{{color .PodColor .PodName}}\",\n  \"container\": \"{{color .ContainerColor .ContainerName}}\",\n  {{if .Timestamp}}\"timestamp\": \"{{.Timestamp}}\",\n  {{end}}\"message\": {{extjson .Message}}"
 			if showNamespace {
 				t = fmt.Sprintf("  \"namespace\": \"{{color .PodColor .Namespace}}\",\n%s", t)
 			}
