@@ -310,7 +310,7 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 				return o
 			}(),
 			`{"msg":"extjson message"}`,
-			`{"pod": "pod1", "container": "container1", "message": {"msg":"extjson message"}}
+			`{"pod":"pod1","container":"container1","message":{"msg":"extjson message"}}
 `,
 			false,
 		},
@@ -324,7 +324,7 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 				return o
 			}(),
 			`{"msg":"extjson message"}`,
-			`{"pod": "pod1", "container": "container1", "timestamp": "2026-01-02T03:04:05.000000000Z", "message": {"msg":"extjson message"}}
+			`{"pod":"pod1","container":"container1","timestamp":"2026-01-02T03:04:05.000000000Z","message":{"msg":"extjson message"}}
 `,
 			false,
 		},
@@ -338,7 +338,7 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 				return o
 			}(),
 			`{"msg":"extjson message"}`,
-			`{"namespace": "ns1", "pod": "pod1", "container": "container1", "message": {"msg":"extjson message"}}
+			`{"namespace":"ns1","pod":"pod1","container":"container1","message":{"msg":"extjson message"}}
 `,
 			false,
 		},
@@ -352,8 +352,22 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 				return o
 			}(),
 			`{"msg":"extjson message"}`,
-			`{"namespace": "ns1", "pod": "pod1", "container": "container1", "message": {"msg":"extjson message"}}
+			`{"namespace":"ns1","pod":"pod1","container":"container1","message":{"msg":"extjson message"}}
 `,
+			false,
+		},
+		{
+			"output=extjson+color",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "extjson"
+				o.allNamespaces = true
+				o.color = "always"
+
+				return o
+			}(),
+			`{"msg":"extjson message"}`,
+			"{\"namespace\":\"\x1b[31mns1\x1b[0m\",\"pod\":\"\x1b[31mpod1\x1b[0m\",\"container\":\"\x1b[34mcontainer1\x1b[0m\",\"message\":{\"msg\":\"extjson message\"}}\n",
 			false,
 		},
 		{
@@ -368,7 +382,9 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			`{
   "pod": "pod1",
   "container": "container1",
-  "message": {"msg":"ppextjson message"}
+  "message": {
+    "msg": "ppextjson message"
+  }
 }
 `,
 			false,
@@ -387,7 +403,9 @@ func TestOptionsGenerateTemplate(t *testing.T) {
   "pod": "pod1",
   "container": "container1",
   "timestamp": "2026-01-02T03:04:05.000000000Z",
-  "message": {"msg":"ppextjson message"}
+  "message": {
+    "msg": "ppextjson message"
+  }
 }
 `,
 			false,
@@ -406,7 +424,9 @@ func TestOptionsGenerateTemplate(t *testing.T) {
   "namespace": "ns1",
   "pod": "pod1",
   "container": "container1",
-  "message": {"msg":"ppextjson message"}
+  "message": {
+    "msg": "ppextjson message"
+  }
 }
 `,
 			false,
@@ -425,9 +445,25 @@ func TestOptionsGenerateTemplate(t *testing.T) {
   "namespace": "ns1",
   "pod": "pod1",
   "container": "container1",
-  "message": {"msg":"ppextjson message"}
+  "message": {
+    "msg": "ppextjson message"
+  }
 }
 `,
+			false,
+		},
+		{
+			"output=ppextjson+color",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "ppextjson"
+				o.allNamespaces = true
+				o.color = "always"
+
+				return o
+			}(),
+			`{"msg":"ppextjson message"}`,
+			"{\n  \"namespace\": \"\x1b[31mns1\x1b[0m\",\n  \"pod\": \"\x1b[31mpod1\x1b[0m\",\n  \"container\": \"\x1b[34mcontainer1\x1b[0m\",\n  \"message\": {\n    \"msg\": \"ppextjson message\"\n  }\n}\n",
 			false,
 		},
 		{
@@ -673,6 +709,10 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			}
 			if tt.o.timestamps != "" {
 				log.Timestamp = "2026-01-02T03:04:05.000000000Z"
+			}
+			if tt.o.color == "always" {
+				log.PodColor.EnableColor()
+				log.ContainerColor.EnableColor()
 			}
 			tmpl, err := tt.o.generateTemplate()
 

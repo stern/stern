@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	goflag "flag"
@@ -551,8 +552,8 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		}
 		t = string(data)
 	}
+	showNamespace := o.allNamespaces || len(makeUnique(o.namespaces)) > 1
 	if t == "" {
-		showNamespace := o.allNamespaces || len(makeUnique(o.namespaces)) > 1
 		switch o.output {
 		case "default":
 			t = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{if .Timestamp}}{{.Timestamp}} {{end}}{{.Message}}"
@@ -564,17 +565,9 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		case "json":
 			t = "{{json .}}"
 		case "extjson":
-			t = "\"pod\": \"{{color .PodColor .PodName}}\", \"container\": \"{{color .ContainerColor .ContainerName}}\", {{if .Timestamp}}\"timestamp\": \"{{.Timestamp}}\", {{end}}\"message\": {{extjson .Message}}"
-			if showNamespace {
-				t = fmt.Sprintf("\"namespace\": \"{{color .PodColor .Namespace}}\", %s", t)
-			}
-			t = fmt.Sprintf("{%s}", t)
+			t = "{{extjson .}}"
 		case "ppextjson":
-			t = "  \"pod\": \"{{color .PodColor .PodName}}\",\n  \"container\": \"{{color .ContainerColor .ContainerName}}\",\n  {{if .Timestamp}}\"timestamp\": \"{{.Timestamp}}\",\n  {{end}}\"message\": {{extjson .Message}}"
-			if showNamespace {
-				t = fmt.Sprintf("  \"namespace\": \"{{color .PodColor .Namespace}}\",\n%s", t)
-			}
-			t = fmt.Sprintf("{\n%s\n}", t)
+			t = "{{ppextjson .}}"
 		default:
 			return nil, errors.New("output should be one of 'default', 'raw', 'json', 'extjson', and 'ppextjson'")
 		}
@@ -627,15 +620,11 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			}
 			return strings.Join(parts, ", ")
 		},
-		"extjson": func(in string) (string, error) {
-			if json.Valid([]byte(in)) {
-				return strings.TrimSuffix(in, "\n"), nil
-			}
-			b, err := json.Marshal(in)
-			if err != nil {
-				return "", err
-			}
-			return strings.TrimSuffix(string(b), "\n"), nil
+		"extjson": func(in any) (string, error) {
+			return marshalExtJSON(in, showNamespace, false)
+		},
+		"ppextjson": func(in any) (string, error) {
+			return marshalExtJSON(in, showNamespace, true)
 		},
 		"prettyJSON": func(value any) string {
 			var data map[string]any
@@ -768,6 +757,75 @@ func (o *options) generateTemplate() (*template.Template, error) {
 		return nil, errors.Wrap(err, "unable to parse template")
 	}
 	return template, err
+}
+
+// extJSONLog defines the output structure for extjson and ppextjson.
+// A struct is used instead of a map to preserve the field order in the JSON
+// output (namespace, pod, container, timestamp, message), and json.RawMessage
+// embeds valid JSON log messages without double-encoding them as strings.
+type extJSONLog struct {
+	Namespace string          `json:"namespace,omitempty"`
+	Pod       string          `json:"pod"`
+	Container string          `json:"container"`
+	Timestamp string          `json:"timestamp,omitempty"`
+	Message   json.RawMessage `json:"message"`
+}
+
+func encodeExtJSON(v any, pretty bool) (string, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if pretty {
+		enc.SetIndent("", "  ")
+	}
+	if err := enc.Encode(v); err != nil {
+		return "", err
+	}
+	b := bytes.TrimSuffix(buf.Bytes(), []byte("\n"))
+	b = bytes.ReplaceAll(b, []byte(`\u001b`), []byte("\x1b"))
+	return string(b), nil
+}
+
+func marshalExtJSONMessage(in string) (json.RawMessage, error) {
+	trimmed := strings.TrimSuffix(in, "\n")
+	if json.Valid([]byte(trimmed)) {
+		return json.RawMessage(trimmed), nil
+	}
+	s, err := encodeExtJSON(trimmed, false)
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(s), nil
+}
+
+func marshalExtJSON(in any, showNamespace, pretty bool) (string, error) {
+	switch v := in.(type) {
+	case string:
+		msg, err := marshalExtJSONMessage(v)
+		if err != nil {
+			return "", err
+		}
+		return encodeExtJSON(msg, pretty)
+	case stern.Log:
+		msg, err := marshalExtJSONMessage(v.Message)
+		if err != nil {
+			return "", err
+		}
+		var namespace string
+		if showNamespace {
+			namespace = v.PodColor.SprintFunc()(v.Namespace)
+		}
+		out := extJSONLog{
+			Namespace: namespace,
+			Pod:       v.PodColor.SprintFunc()(v.PodName),
+			Container: v.ContainerColor.SprintFunc()(v.ContainerName),
+			Timestamp: v.Timestamp,
+			Message:   msg,
+		}
+		return encodeExtJSON(out, pretty)
+	default:
+		return "", fmt.Errorf("extjson: unsupported type %T", in)
+	}
 }
 
 // extractJSONPart resolves a key against a decoded JSON object. The key is first
