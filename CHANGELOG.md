@@ -1,3 +1,73 @@
+# v1.35.0
+
+## :zap: Notable Changes
+
+### A new `--pager` flag to pipe output into a pager
+
+You can now pipe stern's output into a pager with the `--pager` flag. Unlike piping in the shell (`stern --color=always backend | less -R`), colors are preserved without any extra flags, and stern stops tailing when you quit the pager.
+
+```
+stern --pager less backend
+```
+
+The pager is used only when the standard output is connected to a terminal (tty). If you always want to use a pager, set it in the config file:
+
+```yaml
+pager: less
+```
+
+### Distinct colors for pods created by the same workload
+
+Pods created by the same workload (e.g. replicas of a Deployment) are now assigned distinct colors as long as unused colors remain, so that their interleaved logs are easier to tell apart. Pods that do not share a workload with other pods keep the same colors as before.
+
+### Nested field extraction in `extractJSONParts`
+
+`extractJSONParts` and `tryExtractJSONParts` now accept keys in dot notation to access nested fields.
+
+```
+stern --template='{{ extractJSONParts .Message "python.levelname" "message" }}{{"\n"}}' backend
+```
+
+### The timestamp and the namespace in `extjson` and `ppextjson`
+
+The `extjson` and `ppextjson` outputs now include the `timestamp` field when `--timestamps` is specified, and the `namespace` field when tailing multiple namespaces with `--namespace`. Nested JSON messages in `ppextjson` are now indented as well.
+
+```
+$ stern --timestamps -o extjson backend
+{"pod":"backend-...","container":"backend","timestamp":"2026-10-01T10:00:00.123456789Z","message":"hello"}
+```
+
+## :warning: Breaking Changes
+
+### `.Message` no longer includes the timestamp with `--timestamps`
+
+With `--timestamps`, the timestamp is no longer prepended to `.Message` in templates, so template functions that parse `.Message` as JSON now work with `--timestamps`. The timestamp is available as the new `.Timestamp` template variable. The output of the built-in `default` and `raw` templates is unchanged, but if you use a custom template with `--timestamps`, add `.Timestamp` to it to keep printing the timestamp.
+
+```
+stern --timestamps --template='{{.Timestamp}} {{.Message}}{{"\n"}}' backend
+```
+
+## Changes
+
+* fix: close config file after reading ([#367](https://github.com/stern/stern/pull/367)) ee5b0b3 (Filip Boye-Kofi)
+* fix: change errorf format to represent real value ([#368](https://github.com/stern/stern/pull/368)) 0d39b3f (Filip Boye-Kofi)
+* docs: fix "when if" typo in max-log-requests table ([#371](https://github.com/stern/stern/pull/371)) 13b9806 (SEONGHYUN HONG)
+* Keep .Message raw with --timestamps; expose timestamp as .Timestamp ([#372](https://github.com/stern/stern/pull/372)) 8a00e61 (SEONGHYUN HONG)
+* Support nested field extraction via dot notation in extractJSONParts ([#373](https://github.com/stern/stern/pull/373)) 3dd605b (somaz)
+* docs: list toUTC in README template functions ([#378](https://github.com/stern/stern/pull/378)) 2926461 (Dean Chen)
+* Fix misspelled identifiers reHightlight and stirngSlice ([#382](https://github.com/stern/stern/pull/382)) 523c01a (MsfPablo)
+* fix: honor --timestamps when reading from stdin ([#380](https://github.com/stern/stern/pull/380)) 96b3c3a (Vincent)
+* fix: include the namespace in extjson and ppextjson for multiple namespaces ([#386](https://github.com/stern/stern/pull/386)) d6d42c9 (Ahmad Mehrabi)
+* fix: preserve the sign of fractional Unix timestamps ([#388](https://github.com/stern/stern/pull/388)) 6db257e (Haram Jeong)
+* docs: fix the function name in the colorCustom example ([#383](https://github.com/stern/stern/pull/383)) 050c9fe (Iain)
+* Assign distinct colors to pods created by the same workload ([#375](https://github.com/stern/stern/pull/375)) 74000c2 (Jojin)
+* Add --pager flag to pipe output into a pager ([#376](https://github.com/stern/stern/pull/376)) 4772306 (Jojin)
+* Hide the namespace when --namespace repeats a single namespace ([#389](https://github.com/stern/stern/pull/389)) b4b5d59 (Kazuki Suda)
+* Update dependencies for Kubernetes 1.37 ([#390](https://github.com/stern/stern/pull/390)) e62aec2 (Kazuki Suda)
+* fix: show the timestamp in extjson and ppextjson output ([#392](https://github.com/stern/stern/pull/392)) 5e330c6 (Spicy Shark)
+* Marshal extjson and ppextjson outputs with encoding/json instead of string concatenation ([#393](https://github.com/stern/stern/pull/393)) 7ef2365 (Kazuki Suda)
+* fix: keep inline regexp flags within their own --highlight pattern ([#395](https://github.com/stern/stern/pull/395)) 9a830a0 (Spicy Shark)
+
 # v1.34.0
 
 ## :zap: Notable Changes
