@@ -300,6 +300,22 @@ func TestHighlightMatchedString(t *testing.T) {
 			},
 			"test \x1b[31;1mmatch on the longer one\x1b[0;22m",
 		},
+		{
+			"ERROR WARN warn",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`(?i)error`),
+				regexp.MustCompile(`warn`),
+			},
+			"\x1b[31;1mERROR\x1b[0;22m WARN \x1b[31;1mwarn\x1b[0;22m",
+		},
+		{
+			"foo bar baz qux",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`foo|bar`),
+				regexp.MustCompile(`baz`),
+			},
+			"\x1b[31;1mfoo\x1b[0;22m \x1b[31;1mbar\x1b[0;22m \x1b[31;1mbaz\x1b[0;22m qux",
+		},
 	}
 
 	orig := color.NoColor

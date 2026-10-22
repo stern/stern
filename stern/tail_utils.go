@@ -98,7 +98,7 @@ func (o TailOptions) HighlightMatchedString(msg string) string {
 	if o.reHighlight == nil {
 		ss := make([]string, len(highlight))
 		for i, hl := range highlight {
-			ss[i] = hl.String()
+			ss[i] = "(?:" + hl.String() + ")"
 		}
 
 		// We expect a longer match
