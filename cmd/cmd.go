@@ -139,11 +139,6 @@ func (o *options) Complete(args []string) error {
 		}
 	}
 
-	envVar, ok := os.LookupEnv("STERNCONFIG")
-	if ok {
-		o.configFilePath = envVar
-	}
-
 	o.clientConfig = o.configFlags.ToRawKubeConfigLoader()
 
 	restConfig, err := o.configFlags.ToRESTConfig()
@@ -408,6 +403,11 @@ func (o *options) setColorList() error {
 // overrideFlagSetDefaultFromConfig overrides the default value of the flagSets
 // from the config file
 func (o *options) overrideFlagSetDefaultFromConfig(fs *pflag.FlagSet) error {
+	envVar, ok := os.LookupEnv("STERNCONFIG")
+	if ok {
+		o.configFilePath = envVar
+	}
+
 	expanded, err := homedir.Expand(o.configFilePath)
 	if err != nil {
 		return err
@@ -898,11 +898,11 @@ func NewSternCmd(stream genericclioptions.IOStreams) (*cobra.Command, error) {
 				return nil
 			}
 
-			if err := o.Complete(args); err != nil {
+			if err := o.overrideFlagSetDefaultFromConfig(cmd.Flags()); err != nil {
 				return err
 			}
 
-			if err := o.overrideFlagSetDefaultFromConfig(cmd.Flags()); err != nil {
+			if err := o.Complete(args); err != nil {
 				return err
 			}
 
