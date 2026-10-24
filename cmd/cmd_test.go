@@ -57,7 +57,62 @@ func TestSternCommand(t *testing.T) {
 	}
 }
 
-func TestOptionsComplete(t *testing.T) {
+func TestSternCommandConfigBeforeComplete(t *testing.T) {
+	t.Setenv("STERNCONFIG", "")
+	if err := os.Unsetenv("STERNCONFIG"); err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name string
+		args []string
+		tail int64
+		err  string
+	}{
+		{
+			"config context is checked before validation",
+			[]string{"--config=testdata/config-kube-flags.yaml"},
+			0,
+			`context "nope" does not exist`,
+		},
+		{
+			"context flag overrides config",
+			[]string{"--config=testdata/config-kube-flags.yaml", "--context=a"},
+			1,
+			"One of pod-query, --selector, --field-selector, --prompt or --stdin is required",
+		},
+		{
+			"config without context keeps tail",
+			[]string{"--config=testdata/config-tail1.yaml"},
+			1,
+			"One of pod-query, --selector, --field-selector, --prompt or --stdin is required",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd, err := NewSternCmd(genericclioptions.NewTestIOStreamsDiscard())
+			if err != nil {
+				t.Fatal(err)
+			}
+			cmd.SetArgs(append([]string{"--kubeconfig=testdata/kubeconfig.yaml"}, tt.args...))
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+			if err := cmd.Execute(); err == nil || err.Error() != tt.err {
+				t.Fatalf("expected %q err, but got %v", tt.err, err)
+			}
+			if tt.tail != 0 {
+				if tail, err := cmd.Flags().GetInt64("tail"); err != nil || tail != tt.tail {
+					t.Errorf("expected %d for tail, but got %d, %v", tt.tail, tail, err)
+				}
+			}
+		})
+	}
+}
+
+func TestOptionsOverrideFlagSetDefaultFromConfigEnv(t *testing.T) {
+	t.Setenv("STERNCONFIG", "")
+	if err := os.Unsetenv("STERNCONFIG"); err != nil {
+		t.Fatal(err)
+	}
 	streams := genericclioptions.NewTestIOStreamsDiscard()
 
 	tests := []struct {
@@ -89,7 +144,7 @@ func TestOptionsComplete(t *testing.T) {
 			}
 
 			o := NewOptions(streams)
-			_ = o.Complete(tt.args)
+			_ = o.overrideFlagSetDefaultFromConfig(pflag.NewFlagSet("", pflag.ContinueOnError))
 
 			if tt.expectedConfigFilePath != o.configFilePath {
 				t.Errorf("expected %s for configFilePath, but got %s", tt.expectedConfigFilePath, o.configFilePath)
@@ -1158,6 +1213,11 @@ func TestOptionsSternConfig(t *testing.T) {
 }
 
 func TestOptionsOverrideFlagSetDefaultFromConfig(t *testing.T) {
+	t.Setenv("STERNCONFIG", "")
+	if err := os.Unsetenv("STERNCONFIG"); err != nil {
+		t.Fatal(err)
+	}
+
 	orig := defaultConfigFilePath
 	defer func() {
 		defaultConfigFilePath = orig
@@ -1258,6 +1318,11 @@ func TestOptionsOverrideFlagSetDefaultFromConfig(t *testing.T) {
 }
 
 func TestOptionsOverrideFlagSetDefaultFromConfigArray(t *testing.T) {
+	t.Setenv("STERNCONFIG", "")
+	if err := os.Unsetenv("STERNCONFIG"); err != nil {
+		t.Fatal(err)
+	}
+
 	tests := []struct {
 		config string
 		want   []string
