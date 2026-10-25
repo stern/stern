@@ -102,10 +102,6 @@ func (t *FileTail) PrintWithoutHighlight(msg string) {
 func (t *FileTail) consumeLine(line string) {
 	content := line
 
-	if t.Options.IsExclude(content) || !t.Options.IsInclude(content) {
-		return
-	}
-
 	var timestamp string
 	if t.Options.Timestamps {
 		// A piped line may already carry its own timestamp, as anything coming
@@ -123,6 +119,10 @@ func (t *FileTail) consumeLine(line string) {
 			return
 		}
 		timestamp = updatedTs
+	}
+
+	if t.Options.IsExclude(content) || !t.Options.IsInclude(content) {
+		return
 	}
 
 	t.Print(content, timestamp)
