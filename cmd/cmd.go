@@ -599,8 +599,8 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			return obj, nil
 		},
 		"extractJSONParts": func(text string, part ...string) (string, error) {
-			obj := make(map[string]interface{})
-			if err := json.Unmarshal([]byte(text), &obj); err != nil {
+			obj, err := decodeJSONObject(text)
+			if err != nil {
 				return "", err
 			}
 			parts := make([]string, 0)
@@ -610,8 +610,8 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			return strings.Join(parts, ", "), nil
 		},
 		"tryExtractJSONParts": func(text string, part ...string) string {
-			obj := make(map[string]interface{})
-			if err := json.Unmarshal([]byte(text), &obj); err != nil {
+			obj, err := decodeJSONObject(text)
+			if err != nil {
 				return text
 			}
 			parts := make([]string, 0)
@@ -631,9 +631,11 @@ func (o *options) generateTemplate() (*template.Template, error) {
 
 			switch v := value.(type) {
 			case string:
-				if err := json.Unmarshal([]byte(v), &data); err != nil {
+				obj, err := decodeJSONObject(v)
+				if err != nil {
 					return v
 				}
+				data = obj
 			case map[string]any:
 				data = v
 			default:
@@ -849,6 +851,20 @@ func extractJSONPart(obj map[string]interface{}, key string) interface{} {
 		}
 	}
 	return current
+}
+
+// decodeJSONObject decodes text into a map like json.Unmarshal, but keeps
+// numbers as json.Number so they print as written. Decoder.Decode also accepts
+// data after the first value, so invalid text goes to json.Unmarshal to be
+// rejected.
+func decodeJSONObject(text string) (map[string]interface{}, error) {
+	obj := make(map[string]interface{})
+	if !json.Valid([]byte(text)) {
+		return obj, json.Unmarshal([]byte(text), &obj)
+	}
+	decoder := json.NewDecoder(strings.NewReader(text))
+	decoder.UseNumber()
+	return obj, decoder.Decode(&obj)
 }
 
 func (o *options) generateFieldSelector() (fields.Selector, error) {

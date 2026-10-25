@@ -747,6 +747,50 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			"not json",
 			false,
 		},
+		{
+			"template with extractJSONParts keeps numbers as written",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{extractJSONParts .Message "bytes" "id"}}`
+				return o
+			}(),
+			`{"bytes":5242880,"id":1234567890123456789}`,
+			"5242880, 1234567890123456789",
+			false,
+		},
+		{
+			"template with tryExtractJSONParts keeps numbers as written",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{tryExtractJSONParts .Message "ts"}}`
+				return o
+			}(),
+			`{"ts":1700000000.123}`,
+			"1700000000.123",
+			false,
+		},
+		{
+			"template with tryExtractJSONParts on text after the json",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{tryExtractJSONParts .Message "level"}}`
+				return o
+			}(),
+			`{"level":"INFO"} trailing`,
+			`{"level":"INFO"} trailing`,
+			false,
+		},
+		{
+			"template with prettyJSON keeps numbers as written",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{prettyJSON .Message}}`
+				return o
+			}(),
+			`{"id":1234567890123456789}`,
+			"{\n  \"id\": 1234567890123456789\n}",
+			false,
+		},
 	}
 
 	for _, tt := range tests {
