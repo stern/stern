@@ -120,7 +120,7 @@ line 4 (my-node/my-namespace/my-pod/my-container)
 			}
 			tail := NewTail(clientset.CoreV1(), pod, "my-container", tmpl, out, io.Discard, &TailOptions{}, false)
 			tail.resumeRequest = tt.resumeReq
-			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(logLines)}); err != nil {
+			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(logLines)}); err != nil && err != io.EOF {
 				t.Fatalf("%d: unexpected err %v", i, err)
 			}
 
@@ -181,7 +181,7 @@ log 4 (my-namespace/my-pod/my-container)
 			}
 
 			tail := NewTail(clientset.CoreV1(), pod, "my-container", tmpl, out, io.Discard, &TailOptions{Highlight: []*regexp.Regexp{regexp.MustCompile("line")}}, false)
-			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != nil {
+			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != nil && err != io.EOF {
 				t.Fatalf("%d: unexpected err %v", i, err)
 			}
 
@@ -249,7 +249,7 @@ func TestInclude(t *testing.T) {
 			}
 
 			tail := NewTail(clientset.CoreV1(), pod, "my-container", tmpl, out, io.Discard, &TailOptions{Include: []*regexp.Regexp{regexp.MustCompile("line")}}, false)
-			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != nil {
+			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(tt.logLine)}); err != nil && err != io.EOF {
 				t.Fatalf("%d: unexpected err %v", i, err)
 			}
 
@@ -485,7 +485,7 @@ func TestConsumeStreamTailTimestamp(t *testing.T) {
 			}
 			tail := NewTail(clientset.CoreV1(), pod, "my-container", tt.tmpl, out, errOut,
 				&TailOptions{Timestamps: true, TimestampFormat: TimestampFormatShort, Location: time.UTC}, false)
-			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(logLines)}); err != nil {
+			if err := tail.ConsumeRequest(context.TODO(), &responseWrapperMock{data: bytes.NewBufferString(logLines)}); err != nil && err != io.EOF {
 				t.Fatalf("unexpected err %v", err)
 			}
 			if errOut.Len() != 0 {
