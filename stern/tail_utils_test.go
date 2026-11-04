@@ -360,3 +360,38 @@ func TestHighlightMatchedString(t *testing.T) {
 		}
 	}
 }
+
+func TestHighlightMatchedStringCompilesOnce(t *testing.T) {
+	o := &TailOptions{
+		Include:   []*regexp.Regexp{regexp.MustCompile(`foo`)},
+		Highlight: []*regexp.Regexp{regexp.MustCompile(`bar`)},
+	}
+
+	o.HighlightMatchedString("foo bar")
+	re := o.reHighlight
+	if re == nil {
+		t.Fatal("expected the highlight regexp to be kept after the first call")
+	}
+
+	o.HighlightMatchedString("foo bar")
+	if o.reHighlight != re {
+		t.Error("expected the highlight regexp to be reused, but it was compiled again")
+	}
+}
+
+func TestHighlightMatchedStringKeepsIncludeBackingArray(t *testing.T) {
+	spare := regexp.MustCompile(`spare`)
+	include := make([]*regexp.Regexp, 1, 2)
+	include[0] = regexp.MustCompile(`foo`)
+	include = append(include, spare)[:1]
+
+	o := &TailOptions{
+		Include:   include,
+		Highlight: []*regexp.Regexp{regexp.MustCompile(`bar`)},
+	}
+	o.HighlightMatchedString("foo bar")
+
+	if got := include[:2][1]; got != spare {
+		t.Errorf("expected the spare capacity of Include to be left alone, but it holds %v", got)
+	}
+}

@@ -3,6 +3,7 @@ package stern
 import (
 	"errors"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -92,13 +93,16 @@ var colorHighlight = color.New(color.FgRed, color.Bold).SprintFunc()
 // reEscape matches the SGR escape sequences that color writes.
 var reEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
-func (o TailOptions) HighlightMatchedString(msg string) string {
-	highlight := append(o.Include, o.Highlight...)
-	if len(highlight) == 0 {
+// HighlightMatchedString highlights the parts of msg that match Include or
+// Highlight. The combined regexp is compiled on the first call and reused, so
+// it has a pointer receiver.
+func (o *TailOptions) HighlightMatchedString(msg string) string {
+	if len(o.Include) == 0 && len(o.Highlight) == 0 {
 		return msg
 	}
 
 	if o.reHighlight == nil {
+		highlight := slices.Concat(o.Include, o.Highlight)
 		ss := make([]string, len(highlight))
 		for i, hl := range highlight {
 			ss[i] = "(?:" + hl.String() + ")"
