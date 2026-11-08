@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"regexp"
 	"strings"
 	"testing"
 	"text/template"
@@ -54,6 +55,8 @@ func TestConsumeFileTailTimestamps(t *testing.T) {
 		name       string
 		line       string
 		timestamps bool
+		include    []*regexp.Regexp
+		exclude    []*regexp.Regexp
 		// expected is an exact match. When it is empty the timestamp is
 		// generated and cannot be compared, so suffix is checked instead.
 		expected string
@@ -89,12 +92,33 @@ func TestConsumeFileTailTimestamps(t *testing.T) {
 			timestamps: false,
 			expected:   "test line\n",
 		},
+		{
+			name:       "an include is matched against the message, not the timestamp",
+			line:       "2026-08-20T10:00:00.123456789Z INFO ok\n2026-08-20T10:00:01.123456789Z ERROR boom\n",
+			timestamps: true,
+			include:    []*regexp.Regexp{regexp.MustCompile(`^ERROR`)},
+			expected:   "2026-08-20T10:00:01.123456789Z ERROR boom\n",
+		},
+		{
+			name:       "an exclude is matched against the message, not the timestamp",
+			line:       "2026-08-20T10:00:00.123456789Z INFO ok\n2026-08-20T10:00:01.123456789Z ERROR boom\n",
+			timestamps: true,
+			exclude:    []*regexp.Regexp{regexp.MustCompile(`^ERROR`)},
+			expected:   "2026-08-20T10:00:00.123456789Z INFO ok\n",
+		},
+		{
+			name:       "without timestamps a filter is matched against the whole line",
+			line:       "2026-08-20T10:00:00.123456789Z ERROR boom\n",
+			timestamps: false,
+			include:    []*regexp.Regexp{regexp.MustCompile(`^2026`)},
+			expected:   "2026-08-20T10:00:00.123456789Z ERROR boom\n",
+		},
 	}
 
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			out := new(bytes.Buffer)
-			tail := NewFileTail(tmpl, nil, out, io.Discard, &TailOptions{Timestamps: tt.timestamps, Location: time.UTC})
+			tail := NewFileTail(tmpl, nil, out, io.Discard, &TailOptions{Timestamps: tt.timestamps, Location: time.UTC, Include: tt.include, Exclude: tt.exclude})
 			if err := tail.ConsumeReader(bufio.NewReader(strings.NewReader(tt.line))); err != nil {
 				t.Fatalf("%d: unexpected err %v", i, err)
 			}
