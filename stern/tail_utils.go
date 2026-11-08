@@ -64,7 +64,7 @@ type TailOptions struct {
 	reHighlight *regexp.Regexp
 }
 
-func (o TailOptions) IsExclude(msg string) bool {
+func (o *TailOptions) IsExclude(msg string) bool {
 	for _, rex := range o.Exclude {
 		if rex.MatchString(msg) {
 			return true
@@ -74,7 +74,7 @@ func (o TailOptions) IsExclude(msg string) bool {
 	return false
 }
 
-func (o TailOptions) IsInclude(msg string) bool {
+func (o *TailOptions) IsInclude(msg string) bool {
 	if len(o.Include) == 0 {
 		return true
 	}
@@ -94,8 +94,7 @@ var colorHighlight = color.New(color.FgRed, color.Bold).SprintFunc()
 var reEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 // HighlightMatchedString highlights the parts of msg that match Include or
-// Highlight. The combined regexp is compiled on the first call and reused, so
-// it has a pointer receiver.
+// Highlight. The combined regexp is compiled on the first call and reused.
 func (o *TailOptions) HighlightMatchedString(msg string) string {
 	if len(o.Include) == 0 && len(o.Highlight) == 0 {
 		return msg
@@ -154,7 +153,7 @@ func (o *TailOptions) HighlightMatchedString(msg string) string {
 	return sb.String()
 }
 
-func (o TailOptions) UpdateTimezoneAndFormat(timestamp string) (string, error) {
+func (o *TailOptions) UpdateTimezoneAndFormat(timestamp string) (string, error) {
 	t, err := time.ParseInLocation(time.RFC3339Nano, timestamp, time.UTC)
 	if err != nil {
 		return "", errors.New("missing timestamp")
