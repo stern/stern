@@ -3,6 +3,7 @@ package stern
 import (
 	"errors"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -89,13 +90,19 @@ func (o TailOptions) IsInclude(msg string) bool {
 
 var colorHighlight = color.New(color.FgRed, color.Bold).SprintFunc()
 
-func (o TailOptions) HighlightMatchedString(msg string) string {
-	highlight := append(o.Include, o.Highlight...)
-	if len(highlight) == 0 {
+// reEscape matches the SGR escape sequences that color writes.
+var reEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+// HighlightMatchedString highlights the parts of msg that match Include or
+// Highlight. The combined regexp is compiled on the first call and reused, so
+// it has a pointer receiver.
+func (o *TailOptions) HighlightMatchedString(msg string) string {
+	if len(o.Include) == 0 && len(o.Highlight) == 0 {
 		return msg
 	}
 
 	if o.reHighlight == nil {
+		highlight := slices.Concat(o.Include, o.Highlight)
 		ss := make([]string, len(highlight))
 		for i, hl := range highlight {
 			ss[i] = "(?:" + hl.String() + ")"
@@ -109,11 +116,42 @@ func (o TailOptions) HighlightMatchedString(msg string) string {
 		o.reHighlight = regexp.MustCompile("(" + strings.Join(ss, "|") + ")")
 	}
 
-	msg = o.reHighlight.ReplaceAllStringFunc(msg, func(part string) string {
-		return colorHighlight(part)
-	})
+	escapes := reEscape.FindAllStringIndex(msg, -1)
+	if len(escapes) == 0 {
+		return o.reHighlight.ReplaceAllStringFunc(msg, func(part string) string {
+			return colorHighlight(part)
+		})
+	}
 
-	return msg
+	// Match the text without its escape sequences, so that a match neither
+	// cuts a sequence open nor stops at one.
+	matches := o.reHighlight.FindAllStringIndex(reEscape.ReplaceAllString(msg, ""), -1)
+
+	// offset converts an offset in that text to an offset in msg.
+	offset := func(p int) int {
+		for _, e := range escapes {
+			if e[0] > p {
+				break
+			}
+			p += e[1] - e[0]
+		}
+		return p
+	}
+
+	var sb strings.Builder
+	last := 0
+	for _, m := range matches {
+		if m[0] == m[1] {
+			continue
+		}
+		start, end := offset(m[0]), offset(m[1]-1)+1
+		sb.WriteString(msg[last:start])
+		sb.WriteString(colorHighlight(msg[start:end]))
+		last = end
+	}
+	sb.WriteString(msg[last:])
+
+	return sb.String()
 }
 
 func (o TailOptions) UpdateTimezoneAndFormat(timestamp string) (string, error) {

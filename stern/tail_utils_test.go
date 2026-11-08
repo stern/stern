@@ -316,6 +316,34 @@ func TestHighlightMatchedString(t *testing.T) {
 			},
 			"\x1b[31;1mfoo\x1b[0;22m \x1b[31;1mbar\x1b[0;22m \x1b[31;1mbaz\x1b[0;22m qux",
 		},
+		{
+			"\x1b[92mpod\x1b[0m \x1b[32mcont\x1b[0m a1b22",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`[0-9]+`),
+			},
+			"\x1b[92mpod\x1b[0m \x1b[32mcont\x1b[0m a\x1b[31;1m1\x1b[0;22mb\x1b[31;1m22\x1b[0;22m",
+		},
+		{
+			"\x1b[38;5;196m5\x1b[0m m",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`[0-9]+|m`),
+			},
+			"\x1b[38;5;196m\x1b[31;1m5\x1b[0;22m\x1b[0m \x1b[31;1mm\x1b[0;22m",
+		},
+		{
+			"id=\x1b[32m42\x1b[0m ok",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`id=\d+`),
+			},
+			"\x1b[31;1mid=\x1b[32m42\x1b[0;22m\x1b[0m ok",
+		},
+		{
+			"\x1b[92mab\x1b[0m",
+			[]*regexp.Regexp{
+				regexp.MustCompile(`x*`),
+			},
+			"\x1b[92mab\x1b[0m",
+		},
 	}
 
 	orig := color.NoColor
@@ -330,5 +358,40 @@ func TestHighlightMatchedString(t *testing.T) {
 		if actual != tt.expected {
 			t.Errorf("%d: expected %q, but actual %q", i, tt.expected, actual)
 		}
+	}
+}
+
+func TestHighlightMatchedStringCompilesOnce(t *testing.T) {
+	o := &TailOptions{
+		Include:   []*regexp.Regexp{regexp.MustCompile(`foo`)},
+		Highlight: []*regexp.Regexp{regexp.MustCompile(`bar`)},
+	}
+
+	o.HighlightMatchedString("foo bar")
+	re := o.reHighlight
+	if re == nil {
+		t.Fatal("expected the highlight regexp to be kept after the first call")
+	}
+
+	o.HighlightMatchedString("foo bar")
+	if o.reHighlight != re {
+		t.Error("expected the highlight regexp to be reused, but it was compiled again")
+	}
+}
+
+func TestHighlightMatchedStringKeepsIncludeBackingArray(t *testing.T) {
+	spare := regexp.MustCompile(`spare`)
+	include := make([]*regexp.Regexp, 1, 2)
+	include[0] = regexp.MustCompile(`foo`)
+	include = append(include, spare)[:1]
+
+	o := &TailOptions{
+		Include:   include,
+		Highlight: []*regexp.Regexp{regexp.MustCompile(`bar`)},
+	}
+	o.HighlightMatchedString("foo bar")
+
+	if got := include[:2][1]; got != spare {
+		t.Errorf("expected the spare capacity of Include to be left alone, but it holds %v", got)
 	}
 }
