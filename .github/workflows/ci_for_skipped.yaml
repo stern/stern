@@ -9,6 +9,8 @@ on:
     types: [opened, synchronize]
     paths: ['**.md']
 
+permissions: {}
+
 jobs:
   run:
     runs-on: ubuntu-latest

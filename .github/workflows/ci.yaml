@@ -9,6 +9,9 @@ on:
     types: [opened, synchronize]
     paths-ignore: ['**.md']
 
+permissions:
+  contents: read
+
 jobs:
   run:
     runs-on: ubuntu-latest

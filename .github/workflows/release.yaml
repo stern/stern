@@ -4,9 +4,15 @@ on:
   push:
     tags: ["v*"]
 
+permissions:
+  contents: read
+
 jobs:
   run:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     steps:
     - uses: actions/checkout@v7
     - uses: actions/setup-go@v7
