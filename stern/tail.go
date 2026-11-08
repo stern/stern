@@ -25,7 +25,6 @@ import (
 	"strings"
 	"text/template"
 	"time"
-	"unicode"
 
 	"github.com/fatih/color"
 	corev1 "k8s.io/api/core/v1"
@@ -344,20 +343,19 @@ func splitLogLineIfTimestamped(line string) (timestamp string, content string, o
 }
 
 // removeSubsecond removes the subsecond of the timestamp.
-// It converts RFC3339Nano to RFC3339 fast.
+// It converts RFC3339Nano to RFC3339 fast. Only the digits right after the
+// dot are removed, so a UTC offset such as "+09:00" is kept.
 func removeSubsecond(timestamp string) string {
-	dot := strings.IndexRune(timestamp, '.')
+	dot := strings.IndexByte(timestamp, '.')
 	if dot == -1 {
 		return timestamp
 	}
-	var last int
-	for i := dot; i < len(timestamp); i++ {
-		if unicode.IsDigit(rune(timestamp[i])) {
-			last = i
-		}
+	end := dot + 1
+	for end < len(timestamp) && timestamp[end] >= '0' && timestamp[end] <= '9' {
+		end++
 	}
-	if last == 0 {
+	if end == dot+1 {
 		return timestamp
 	}
-	return timestamp[:dot] + timestamp[last+1:]
+	return timestamp[:dot] + timestamp[end:]
 }
