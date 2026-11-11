@@ -416,6 +416,14 @@ func TestRemoveSubsecond(t *testing.T) {
 			expected: "2023-02-14T05:36:39Z",
 		},
 		{
+			ts:       "2023-02-14T14:36:39.902767599+09:00",
+			expected: "2023-02-14T14:36:39+09:00",
+		},
+		{
+			ts:       "2023-02-13T23:36:39.1-06:00",
+			expected: "2023-02-13T23:36:39-06:00",
+		},
+		{
 			ts:       "2023-02-14T05:36:39Z",
 			expected: "2023-02-14T05:36:39Z",
 		},
@@ -495,5 +503,27 @@ func TestConsumeStreamTailTimestamp(t *testing.T) {
 				t.Errorf("expected `%s`, but actual `%s`", tt.expected, out)
 			}
 		})
+	}
+}
+
+func TestGetResumeRequestWithUTCOffset(t *testing.T) {
+	tail := NewTail(fake.NewSimpleClientset().CoreV1(), &corev1.Pod{}, "",
+		template.Must(template.New("").Parse(`{{.Message}}`)), io.Discard, io.Discard, &TailOptions{}, false)
+	tail.consumeLine("2023-02-14T14:36:39.902767599+09:00 first")
+	tail.consumeLine("2023-02-14T14:36:39.902767600+09:00 second")
+
+	req := tail.GetResumeRequest()
+	if req == nil {
+		t.Fatal("expected a resume request")
+	}
+	if req.Timestamp != "2023-02-14T14:36:39+09:00" || req.LinesToSkip != 2 {
+		t.Errorf("unexpected resume request: %+v", req)
+	}
+	sinceTime, err := req.sinceTime()
+	if err != nil {
+		t.Fatalf("sinceTime() failed: %v", err)
+	}
+	if want := time.Date(2023, 2, 14, 5, 36, 39, 0, time.UTC); !sinceTime.Equal(&metav1.Time{Time: want}) {
+		t.Errorf("expected %v, but actual %v", want, sinceTime.UTC())
 	}
 }
