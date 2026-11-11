@@ -428,10 +428,6 @@ func TestRemoveSubsecond(t *testing.T) {
 			expected: "2023-02-14T05:36:39Z",
 		},
 		{
-			ts:       "2023-02-14T05:36:39Z",
-			expected: "2023-02-14T05:36:39Z",
-		},
-		{
 			ts:       "1.1",
 			expected: "1",
 		},
