@@ -86,12 +86,9 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		resource.kind, resource.name = parts[0], parts[1]
 		if PodMatcher.Matches(resource.kind) {
 			// Pods might have no labels or share the same labels,
-			// so we use an exact match instead.
-			podName, err := regexp.Compile("^" + resource.name + "$")
-			if err != nil {
-				return errors.Wrap(err, "failed to compile regular expression for pod")
-			}
-			config.PodQuery = podName
+			// so we use an exact match instead. The name is quoted because
+			// pod names may contain dots.
+			config.PodQuery = regexp.MustCompile("^" + regexp.QuoteMeta(resource.name) + "$")
 		}
 	}
 
