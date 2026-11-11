@@ -1361,6 +1361,37 @@ func TestOptionsOverrideFlagSetDefaultFromConfig(t *testing.T) {
 	}
 }
 
+func TestOptionsOverrideFlagSetDefaultFromConfigNullValues(t *testing.T) {
+	t.Setenv("STERNCONFIG", "")
+	if err := os.Unsetenv("STERNCONFIG"); err != nil {
+		t.Fatal(err)
+	}
+
+	o := NewOptions(genericclioptions.NewTestIOStreamsDiscard())
+	fs := pflag.NewFlagSet("", pflag.ExitOnError)
+	o.AddFlags(fs)
+	if err := fs.Parse([]string{"--config=testdata/config-null-values.yaml"}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := o.overrideFlagSetDefaultFromConfig(fs); err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+
+	if o.tail != -1 {
+		t.Errorf("expected -1 for tail, but got %d", o.tail)
+	}
+	if o.selector != "" {
+		t.Errorf("expected empty selector, but got %q", o.selector)
+	}
+	if o.template != "" {
+		t.Errorf("expected empty template, but got %q", o.template)
+	}
+	if len(o.exclude) != 0 {
+		t.Errorf("expected no exclude, but got %v", o.exclude)
+	}
+}
+
 func TestOptionsOverrideFlagSetDefaultFromConfigArray(t *testing.T) {
 	t.Setenv("STERNCONFIG", "")
 	if err := os.Unsetenv("STERNCONFIG"); err != nil {

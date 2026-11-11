@@ -446,6 +446,12 @@ func (o *options) overrideFlagSetDefaultFromConfig(fs *pflag.FlagSet) error {
 			continue
 		}
 
+		// an option without a value (e.g. "selector:") is null in YAML;
+		// keep the default instead of setting the string "<nil>"
+		if value == nil {
+			continue
+		}
+
 		if valueSlice, ok := value.([]any); ok {
 			// the value is an array
 			if flagSlice, ok := flag.Value.(pflag.SliceValue); ok {
