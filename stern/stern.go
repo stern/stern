@@ -17,6 +17,7 @@ package stern
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -31,6 +32,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -132,39 +134,6 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		return eg.Wait()
 	}
 
-	tailTarget := func(ctx context.Context, target *Target) {
-		// We use a rate limiter to prevent a burst of retries.
-		// It also enables us to retry immediately, in most cases,
-		// when it is disconnected on the way.
-		limiter := rate.NewLimiter(rate.Every(time.Second*20), 2)
-		var resumeRequest *ResumeRequest
-		for {
-			if err := limiter.Wait(ctx); err != nil {
-				fmt.Fprintf(config.ErrOut, "failed to retry: %v\n", err)
-				return
-			}
-			tail := newTail(target)
-			var err error
-			if resumeRequest == nil {
-				err = tail.Start(ctx)
-			} else {
-				err = tail.Resume(ctx, resumeRequest)
-			}
-			tail.Close()
-			if err == nil {
-				return
-			}
-			if !filter.isActive(target) {
-				fmt.Fprintf(config.ErrOut, "failed to tail: %v\n", err)
-				return
-			}
-			fmt.Fprintf(config.ErrOut, "failed to tail: %v, will retry\n", err)
-			if resumeReq := tail.GetResumeRequest(); resumeReq != nil {
-				resumeRequest = resumeReq
-			}
-		}
-	}
-
 	cancelMap := sync.Map{}
 	eg, nctx := errgroup.WithContext(ctx)
 	var numRequests atomic.Int64
@@ -198,16 +167,20 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 							config.MaxLogRequests)
 					}
 					ctx, cancel := context.WithCancel(nctx)
-					cancelMap.Store(target.GetID(), cancel)
+					// A restarted container replaces the entry of the previous
+					// one, whose tail may still be ending. The entry is a pointer
+					// so that the previous tail removes only its own entry.
+					entry := &tailCancel{cancel: cancel}
+					cancelMap.Store(target.GetID(), entry)
 					go func() {
-						tailTarget(ctx, target)
+						tailTarget(ctx, target, filter, newTail, config.ErrOut)
 						numRequests.Add(-1)
 						cancel()
-						cancelMap.Delete(target.GetID())
+						cancelMap.CompareAndDelete(target.GetID(), entry)
 					}()
 				case target := <-d:
-					if cancel, ok := cancelMap.LoadAndDelete(target.GetID()); ok {
-						cancel.(context.CancelFunc)()
+					if entry, ok := cancelMap.LoadAndDelete(target.GetID()); ok {
+						entry.(*tailCancel).cancel()
 					}
 				case <-nctx.Done():
 					return nil
@@ -216,6 +189,105 @@ func Run(ctx context.Context, client kubernetes.Interface, config *Config) error
 		})
 	}
 	return eg.Wait()
+}
+
+type tailCancel struct {
+	cancel context.CancelFunc
+}
+
+var (
+	// endedStreamGracePeriod is how long to wait for the pod watch to report
+	// the end of a container after its log stream has ended.
+	endedStreamGracePeriod = 5 * time.Second
+	// targetPollInterval is how often to check the state from the pod watch.
+	targetPollInterval = 250 * time.Millisecond
+)
+
+// tailTarget follows the logs of the container of target until it ends.
+func tailTarget(ctx context.Context, target *Target, filter *targetFilter, newTail func(*Target) *Tail, errOut io.Writer) {
+	// We use a rate limiter to prevent a burst of retries.
+	// It also enables us to retry immediately, in most cases,
+	// when it is disconnected on the way.
+	limiter := rate.NewLimiter(rate.Every(time.Second*20), 2)
+	var resumeRequest *ResumeRequest
+	for {
+		if err := limiter.Wait(ctx); err != nil {
+			fmt.Fprintf(errOut, "failed to retry: %v\n", err)
+			return
+		}
+		tail := newTail(target)
+		var err error
+		if resumeRequest == nil {
+			err = tail.Start(ctx)
+		} else {
+			err = resumeTail(ctx, tail, resumeRequest, filter, target)
+		}
+		tail.Close()
+		if resumeReq := tail.GetResumeRequest(); resumeReq != nil {
+			resumeRequest = resumeReq
+		}
+		if err == nil {
+			// The log stream ends when the container terminates, but also when
+			// the kubelet restarts or the connection is closed on the way.
+			if !stillRunning(ctx, filter, target) {
+				return
+			}
+			klog.V(7).InfoS("Log stream ended while the container is running, resuming", "target", target.GetID())
+			continue
+		}
+		if !filter.isActive(target) {
+			fmt.Fprintf(errOut, "failed to tail: %v\n", err)
+			return
+		}
+		fmt.Fprintf(errOut, "failed to tail: %v, will retry\n", err)
+	}
+}
+
+// stillRunning reports whether the container of target is still running after
+// its log stream has ended. The stream usually ends before the pod watch
+// reports the terminated container, so it waits for the grace period.
+func stillRunning(ctx context.Context, filter *targetFilter, target *Target) bool {
+	grace := time.NewTimer(endedStreamGracePeriod)
+	defer grace.Stop()
+	poll := time.NewTicker(targetPollInterval)
+	defer poll.Stop()
+	for {
+		if ctx.Err() != nil || !filter.isRunning(target) {
+			return false
+		}
+		select {
+		case <-ctx.Done():
+			return false
+		case <-grace.C:
+			return filter.isRunning(target)
+		case <-poll.C:
+		}
+	}
+}
+
+// resumeTail resumes tail and stops it when the pod watch sees a newer
+// container with the same name. The log endpoint serves the logs of the
+// current container, so a resumed stream may belong to the newer container,
+// which has a tail of its own.
+func resumeTail(ctx context.Context, tail *Tail, resumeRequest *ResumeRequest, filter *targetFilter, target *Target) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go func() {
+		poll := time.NewTicker(targetPollInterval)
+		defer poll.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-poll.C:
+				if !filter.isCurrent(target) {
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+	return tail.Resume(ctx, resumeRequest)
 }
 
 func chooseSelector(ctx context.Context, client kubernetes.Interface, namespace, kind, name string, selector labels.Selector) (labels.Selector, error) {
