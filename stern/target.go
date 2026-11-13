@@ -27,6 +27,10 @@ import (
 type Target struct {
 	Pod       *corev1.Pod
 	Container string
+
+	// containerID is the ID of the container that the pod watch saw
+	// when it emitted this target.
+	containerID string
 }
 
 // GetID returns the ID of the object
@@ -38,6 +42,7 @@ func (t *Target) GetID() string {
 type targetState struct {
 	podUID      string
 	containerID string
+	running     bool
 }
 
 // targetFilter is a filter of Target
@@ -110,8 +115,9 @@ OUTER:
 		}
 
 		t := &Target{
-			Pod:       pod,
-			Container: c.Name,
+			Pod:         pod,
+			Container:   c.Name,
+			containerID: chooseContainerID(c),
 		}
 
 		if !conditionFound {
@@ -141,7 +147,7 @@ func (f *targetFilter) shouldAdd(t *Target, podUID string, cs corev1.ContainerSt
 
 	f.mu.Lock()
 	last := f.targetStates[t.GetID()]
-	f.targetStates[t.GetID()] = &targetState{podUID: podUID, containerID: containerID}
+	f.targetStates[t.GetID()] = &targetState{podUID: podUID, containerID: containerID, running: cs.State.Running != nil}
 	f.mu.Unlock()
 
 	if containerID == "" {
@@ -187,6 +193,25 @@ func (f *targetFilter) isActive(t *Target) bool {
 	defer f.mu.RUnlock()
 	last := f.targetStates[t.GetID()]
 	return last != nil && last.containerID != ""
+}
+
+// isRunning reports whether the pod watch last saw the container of t running.
+// It is false once the container has terminated, the pod is gone, or a newer
+// container with the same name has started, which gets a tail of its own.
+func (f *targetFilter) isRunning(t *Target) bool {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	last := f.targetStates[t.GetID()]
+	return last != nil && last.containerID == t.containerID && last.running
+}
+
+// isCurrent reports whether the container of t is still the latest container
+// with its name that the pod watch has seen.
+func (f *targetFilter) isCurrent(t *Target) bool {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	last := f.targetStates[t.GetID()]
+	return last != nil && last.containerID == t.containerID
 }
 
 func chooseContainerID(cs corev1.ContainerStatus) string {
