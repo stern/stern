@@ -7,6 +7,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func TestTargetFilter(t *testing.T) {
@@ -428,6 +429,51 @@ func TestTargetFilterShouldAdd(t *testing.T) {
 				t.Errorf("expected %v, but actual %v", tt.expected, actual)
 			}
 		})
+	}
+}
+
+func TestTargetFilterSameIDAcrossNamespaces(t *testing.T) {
+	filter := newTargetFilter(targetFilterConfig{
+		podFilter:       regexp.MustCompile(`.*`),
+		containerFilter: regexp.MustCompile(`.*`),
+		containerStates: []ContainerState{RUNNING},
+	})
+	createPod := func(namespace, name, containerID string) *corev1.Pod {
+		return &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      name,
+				UID:       types.UID(namespace + "/" + name),
+			},
+			Status: corev1.PodStatus{
+				ContainerStatuses: []corev1.ContainerStatus{{
+					Name:        "app",
+					ContainerID: containerID,
+					State:       corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+				}},
+			},
+		}
+	}
+	// "app-prod"/"web" and "app"/"prod-web" used to share the ID
+	// "app-prod-web-app"
+	pod1 := createPod("app-prod", "web", "cid1")
+	pod2 := createPod("app", "prod-web", "cid2")
+
+	var added []string
+	visit := func(pod *corev1.Pod) {
+		filter.visit(pod, func(target *Target, _ bool) {
+			added = append(added, target.Pod.Namespace+"/"+target.Pod.Name)
+		})
+	}
+	visit(pod1)
+	visit(pod2)
+	// status updates of running pods must not start their tails again
+	visit(pod1)
+	visit(pod2)
+
+	expected := []string{"app-prod/web", "app/prod-web"}
+	if !reflect.DeepEqual(expected, added) {
+		t.Errorf("expected %v, but actual %v", expected, added)
 	}
 }
 
