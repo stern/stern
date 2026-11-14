@@ -128,32 +128,32 @@ func TestRetrieveLabelsFromResource(t *testing.T) {
 		// apps
 		{
 			desc:  "daemonsets",
-			kinds: []string{"ds", "daemonsets", "daemonset"},
+			kinds: []string{"ds", "daemonsets", "daemonset", "daemonset.apps", "daemonsets.apps"},
 			name:  "ds1",
 			label: "ds-label",
 		},
 		{
 			desc:  "deployments",
-			kinds: []string{"deploy", "deployments", "deployment"},
+			kinds: []string{"deploy", "deployments", "deployment", "deployment.apps", "deployments.apps"},
 			name:  "deploy1",
 			label: "deploy-label",
 		},
 		{
 			desc:  "replicasets",
-			kinds: []string{"rs", "replicasets", "replicaset"},
+			kinds: []string{"rs", "replicasets", "replicaset", "replicaset.apps", "replicasets.apps"},
 			name:  "rs1",
 			label: "rs-label",
 		},
 		{
 			desc:  "statefulsets",
-			kinds: []string{"sts", "statefulsets", "statefulset"},
+			kinds: []string{"sts", "statefulsets", "statefulset", "statefulset.apps", "statefulsets.apps"},
 			name:  "sts1",
 			label: "sts-label",
 		},
 		// batch
 		{
 			desc:  "jobs",
-			kinds: []string{"job", "jobs"},
+			kinds: []string{"job", "jobs", "job.batch", "jobs.batch"},
 			name:  "job1",
 			label: "job-label",
 		},
@@ -191,6 +191,28 @@ func TestRetrieveLabelsFromResource(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestResourceMatcherMatchesGroup(t *testing.T) {
+	tests := []struct {
+		matcher ResourceMatcher
+		name    string
+		want    bool
+	}{
+		{DeploymentMatcher, "deployment.apps", true},
+		{DeploymentMatcher, "deployment.batch", false},
+		{DeploymentMatcher, "deployment.", false},
+		{JobMatcher, "job.batch", true},
+		{JobMatcher, "job.apps", false},
+		{PodMatcher, "pod", true},
+		{PodMatcher, "pod.apps", false},
+		{ServiceMatcher, "service.", false},
+	}
+	for _, tt := range tests {
+		if got := tt.matcher.Matches(tt.name); got != tt.want {
+			t.Errorf("%s.Matches(%q) = %v, want %v", tt.matcher.Name(), tt.name, got, tt.want)
+		}
 	}
 }
 
