@@ -29,9 +29,11 @@ type Target struct {
 	Container string
 }
 
-// GetID returns the ID of the object
+// GetID returns the ID of the object. The parts are joined with "/", which
+// namespace, pod and container names cannot contain, so that targets such as
+// a-b/c/app and a/b-c/app get different IDs.
 func (t *Target) GetID() string {
-	return fmt.Sprintf("%s-%s-%s", t.Pod.Namespace, t.Pod.Name, t.Container)
+	return fmt.Sprintf("%s/%s/%s", t.Pod.Namespace, t.Pod.Name, t.Container)
 }
 
 // targetState holds a last shown container ID
