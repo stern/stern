@@ -210,17 +210,17 @@ func tailTarget(ctx context.Context, target *Target, filter *targetFilter, newTa
 	// when it is disconnected on the way.
 	limiter := rate.NewLimiter(rate.Every(time.Second*20), 2)
 	var resumeRequest *ResumeRequest
-	for {
+	for attempt := 0; ; attempt++ {
 		if err := limiter.Wait(ctx); err != nil {
 			fmt.Fprintf(errOut, "failed to retry: %v\n", err)
 			return
 		}
 		tail := newTail(target)
 		var err error
-		if resumeRequest == nil {
+		if attempt == 0 {
 			err = tail.Start(ctx)
 		} else {
-			err = resumeTail(ctx, tail, resumeRequest, filter, target)
+			err = reconnectTail(ctx, tail, resumeRequest, filter, target)
 		}
 		tail.Close()
 		if resumeReq := tail.GetResumeRequest(); resumeReq != nil {
@@ -265,11 +265,11 @@ func stillRunning(ctx context.Context, filter *targetFilter, target *Target) boo
 	}
 }
 
-// resumeTail resumes tail and stops it when the pod watch sees a newer
-// container with the same name. The log endpoint serves the logs of the
-// current container, so a resumed stream may belong to the newer container,
-// which has a tail of its own.
-func resumeTail(ctx context.Context, tail *Tail, resumeRequest *ResumeRequest, filter *targetFilter, target *Target) error {
+// reconnectTail tails the container of target again after its stream has
+// ended, and stops it when the pod watch sees a newer container with the same
+// name. The log endpoint serves the logs of the current container, so a new
+// stream may belong to the newer container, which has a tail of its own.
+func reconnectTail(ctx context.Context, tail *Tail, resumeRequest *ResumeRequest, filter *targetFilter, target *Target) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func() {
@@ -287,6 +287,9 @@ func resumeTail(ctx context.Context, tail *Tail, resumeRequest *ResumeRequest, f
 			}
 		}
 	}()
+	if resumeRequest == nil {
+		return tail.Start(ctx)
+	}
 	return tail.Resume(ctx, resumeRequest)
 }
 

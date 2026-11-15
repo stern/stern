@@ -446,6 +446,16 @@ func TestTailTargetAfterEndedStream(t *testing.T) {
 			expected:   "a\nb\n",
 			sinceTimes: []string{"2026-01-01T00:00:00Z"},
 		},
+		{
+			name: "new stream after one without lines belongs to a restarted container",
+			responses: func(watch func(*corev1.Pod)) []func(*http.Request) io.ReadCloser {
+				return []func(*http.Request) io.ReadCloser{
+					logs("", nil),
+					openLogs("2026-01-01T00:00:01Z b\n", func() { watch(genPod("containerd://2", running)) }),
+				}
+			},
+			expected: "b\n",
+		},
 	}
 
 	for _, tt := range tests {
