@@ -14,10 +14,13 @@
 
 package stern
 
+import "strings"
+
 // ResourceMatcher is a matcher for Kubernetes resources
 type ResourceMatcher struct {
 	name    string   // the resource name in singular e.g. "deployment"
 	aliases []string // the aliases of the resource e.g. "deploy" and "deployments"
+	group   string   // the API group of the resource e.g. "apps", empty for the core group
 }
 
 // Name returns the resource name in singular
@@ -30,8 +33,13 @@ func (r *ResourceMatcher) AllNames() []string {
 	return append(r.aliases, r.name)
 }
 
-// Matches returns if name matches one of the resource names
+// Matches returns if name matches one of the resource names. A name qualified
+// with the API group, as "kubectl get -o name" prints it (e.g.
+// "deployment.apps"), matches too.
 func (r *ResourceMatcher) Matches(name string) bool {
+	if r.group != "" {
+		name = strings.TrimSuffix(name, "."+r.group)
+	}
 	for _, n := range r.AllNames() {
 		if n == name {
 			return true
@@ -44,11 +52,11 @@ var (
 	PodMatcher                   = ResourceMatcher{name: "pod", aliases: []string{"po", "pods"}}
 	ReplicationControllerMatcher = ResourceMatcher{name: "replicationcontroller", aliases: []string{"rc", "replicationcontrollers"}}
 	ServiceMatcher               = ResourceMatcher{name: "service", aliases: []string{"svc", "services"}}
-	DaemonSetMatcher             = ResourceMatcher{name: "daemonset", aliases: []string{"ds", "daemonsets"}}
-	DeploymentMatcher            = ResourceMatcher{name: "deployment", aliases: []string{"deploy", "deployments"}}
-	ReplicaSetMatcher            = ResourceMatcher{name: "replicaset", aliases: []string{"rs", "replicasets"}}
-	StatefulSetMatcher           = ResourceMatcher{name: "statefulset", aliases: []string{"sts", "statefulsets"}}
-	JobMatcher                   = ResourceMatcher{name: "job", aliases: []string{"jobs"}} // job does not have a short name
+	DaemonSetMatcher             = ResourceMatcher{name: "daemonset", group: "apps", aliases: []string{"ds", "daemonsets"}}
+	DeploymentMatcher            = ResourceMatcher{name: "deployment", group: "apps", aliases: []string{"deploy", "deployments"}}
+	ReplicaSetMatcher            = ResourceMatcher{name: "replicaset", group: "apps", aliases: []string{"rs", "replicasets"}}
+	StatefulSetMatcher           = ResourceMatcher{name: "statefulset", group: "apps", aliases: []string{"sts", "statefulsets"}}
+	JobMatcher                   = ResourceMatcher{name: "job", group: "batch", aliases: []string{"jobs"}} // job does not have a short name
 	ResourceMatchers             = []ResourceMatcher{
 		PodMatcher,
 		ReplicationControllerMatcher,

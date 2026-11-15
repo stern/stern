@@ -71,7 +71,8 @@ so you could provide `"web-\w"` to tail `web-backend` and `web-frontend` pods bu
 When the query is in the form `<resource>/<name>` (exact match), you can select all pods belonging
 to the specified Kubernetes resource, such as `deployment/nginx`.
 Supported Kubernetes resources are `pod`, `replicationcontroller`, `service`, `daemonset`, `deployment`,
-`replicaset`, `statefulset` and `job`.
+`replicaset`, `statefulset` and `job`. The resource type can also be qualified with its API group,
+as `kubectl get -o name` prints it (e.g. `deployment.apps/nginx` or `job.batch/migrate`).
 
 ### cli flags
 
