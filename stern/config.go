@@ -50,6 +50,7 @@ type Config struct {
 	Follow                bool
 	Resource              string
 	OnlyLogLines          bool
+	Events                bool
 	MaxLogRequests        int
 	Stdin                 bool
 	DiffContainer         bool
