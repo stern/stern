@@ -52,8 +52,9 @@ func TestTargetFilter(t *testing.T) {
 	genTarget := func(node, pod, container string) Target {
 		p := createPod(node, pod)
 		return Target{
-			Pod:       p,
-			Container: container,
+			Pod:         p,
+			Container:   container,
+			containerID: "dummy",
 		}
 	}
 
@@ -355,8 +356,9 @@ func TestTargetFilterShouldAdd(t *testing.T) {
 			},
 		})
 		return Target{
-			Pod:       pod,
-			Container: containerName,
+			Pod:         pod,
+			Container:   containerName,
+			containerID: containerID,
 		}
 	}
 	tests := []struct {
