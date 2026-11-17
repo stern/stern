@@ -789,9 +789,28 @@ func encodeExtJSON(v any, pretty bool) (string, error) {
 	if err := enc.Encode(v); err != nil {
 		return "", err
 	}
-	b := bytes.TrimSuffix(buf.Bytes(), []byte("\n"))
-	b = bytes.ReplaceAll(b, []byte(`\u001b`), []byte("\x1b"))
-	return string(b), nil
+	return string(bytes.TrimSuffix(buf.Bytes(), []byte("\n"))), nil
+}
+
+// restoreESC turns each \u001b escape in encoded JSON back into a raw ESC so
+// color codes render in the terminal. It walks escape sequences in pairs, so
+// an escaped backslash followed by the text "u001b" is left as it is.
+func restoreESC(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		if s[i] != '\\' || i+1 == len(s) {
+			b.WriteByte(s[i])
+			continue
+		}
+		if strings.HasPrefix(s[i:], `\u001b`) {
+			b.WriteByte('\x1b')
+			i += len(`\u001b`) - 1
+			continue
+		}
+		b.WriteString(s[i : i+2])
+		i++
+	}
+	return b.String()
 }
 
 func marshalExtJSONMessage(in string) (json.RawMessage, error) {
@@ -813,7 +832,8 @@ func marshalExtJSON(in any, showNamespace, pretty bool) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return encodeExtJSON(msg, pretty)
+		s, err := encodeExtJSON(msg, pretty)
+		return restoreESC(s), err
 	case stern.Log:
 		msg, err := marshalExtJSONMessage(v.Message)
 		if err != nil {
@@ -830,7 +850,8 @@ func marshalExtJSON(in any, showNamespace, pretty bool) (string, error) {
 			Timestamp: v.Timestamp,
 			Message:   msg,
 		}
-		return encodeExtJSON(out, pretty)
+		s, err := encodeExtJSON(out, pretty)
+		return restoreESC(s), err
 	default:
 		return "", fmt.Errorf("extjson: unsupported type %T", in)
 	}
