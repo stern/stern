@@ -648,12 +648,17 @@ func (o *options) generateTemplate() (*template.Template, error) {
 				return fmt.Sprintf("%v", value)
 			}
 
-			b, err := json.MarshalIndent(data, "", "  ")
-			if err != nil {
+			// Encode with an Encoder to keep <, > and & as they are: the
+			// output is for reading, not for embedding in HTML.
+			var buf bytes.Buffer
+			enc := json.NewEncoder(&buf)
+			enc.SetEscapeHTML(false)
+			enc.SetIndent("", "  ")
+			if err := enc.Encode(data); err != nil {
 				return fmt.Sprintf("%v", value)
 			}
 
-			return string(b)
+			return strings.TrimSuffix(buf.String(), "\n")
 		},
 		"toRFC3339Nano": func(ts any) string {
 			return toTime(ts).Format(time.RFC3339Nano)

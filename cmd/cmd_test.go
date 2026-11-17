@@ -791,6 +791,28 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			"{\n  \"id\": 1234567890123456789\n}",
 			false,
 		},
+		{
+			"template with prettyJSON keeps <, > and & as written",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{prettyJSON .Message}}`
+				return o
+			}(),
+			`{"msg":"a < b && c > d","url":"/q?a=1&b=2"}`,
+			"{\n  \"msg\": \"a < b && c > d\",\n  \"url\": \"/q?a=1&b=2\"\n}",
+			false,
+		},
+		{
+			"template with prettyJSON on parsed json keeps <, > and & as written",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{prettyJSON (tryParseJSON .Message)}}`
+				return o
+			}(),
+			`{"msg":"<b>&</b>"}`,
+			"{\n  \"msg\": \"<b>&</b>\"\n}",
+			false,
+		},
 	}
 
 	for _, tt := range tests {
