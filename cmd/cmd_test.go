@@ -781,6 +781,28 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			false,
 		},
 		{
+			"template with tryParseJSON keeps numbers as written",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{with $d := tryParseJSON .Message}}{{$d.id}}{{else}}not json{{end}}`
+				return o
+			}(),
+			`{"id":1234567890123456789}`,
+			"1234567890123456789",
+			false,
+		},
+		{
+			"template with tryParseJSON on text after the json",
+			func() *options {
+				o := NewOptions(streams)
+				o.template = `{{with $d := tryParseJSON .Message}}{{$d.level}}{{else}}not json{{end}}`
+				return o
+			}(),
+			`{"level":"INFO"} trailing`,
+			"not json",
+			false,
+		},
+		{
 			"template with prettyJSON keeps numbers as written",
 			func() *options {
 				o := NewOptions(streams)

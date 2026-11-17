@@ -589,10 +589,8 @@ func (o *options) generateTemplate() (*template.Template, error) {
 			return string(b), nil
 		},
 		"tryParseJSON": func(text string) map[string]interface{} {
-			decoder := json.NewDecoder(strings.NewReader(text))
-			decoder.UseNumber()
-			obj := make(map[string]interface{})
-			if err := decoder.Decode(&obj); err != nil {
+			obj, err := decodeJSONObject(text)
+			if err != nil {
 				return nil
 			}
 			return obj
