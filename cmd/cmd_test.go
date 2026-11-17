@@ -426,6 +426,72 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			false,
 		},
 		{
+			"output=extjson+escape in json message",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "extjson"
+
+				return o
+			}(),
+			`{"msg":"\u001b[32mok\u001b[0m"}`,
+			"{\"pod\":\"pod1\",\"container\":\"container1\",\"message\":{\"msg\":\"\x1b[32mok\x1b[0m\"}}\n",
+			false,
+		},
+		{
+			"output=extjson+escape in text message",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "extjson"
+
+				return o
+			}(),
+			"\x1b[31mred\x1b[0m text",
+			"{\"pod\":\"pod1\",\"container\":\"container1\",\"message\":\"\x1b[31mred\x1b[0m text\"}\n",
+			false,
+		},
+		{
+			"output=extjson+literal u001b in text message",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "extjson"
+
+				return o
+			}(),
+			`payload={"color":"\u001b[31m"}`,
+			`{"pod":"pod1","container":"container1","message":"payload={\"color\":\"\\u001b[31m\"}"}
+`,
+			false,
+		},
+		{
+			"output=extjson+escaped backslash in json message",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "extjson"
+
+				return o
+			}(),
+			`{"msg":"\\u001b stays, \\\u001b[0m resets"}`,
+			"{\"pod\":\"pod1\",\"container\":\"container1\",\"message\":{\"msg\":\"\\\\u001b stays, \\\\\x1b[0m resets\"}}\n",
+			false,
+		},
+		{
+			"output=ppextjson+literal u001b in text message",
+			func() *options {
+				o := NewOptions(streams)
+				o.output = "ppextjson"
+
+				return o
+			}(),
+			`payload={"color":"\u001b[31m"}`,
+			`{
+  "pod": "pod1",
+  "container": "container1",
+  "message": "payload={\"color\":\"\\u001b[31m\"}"
+}
+`,
+			false,
+		},
+		{
 			"output=ppextjson",
 			func() *options {
 				o := NewOptions(streams)
