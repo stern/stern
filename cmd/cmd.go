@@ -552,7 +552,11 @@ func (o *options) outputHiddenOptions() {
 func (o *options) generateTemplate() (*template.Template, error) {
 	t := o.template
 	if o.templateFile != "" {
-		data, err := os.ReadFile(o.templateFile)
+		path, err := homedir.Expand(o.templateFile)
+		if err != nil {
+			return nil, err
+		}
+		data, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
