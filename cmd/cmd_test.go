@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/pflag"
 	"github.com/stern/stern/stern"
 	"k8s.io/apimachinery/pkg/fields"
@@ -833,6 +834,58 @@ func TestOptionsGenerateTemplate(t *testing.T) {
 			}
 			if want, got := tt.want, buf.String(); want != got {
 				t.Errorf("want %v, but got %v", want, got)
+			}
+		})
+	}
+}
+
+// A flag written as --template-file=~/stern.tpl, or a template-file option in
+// the config file, reaches stern with the tilde intact because the shell
+// expands only a tilde at the start of a word.
+func TestOptionsGenerateTemplateFileHomeDir(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	// go-homedir caches the home directory after the first lookup.
+	orig := homedir.DisableCache
+	homedir.DisableCache = true
+	defer func() { homedir.DisableCache = orig }()
+
+	if err := os.WriteFile(filepath.Join(home, "stern.tpl"), []byte("home template"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name         string
+		templateFile string
+		want         string
+		wantError    bool
+	}{
+		{"home-dir", "~/stern.tpl", "home template", false},
+		{"missing", "~/not-exist.tpl", "", true},
+		{"other-user", "~someone/stern.tpl", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := NewOptions(genericclioptions.NewTestIOStreamsDiscard())
+			o.templateFile = tt.templateFile
+
+			tmpl, err := o.generateTemplate()
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("expected error, but got no error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			var buf bytes.Buffer
+			if err := tmpl.Execute(&buf, stern.Log{}); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got := buf.String(); got != tt.want {
+				t.Errorf("want %q, but got %q", tt.want, got)
 			}
 		})
 	}
