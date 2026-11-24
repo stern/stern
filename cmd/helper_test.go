@@ -31,6 +31,10 @@ func TestToTimeE(t *testing.T) {
 		{json.Number("-0.5"), time.Unix(-1, 500000000).UTC(), false},
 		{"-0.000000001", time.Unix(-1, 999999999).UTC(), false},
 		{"-1.12345678912345", time.Unix(-2, 876543211).UTC(), false},
+		// parseJSON decodes numbers as float64
+		{float64(1136171045), base, false},
+		{float64(1136171045) + 0.5, base.Add(500000000 * time.Nanosecond), false},
+		{float64(-1.25), time.Unix(-2, 750000000).UTC(), false},
 		// cast.ToTimeE
 		{1136171045, base, false},
 		{"2006-01-02T03:04:05.123456789", base.Add(123456789 * time.Nanosecond), false},
