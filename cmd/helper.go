@@ -24,6 +24,12 @@ func toTimeE(a any) (time.Time, error) {
 		if t, ok := parseUnixTimeNanoString(v.String()); ok {
 			return t, nil
 		}
+	case float64:
+		// parseJSON decodes numbers as float64; format without an exponent
+		// so the same Unix timestamp handling applies as for string input.
+		if t, ok := parseUnixTimeNanoString(strconv.FormatFloat(v, 'f', -1, 64)); ok {
+			return t, nil
+		}
 	}
 	return cast.ToTimeE(a)
 }
