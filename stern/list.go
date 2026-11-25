@@ -38,6 +38,7 @@ func List(ctx context.Context, client kubernetes.Interface, config *Config) (map
 	labels := make(map[string]string)
 	options := metav1.ListOptions{}
 
+	var mu sync.Mutex
 	wg := sync.WaitGroup{}
 
 	wg.Add(len(namespaces))
@@ -53,6 +54,9 @@ func List(ctx context.Context, client kubernetes.Interface, config *Config) (map
 			}
 
 			match := "app.kubernetes.io/instance"
+			// The goroutines of all namespaces write to the same map.
+			mu.Lock()
+			defer mu.Unlock()
 			// Iterate through pods in namespace, looking for matching labels.
 			for _, pod := range pods.Items {
 				key := pod.Labels[match]
