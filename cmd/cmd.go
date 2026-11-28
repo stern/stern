@@ -403,8 +403,8 @@ func (o *options) setColorList() error {
 // overrideFlagSetDefaultFromConfig overrides the default value of the flagSets
 // from the config file
 func (o *options) overrideFlagSetDefaultFromConfig(fs *pflag.FlagSet) error {
-	envVar, ok := os.LookupEnv("STERNCONFIG")
-	if ok {
+	// --config has higher priority than the STERNCONFIG environment variable
+	if envVar, ok := os.LookupEnv("STERNCONFIG"); ok && !fs.Changed("config") {
 		o.configFilePath = envVar
 	}
 
