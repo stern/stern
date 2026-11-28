@@ -135,6 +135,14 @@ func TestOptionsOverrideFlagSetDefaultFromConfigEnv(t *testing.T) {
 			args:                   []string{},
 			expectedConfigFilePath: "./config.yaml",
 		},
+		{
+			name: "--config takes precedence over STERNCONFIG env",
+			env: map[string]string{
+				"STERNCONFIG": "./config.yaml",
+			},
+			args:                   []string{"--config=./other.yaml"},
+			expectedConfigFilePath: "./other.yaml",
+		},
 	}
 
 	for _, tt := range tests {
@@ -144,7 +152,12 @@ func TestOptionsOverrideFlagSetDefaultFromConfigEnv(t *testing.T) {
 			}
 
 			o := NewOptions(streams)
-			_ = o.overrideFlagSetDefaultFromConfig(pflag.NewFlagSet("", pflag.ContinueOnError))
+			fs := pflag.NewFlagSet("", pflag.ContinueOnError)
+			o.AddFlags(fs)
+			if err := fs.Parse(tt.args); err != nil {
+				t.Fatal(err)
+			}
+			_ = o.overrideFlagSetDefaultFromConfig(fs)
 
 			if tt.expectedConfigFilePath != o.configFilePath {
 				t.Errorf("expected %s for configFilePath, but got %s", tt.expectedConfigFilePath, o.configFilePath)
