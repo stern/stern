@@ -140,6 +140,7 @@ timestamps: short
 ```
 
 You can change the config file path with `--config` flag or `STERNCONFIG` environment variable.
+If both are set, the `--config` flag is used.
 
 ### templates
 
